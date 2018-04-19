@@ -207,7 +207,7 @@ const commands = {
               queue[msg.guild.id].playing = false;
               msg.member.voiceChannel.leave();
             });
-            msg.channel.sendMessage(`Soitettaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
+            msg.channel.sendMessage(`Soitettaan PÄÄPÄIVÄ!`);
             dispatcher = msg.guild.voiceConnection.playStream(yt(song.url, streamOptions), {
               passes: tokens.passes
             });
@@ -318,7 +318,7 @@ client.on('ready', () => {
 client.on('message', msg => {
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
-  /*const sana1 = /homo/;
+  const sana1 = /homo/;
   const sana2 = /autisti/;
   if (sana1.test(msg.content) === true || sana2.test(msg.content) === true) {
     const sasu_emoji = msg.guild.emojis.find('name', 'sasu');
@@ -326,7 +326,7 @@ client.on('message', msg => {
 
     msg.react(sasu_emoji);
     msg.react(karvis_emoji);
-  }*/
+  }
 
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
