@@ -200,10 +200,6 @@ const commands = {
             requester: "bOtter"
           });
 
-          play(queue[msg.guild.id].songs.shift());
-
-
-
           client.user.setPresence({
             game: {
               name: "PÄÄPÄIVÄ | " + tokens.prefix + "help",
