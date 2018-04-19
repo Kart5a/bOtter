@@ -203,6 +203,36 @@ const commands = {
           dispatcher = msg.guild.voiceConnection.playStream(yt("https://www.youtube.com/watch?v=687_ZGkP6OU", streamOptions), {
             passes: tokens.passes
           });
+          let collector = msg.channel.createCollector(m => m);
+          collector.on('message', m => {
+            if (m.content.startsWith(tokens.prefix + 'pause')) {
+              msg.channel.sendMessage('Pauseettu').then(() => {
+                dispatcher.pause();
+              });
+            } else if (m.content.startsWith(tokens.prefix + 'resume')) {
+              msg.channel.sendMessage('Jatketaan').then(() => {
+                dispatcher.resume();
+              });
+            } else if (m.content.startsWith(tokens.prefix + 'skip')) {
+              msg.channel.sendMessage('Skipattu').then(() => {
+                dispatcher.end();
+              });
+            } else if (m.content.startsWith(tokens.prefix + 'time')) {
+              msg.channel.sendMessage(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
+            }
+          });
+
+          dispatcher.on('end', () => {
+            collector.stop();
+            play(queue[msg.guild.id].songs.shift());
+          });
+          
+          dispatcher.on('error', (err) => {
+            return msg.channel.sendMessage('error: ' + err).then(() => {
+              collector.stop();
+              play(queue[msg.guild.id].songs.shift());
+            });
+          });
 
           client.user.setPresence({
             game: {
