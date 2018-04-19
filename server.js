@@ -298,16 +298,16 @@ const commands = {
     let pvmaara = new Date();
     let day = pvmaara.getDay();
     let is = {
-      files: ["img/isWednesday.jpg"]
+      files: ["https://imgur.com/NcE2HFK"]
     };
     let no = {
-      files: ["img/notWednesday.jpg"]
+      files: ["https://imgur.com/hlNUbYt"]
     };
 
       if (day == 3) {
-        msg.channel.send(is);
+        msg.channel.send("",is);
       } else {
-        msg.channel.send(no);
+        msg.channel.send("",no);
       }
 
   }
