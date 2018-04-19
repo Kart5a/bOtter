@@ -297,17 +297,11 @@ const commands = {
     //IS IT WEDNESDAY MY DUDES?
     let pvmaara = new Date();
     let day = pvmaara.getDay();
-    let is = {
-      files: ["https://imgur.com/NcE2HFK"]
-    };
-    let no = {
-      files: ["https://imgur.com/hlNUbYt"]
-    };
 
       if (day == 3) {
-        msg.channel.send("",is);
+        msg.channel.send("", {file: "https://imgur.com/NcE2HFK"});
       } else {
-        msg.channel.send("",no);
+        msg.channel.send("", {file: "https://imgur.com/hlNUbYt"});
       }
 
   }
