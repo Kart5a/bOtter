@@ -316,7 +316,7 @@ client.on('ready', () => {
 
 client.on('message', msg => {
 
-  if (message.content === 'wednesday') {
+  if (msg.content === 'wednesday') {
     let pvmaara = new Date();
 
     let day = pvmaara.getDay();
