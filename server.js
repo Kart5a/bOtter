@@ -114,16 +114,12 @@ const commands = {
             value: "Kertoo onko pääpäivä."
           },
           {
-            name: tokens.prefix + "pääpäivä on",
+            name: tokens.prefix + "onpääpäivä",
             value: "Asettaa kyseisen päivän pääpäiväksi."
           },
           {
-            name: tokens.prefix + "pääpäivä ei",
+            name: tokens.prefix + "eiolepääpäivä",
             value: "Lopettaa pääpäivän."
-          },
-          {
-            name: tokens.prefix + "musa pois",
-            value: "Lopettaa musan."
           },
           {
             name: tokens.prefix + "wednesday",
@@ -181,7 +177,7 @@ const commands = {
   'reboot': (msg) => {
     if (msg.author.id == tokens.adminID) process.exit(); //Requires a node module like Forever to work.
   },
-  'pääpäivä on': (msg) => {
+  'onpääpäivä': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
       var d = new Date();
       date = [d.getDate(), d.getMonth(), d.getYear()];
@@ -220,13 +216,13 @@ const commands = {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
   },
-  'pääpäivä ei': (msg) => {
+  'eiolepääpäivä': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
       date = [0, 0, 0];
 
       if (pääpäivä) {
-        msg.channel.send("Pääpäivä on peruttu :(");
+        msg.channel.send("onpääpäivä peruttu :(");
       } else {
         msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
 
