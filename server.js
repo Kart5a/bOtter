@@ -294,21 +294,22 @@ const commands = {
   },
   'wednesday': (msg) => {
 
+    //IS IT WEDNESDAY MY DUDES?
     let pvmaara = new Date();
     let day = pvmaara.getDay();
-
-    const is = {
-      files: ["https://imgur.com/a/9fAurpg"]
+    let is = {
+      files: ["img/isWednesday.jpg"]
     };
-    const no = {
-      files: ["https://imgur.com/a/2guLgqm"]
+    let no = {
+      files: ["img/notWednesday.jpg"]
     };
 
-    if (day == 3) {
-      msg.channel.sendMessage(is);
-    } else {
-      msg.channel.sendMessage(no);
-    }
+      if (day == 3) {
+        msg.channel.send(is);
+      } else {
+        msg.channel.send(no);
+      }
+
   }
 
 };
