@@ -298,10 +298,10 @@ const commands = {
     let day = pvmaara.getDay();
 
     const is = {
-      files: ["/img/isWednesday.jpg"]
+      files: ["https://imgur.com/a/9fAurpg"]
     };
     const no = {
-      files: ["/img/notWednesday.jpg"]
+      files: ["https://imgur.com/a/2guLgqm"]
     };
 
     if (day == 3) {
