@@ -285,7 +285,7 @@ client.on('ready', () => {
 client.on('message', msg => {
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
-  const sana1 = /homo/;
+  /*const sana1 = /homo/;
   const sana2 = /autisti/;
   if (sana1.test(message.content) === true || sana2.test(message.content) === true) {
     const sasu_emoji = message.guild.emojis.find('name', 'sasu');
@@ -293,7 +293,7 @@ client.on('message', msg => {
 
     message.react(sasu_emoji);
     message.react(karvis_emoji);
-  }
+  }*/
 
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
