@@ -18,10 +18,10 @@ let date = [0, 0, 0];
 
 let pvmaara = new Date();
 let day = pvmaara.getDay();
-let is = {
+const is = {
   files: ["img/isWednesday.jpg"]
 };
-let no = {
+const no = {
   files: ["img/notWednesday.jpg"]
 };
 
