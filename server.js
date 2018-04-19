@@ -299,9 +299,9 @@ const commands = {
     let day = pvmaara.getDay();
 
       if (day == 3) {
-        msg.channel.send("", {file: "https://imgur.com/NcE2HFK"});
+        msg.channel.send({files: ["https://imgur.com/NcE2HFK"]});
       } else {
-        msg.channel.send("", {file: "https://imgur.com/hlNUbYt"});
+        msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
       }
 
   }
