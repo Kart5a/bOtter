@@ -104,7 +104,7 @@ const commands = {
     msg.channel.sendMessage(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
   },
   'help': (msg) => {
-    message.channel.send({
+    msg.channel.send({
       embed: {
         color: 3447003,
 
@@ -182,16 +182,16 @@ const commands = {
     if (msg.author.id == tokens.adminID) process.exit(); //Requires a node module like Forever to work.
   },
   'pääpäivä on': (msg) => {
-    if (message.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
+    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
       var d = new Date();
       date = [d.getDate(), d.getMonth(), d.getYear()];
       if (pääpäivä == true) {
-        message.channel.send("Tänään on jo pääpäivä!");
+        msg.channel.send("Tänään on jo pääpäivä!");
 
       } else {
         pääpäivä = true;
         console.log("pääpäivä asetettu " + date);
-        message.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
+        msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
         msg.member.voiceChannel.join();
 
@@ -217,18 +217,18 @@ const commands = {
         });
       }
     } else {
-      message.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
+      msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
   },
   'pääpäivä ei': (msg) => {
-    if (message.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
+    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
       date = [0, 0, 0];
 
       if (pääpäivä) {
-        message.channel.send("Pääpäivä on peruttu :(");
+        msg.channel.send("Pääpäivä on peruttu :(");
       } else {
-        message.channel.send("Eihä tänää ollukkaa pääpäivä...");
+        msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
 
       }
       pääpäivä = false;
@@ -241,7 +241,7 @@ const commands = {
       });
       dispatcher.end();
     } else {
-      message.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
+      msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
     }
   },
   'pääpäivä': (msg) => {
@@ -257,9 +257,9 @@ const commands = {
     }
 
     if (pääpäivä == true) {
-      message.channel.send("Tänään on pääpäivä!");
+      msg.channel.send("Tänään on pääpäivä!");
     } else if (pääpäivä == false) {
-      message.channel.send("Tänään ei ole pääpäivä :(");
+      msg.channel.send("Tänään ei ole pääpäivä :(");
       client.user.setPresence({
         game: {
           name: "ttunes | !help",
@@ -270,9 +270,9 @@ const commands = {
   },
   'wednesday': (msg) => {
     if (day == 3) {
-      message.channel.send(is);
+      msg.channel.send(is);
     } else {
-      message.channel.send(no);
+      msg.channel.send(no);
     }
   }
 
@@ -287,12 +287,12 @@ client.on('message', msg => {
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   /*const sana1 = /homo/;
   const sana2 = /autisti/;
-  if (sana1.test(message.content) === true || sana2.test(message.content) === true) {
-    const sasu_emoji = message.guild.emojis.find('name', 'sasu');
-    const karvis_emoji = message.guild.emojis.find('name', 'karvis');
+  if (sana1.test(msg.content) === true || sana2.test(msg.content) === true) {
+    const sasu_emoji = msg.guild.emojis.find('name', 'sasu');
+    const karvis_emoji = msg.guild.emojis.find('name', 'karvis');
 
-    message.react(sasu_emoji);
-    message.react(karvis_emoji);
+    msg.react(sasu_emoji);
+    msg.react(karvis_emoji);
   }*/
 
   if (!msg.content.startsWith(tokens.prefix)) return;
