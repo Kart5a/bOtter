@@ -215,11 +215,9 @@ const commands = {
             }
           });
         });
-
-      } else {
-        message.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
       }
-
+    } else {
+      message.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
   },
   'pääpäivä ei': (msg) => {
