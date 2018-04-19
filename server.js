@@ -16,15 +16,6 @@ const streamOptions = {
 var pääpäivä = false;
 let date = [0, 0, 0];
 
-let pvmaara = new Date();
-let day = pvmaara.getDay();
-const is = {
-  files: ["img/isWednesday.jpg"]
-};
-const no = {
-  files: ["img/notWednesday.jpg"]
-};
-
 const commands = {
   'play': (msg) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja linkki!`);
@@ -302,10 +293,20 @@ const commands = {
     }
   },
   'wednesday': (msg) => {
+
+    let pvmaara = new Date();
+    let day = pvmaara.getDay();
+    const is = {
+      files: ["img/isWednesday.jpg"]
+    };
+    const no = {
+      files: ["img/notWednesday.jpg"]
+    };
+
     if (day == 3) {
-      msg.channel.send(is);
+      msg.channel.send("",is);
     } else {
-      msg.channel.send(no);
+      msg.channel.send("",no);
     }
   }
 
