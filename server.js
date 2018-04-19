@@ -200,6 +200,10 @@ const commands = {
             requester: "bOtter"
           });
 
+          dispatcher = msg.guild.voiceConnection.playStream(yt("https://www.youtube.com/watch?v=687_ZGkP6OU", streamOptions), {
+            passes: tokens.passes
+          });
+
           client.user.setPresence({
             game: {
               name: "PÄÄPÄIVÄ | " + tokens.prefix + "help",
