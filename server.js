@@ -305,9 +305,9 @@ const commands = {
     };
 
     if (day == 3) {
-      msg.channel.send(is);
+      msg.channel.sendMessage(is);
     } else {
-      msg.channel.send(no);
+      msg.channel.sendMessage(no);
     }
   }
 
