@@ -276,6 +276,14 @@ const commands = {
     }
   }
 
+};
+
+client.on('ready', () => {
+  console.log('ready!');
+});
+
+client.on('message', msg => {
+
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   const sana1 = /homo/;
   const sana2 = /autisti/;
@@ -287,13 +295,6 @@ const commands = {
     message.react(karvis_emoji);
   }
 
-};
-
-client.on('ready', () => {
-  console.log('ready!');
-});
-
-client.on('message', msg => {
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
 });
