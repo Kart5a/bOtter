@@ -291,7 +291,7 @@ const commands = {
         }
       });
     }
-  },
+  }/*,
   'wednesday': (msg) => {
 
     //IS IT WEDNESDAY MY DUDES?
@@ -306,7 +306,7 @@ const commands = {
         msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
       }
 
-  }
+  }*/
 
 };
 
@@ -315,6 +315,20 @@ client.on('ready', () => {
 });
 
 client.on('message', msg => {
+
+  if (message.content === 'wednesday') {
+    let pvmaara = new Date();
+
+    let day = pvmaara.getDay();
+    console.log(pvmaara + " " + day);
+
+      if (day == 3) {
+        msg.channel.send({files: ["https://imgur.com/NcE2HFK"]});
+      } else {
+        msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
+      }
+    }
+
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   const sana1 = /homo/;
