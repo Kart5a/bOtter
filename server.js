@@ -296,7 +296,9 @@ const commands = {
 
     //IS IT WEDNESDAY MY DUDES?
     let pvmaara = new Date();
+
     let day = pvmaara.getDay();
+    console.log(pvmaara + " " + day);
 
       if (day == 3) {
         msg.channel.send({files: ["https://imgur.com/NcE2HFK"]});
