@@ -92,7 +92,7 @@ const commands = {
     });
     msg.channel.sendMessage(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
   },
-  'help': (msg) => {
+  'apustus': (msg) => {
     msg.channel.send({
       embed: {
         color: 3447003,
@@ -193,7 +193,7 @@ const commands = {
       msg.channel.send("Tänään ei ole pääpäivä :(");
       client.user.setPresence({
         game: {
-          name: "ttunes | !help",
+          name: "ttunes | !apustus",
           type: 2
         }
       });
@@ -264,7 +264,7 @@ const commands = {
 
           client.user.setPresence({
             game: {
-              name: "PÄÄPÄIVÄ | " + tokens.prefix + "help",
+              name: "PÄÄPÄIVÄ | " + tokens.prefix + "apustus",
               type: 2
             }
           });
@@ -289,7 +289,7 @@ const commands = {
       console.log("pääpäivä postettu");
       client.user.setPresence({
         game: {
-          name: "ttunes | !help",
+          name: "ttunes | !apustus",
           type: 2
         }
       });
