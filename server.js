@@ -328,7 +328,7 @@ const commands = {
     tulos = Math.floor(Math.random() * Math.floor(2));
 
     if (tulos === 1) {
-      msg.channel.send("kruuna, " + "hävisit " + msg.author.username);
+      msg.channel.send("Kruuna, " + "hävisit " + msg.author.username);
     } else {
       msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
     }
