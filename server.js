@@ -18,7 +18,7 @@ let date = [0, 0, 0];
 
 const commands = {
   'play': (msg) => {
-    if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja linkki!`);
+    if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
     if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
     if (queue[msg.guild.id].playing) return msg.channel.sendMessage('Soitetaan jo!');
     let dispatcher;
@@ -31,10 +31,8 @@ const commands = {
         queue[msg.guild.id].playing = false;
         msg.member.voiceChannel.leave();
       });
-      msg.channel.sendMessage(`Soitettaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
-      dispatcher = msg.guild.voiceConnection.playStream(yt(song.url, streamOptions), {
-        passes: tokens.passes
-      });
+      msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
+      dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
       let collector = msg.channel.createCollector(m => m);
       collector.on('message', m => {
         if (m.content.startsWith(tokens.prefix + 'pause')) {
@@ -105,11 +103,11 @@ const commands = {
             value: "Kertoo onko pääpäivä."
           },
           {
-            name: tokens.prefix + "onpääpäivä",
+            name: tokens.prefix + "pääpäivä_on",
             value: "Asettaa kyseisen päivän pääpäiväksi."
           },
           {
-            name: tokens.prefix + "eiolepääpäivä",
+            name: tokens.prefix + "pääpäivä_ei",
             value: "Lopettaa pääpäivän."
           },
           {
@@ -168,7 +166,33 @@ const commands = {
   'reboot': (msg) => {
     if (msg.author.id == tokens.adminID) process.exit(); //Requires a node module like Forever to work.
   },
-  'onpääpäivä': (msg) => {
+
+  'pääpäivä': (msg) => {
+    var pv = new Date();
+    pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
+
+    if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
+      pääpäivä = true;
+    } else {
+      pääpäivä = false;
+      console.log("pääpäivä loppu");
+      date = [0, 0, 0];
+    }
+
+    if (pääpäivä == true) {
+      msg.channel.send("Tänään on pääpäivä!");
+    } else if (pääpäivä == false) {
+      msg.channel.send("Tänään ei ole pääpäivä :(");
+      client.user.setPresence({
+        game: {
+          name: "ttunes | !help",
+          type: 2
+        }
+      });
+    }
+  },
+
+  'pääpäivä_on': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
       var d = new Date();
       date = [d.getDate(), d.getMonth(), d.getYear()];
@@ -198,10 +222,8 @@ const commands = {
               queue[msg.guild.id].playing = false;
               msg.member.voiceChannel.leave();
             });
-            msg.channel.sendMessage(`Soitettaan PÄÄPÄIVÄ!`);
-            dispatcher = msg.guild.voiceConnection.playStream(yt(song.url, streamOptions), {
-              passes: tokens.passes
-            });
+            msg.channel.sendMessage(`Soitetaan PÄÄPÄIVÄ!`);
+            dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
             let collector = msg.channel.createCollector(m => m);
             collector.on('message', m => {
               if (m.content.startsWith(tokens.prefix + 'pause')) {
@@ -244,13 +266,13 @@ const commands = {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
   },
-  'eiolepääpäivä': (msg) => {
+  'pääpäivä_ei': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
       date = [0, 0, 0];
 
       if (pääpäivä) {
-        msg.channel.send("onpääpäivä peruttu :(");
+        msg.channel.send("pääpäivä_on peruttu :(");
       } else {
         msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
 
@@ -268,30 +290,6 @@ const commands = {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
     }
   },
-  'pääpäivä': (msg) => {
-    var pv = new Date();
-    pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
-
-    if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
-      pääpäivä = true;
-    } else {
-      pääpäivä = false;
-      console.log("pääpäivä loppu");
-      date = [0, 0, 0];
-    }
-
-    if (pääpäivä == true) {
-      msg.channel.send("Tänään on pääpäivä!");
-    } else if (pääpäivä == false) {
-      msg.channel.send("Tänään ei ole pääpäivä :(");
-      client.user.setPresence({
-        game: {
-          name: "ttunes | !help",
-          type: 2
-        }
-      });
-    }
-  }/*,
   'wednesday': (msg) => {
 
     //IS IT WEDNESDAY MY DUDES?
@@ -306,7 +304,7 @@ const commands = {
         msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
       }
 
-  }*/
+  }
 
 };
 
@@ -315,20 +313,6 @@ client.on('ready', () => {
 });
 
 client.on('message', msg => {
-
-  if (msg.content === 'wednesday') {
-    let pvmaara = new Date();
-
-    let day = pvmaara.getDay();
-    console.log(pvmaara + " " + day);
-
-      if (day == 3) {
-        msg.channel.send({files: ["https://imgur.com/NcE2HFK"]});
-      } else {
-        msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
-      }
-    }
-
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   const sana1 = /homo/;
