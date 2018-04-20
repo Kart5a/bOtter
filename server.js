@@ -119,6 +119,10 @@ const commands = {
             value: "Heittää rahea"
           },
           {
+            name: tokens.prefix + "onkokarvisvammanen",
+            value: "Kertoo onko karvis vammanen"
+          },
+          {
             name: "**__ttuneBotti:__**",
             value: "Tässä kaikki ttuneBottiin liittyvät komennot:"
           },
