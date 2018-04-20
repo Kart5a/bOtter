@@ -272,7 +272,7 @@ const commands = {
       date = [0, 0, 0];
 
       if (pääpäivä) {
-        msg.channel.send("pääpäivä_on peruttu :(");
+        msg.channel.send("pääpäivä on peruttu :(");
       } else {
         msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
 
