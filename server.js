@@ -329,6 +329,11 @@ const commands = {
       msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
     }
   }
+  ,
+  'onkokarvisvammanen': (msg) => {
+
+    msg.channel.send("ON");
+}
 
 };
 
