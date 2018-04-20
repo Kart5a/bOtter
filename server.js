@@ -316,7 +316,7 @@ const commands = {
     if (tulos === 1) {
       msg.channel.send("Klaava, " + "hävisit " + msg.author.username);
     } else {
-      msg.channel.send("Kruuna, " + "voitit " + msg.author.username);
+      msg.channel.send("Kkruuna, " + "voitit " + msg.author.username);
     }
   },
   'klaava': (msg) => {
@@ -324,7 +324,7 @@ const commands = {
     tulos = Math.floor(Math.random() * Math.floor(2));
 
     if (tulos === 1) {
-      msg.channel.send("Kruuna, " + "hävisit " + msg.author.username);
+      msg.channel.send("kruuna, " + "hävisit " + msg.author.username);
     } else {
       msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
     }
