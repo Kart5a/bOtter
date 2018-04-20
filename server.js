@@ -115,6 +115,10 @@ const commands = {
             value: "Tarkistaa onko keskiviikko."
           },
           {
+            name: tokens.prefix + "kruuna/klaava",
+            value: "Heittää rahea"
+          },
+          {
             name: "**__ttuneBotti:__**",
             value: "Tässä kaikki ttuneBottiin liittyvät komennot:"
           },
@@ -304,6 +308,26 @@ const commands = {
         msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
       }
 
+  },
+  'kruuna': (msg) => {
+
+    tulos = Math.floor(Math.random() * Math.floor(2));
+
+    if (tulos === 1) {
+      msg.channel.send("Klaava, " + "hävisit " + msg.author.username);
+    } else {
+      msg.channel.send("Kruuna, " + "voitit " + msg.author.username);
+    }
+  },
+  'klaava': (msg) => {
+
+    tulos = Math.floor(Math.random() * Math.floor(2));
+
+    if (tulos === 1) {
+      msg.channel.send("Kruuna, " + "hävisit " + msg.author.username);
+    } else {
+      msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
+    }
   }
 
 };
