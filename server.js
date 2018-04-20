@@ -222,7 +222,7 @@ const commands = {
               queue[msg.guild.id].playing = false;
               msg.member.voiceChannel.leave();
             });
-            msg.channel.sendMessage(`Soitetaan PÄÄPÄIVÄ!`);
+            msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
             dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
             let collector = msg.channel.createCollector(m => m);
             collector.on('message', m => {
