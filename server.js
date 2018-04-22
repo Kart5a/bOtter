@@ -5,6 +5,8 @@ const yt = require('ytdl-core');
 const tokens = require('./tokens.json');
 const client = new Client();
 
+let dispatcher;
+
 let queue = {};
 
 const streamOptions = {
@@ -26,11 +28,7 @@ function changeTitle(text) {
   });
 }
 
-function setup() {
-  frameRate(3);
-}
-
-function draw() {
+setInterval(function() {
   var pv = new Date();
   pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
   var day = pv.getDay();
@@ -39,18 +37,19 @@ function draw() {
     pääpäivä = true;
   } else {
     pääpäivä = false;
-    console.log("pääpäivä loppu");
     date = [0, 0, 0];
   }
 
-  if (pääpäivä) {
+  if (pääpäivä == true) {
     changeTitle("PÄÄPÄIVÄ");
+    return;
   } else if (day === 3) {
     changeTitle("Wednesday");
+    return;
   } else {
     changeTitle("ttunes");
   }
-}
+}, 5000);
 
 
 const commands = {
@@ -58,7 +57,6 @@ const commands = {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
     if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
     if (queue[msg.guild.id].playing) return msg.channel.sendMessage('Soitetaan jo!');
-    let dispatcher;
     queue[msg.guild.id].playing = true;
 
     console.log(queue);
@@ -194,9 +192,10 @@ const commands = {
       pääpäivä = false;
       console.log("pääpäivä postettu");
 
-      if (dispatcher != null) {
-        dispatcher.end();
-      };
+      if (dispatcher === null || dispatcher === undefined) {
+      } else {
+      dispatcher.end();
+    }
 
     } else {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
