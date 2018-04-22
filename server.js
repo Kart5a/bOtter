@@ -108,10 +108,8 @@ const commands = {
   'add': (msg, manual=null) => {
     let url;
     if (manual !== null) {
-      console.log("1");
       url = manual;
     } else {
-      console.log("2");
       url = msg.content.split(' ')[1];
       if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
     }
@@ -171,7 +169,7 @@ const commands = {
 
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
-        commands.add(msg, linkki);
+        setTimeout(function(){commands.add(msg, linkki);}, 1000);
 
         /////////////////
         commands.play(msg);
