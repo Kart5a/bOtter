@@ -6,6 +6,7 @@ const tokens = require('./tokens.json');
 const client = new Client();
 
 let dispatcher;
+var lastmessager;
 
 let queue = {};
 
@@ -49,7 +50,11 @@ setInterval(function() {
   } else {
     changeTitle("ttunes");
   }
-}, 5000);
+
+  commands.start(lastmessager);
+
+
+}, 1000);
 
 
 const commands = {
@@ -63,25 +68,9 @@ const commands = {
     });
   },
 
+  'start': (msg) => {
 
-  'play': (msg, manual=null) => {
-    let url;
-    if (manual !== null) {
-      url = manual;
-    } else {
-      url = msg.content.split(' ')[1];
-      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
-    }
-    yt.getInfo(url, (err, info) => {
-      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-      queue[msg.guild.id].songs.push({
-        url: url,
-        title: info.title,
-        requester: msg.author.username
-      });
-      msg.channel.sendMessage(`**${info.title}** jonossa!`);
-    });
+    // LAITTAA SOITTIMEN PÄÄLLE //
 
     //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
     if (!msg.guild.voiceConnection) return commands.join(msg);
@@ -126,6 +115,29 @@ const commands = {
         });
       });
     })(queue[msg.guild.id].songs.shift());
+  },
+
+
+  'play': (msg, manual=null) => {
+    lastmessager = msg;
+    // ADDAA TTUNEN JONOON //
+    let url;
+    if (manual !== null) {
+      url = manual;
+    } else {
+      url = msg.content.split(' ')[1];
+      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
+    }
+    yt.getInfo(url, (err, info) => {
+      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
+      queue[msg.guild.id].songs.push({
+        url: url,
+        title: info.title,
+        requester: msg.author.username
+      });
+      msg.channel.sendMessage(`**${info.title}** jonossa!`);
+    });
   },
 
 
