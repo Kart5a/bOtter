@@ -90,6 +90,10 @@ const commands = {
 
 
     // ALKAA SOITTAA QUEUEA //
+    while (flag == false) {
+
+    }
+    
       console.log("Soitetaan!");
       if (!msg.guild.voiceConnection) return commands.join(msg);
       if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
