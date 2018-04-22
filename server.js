@@ -80,7 +80,7 @@ const commands = {
 
     (function play(song) {
       console.log(song);
-      if (song === undefined) return function().then(() => {
+      if (song === undefined) {
         queue[msg.guild.id].playing = false;
         msg.member.voiceChannel.leave();
       });
