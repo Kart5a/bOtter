@@ -166,7 +166,8 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        commands.add("!add https://www.youtube.com/watch?v=687_ZGkP6OU");
+        var jonoon = "!add https://www.youtube.com/watch?v=687_ZGkP6OU";
+        commands.add(jonoon);
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
