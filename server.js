@@ -123,6 +123,10 @@ const commands = {
             value: "Kertoo onko karvis vammanen"
           },
           {
+            name: tokens.prefix + "onkovammanen",
+            value: "!onkovammanen + käyttäjänimi kertoo onko hän vammanen"
+          },
+          {
             name: "**__ttuneBotti:__**",
             value: "Tässä kaikki ttuneBottiin liittyvät komennot:"
           },
@@ -337,6 +341,19 @@ const commands = {
   'onkokarvisvammanen': (msg) => {
 
     msg.channel.send("ON");
+},
+'onkovammanen': (msg) => {
+  let jaba = msg.content.split(' ')[1];
+  if ((jaba == '' || jaba === undefined) && str.includes("@")) return msg.channel.sendMessage(`Ketä tarkoitat?`);
+
+  tulos = Math.floor(Math.random() * Math.floor(2));
+
+  if (tulos === 1) {
+    msg.channel.send(jaba + " on vammanen.");
+  } else {
+    msg.channel.send(jaba + " ei ole vammanen");
+  }
+
 }
 
 };
