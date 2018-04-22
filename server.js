@@ -168,7 +168,7 @@ const commands = {
 
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
-        commands.add("!add " + linkki):
+        commands.add("!add " + linkki);
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
