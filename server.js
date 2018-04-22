@@ -169,7 +169,7 @@ const commands = {
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
         yt.getInfo(linkki, (err, info) => {
-          if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+          if (err) return;
           if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
           queue[msg.guild.id].songs.push({
             url: linkki,
