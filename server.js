@@ -74,6 +74,7 @@ const commands = {
       url = msg.content.split(' ')[1];
       if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
     }
+    console.log("aloitetaan lataus");
     yt.getInfo(url, (err, info) => {
       if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
       if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
@@ -90,10 +91,6 @@ const commands = {
 
 
     // ALKAA SOITTAA QUEUEA //
-    while (flag == false) {
-
-    }
-    
       console.log("Soitetaan!");
       if (!msg.guild.voiceConnection) return commands.join(msg);
       if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
