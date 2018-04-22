@@ -113,8 +113,8 @@ const commands = {
     if (manual != null ) {
       url = manual;
     } else {
-    let url = msg.content.split(' ')[1];
-    if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
+      let url = msg.content.split(' ')[1];
+      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
     }
     yt.getInfo(url, (err, info) => {
       if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
@@ -171,9 +171,11 @@ const commands = {
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
-        commands.add(msg, jonoon);
+        commands.add(msg, jonoon).then(() => jatka());
 
+        function jatka() {
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
+      }
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
