@@ -50,9 +50,6 @@ setInterval(function() {
     changeTitle("ttunes");
   }
 
-  commands.start(lastmessager);
-
-
 }, 60000);
 
 
@@ -86,7 +83,7 @@ const commands = {
         requester: msg.author.username
       });
 
-      while (queue[msg.guild.id].songs.length = 0) {
+      while (queue[msg.guild.id].songs.length == 0) {
         continue;
       };
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
