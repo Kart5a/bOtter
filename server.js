@@ -179,10 +179,10 @@ const commands = {
 
         while (queue[msg.guild.id] === undefined) {
           console.log("Venaillaan");
-        } else {
+        }
 
         commands.play(msg);
-      }
+
 
       }
     } else {
