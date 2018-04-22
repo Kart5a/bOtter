@@ -51,9 +51,7 @@ setInterval(function() {
     changeTitle("ttunes");
   }
 
-  if (queue[lastmessager.guild.id] !== undefined){
-    commands.start(lastmessager);
-  };
+  commands.start(lastmessager);
 
 
 }, 1000);
@@ -82,7 +80,7 @@ const commands = {
 
     (function play(song) {
       console.log(song);
-      if (song === undefined) return msg.channel.sendMessage('Jono on tyhjä').then(() => {
+      if (song === undefined) return function().then(() => {
         queue[msg.guild.id].playing = false;
         msg.member.voiceChannel.leave();
       });
