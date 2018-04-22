@@ -184,9 +184,8 @@ const commands = {
           commands.join(msg);
         }
 
-        if (!queue[msg.guild.id].playing) {
-          commands.play(msg);
-        }
+        commands.play(msg);
+
 
       }
     } else {
