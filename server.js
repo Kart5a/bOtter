@@ -70,6 +70,9 @@ const commands = {
 
   'start': (msg) => {
 
+    if (msg === null) {
+      return;
+    }
     // LAITTAA SOITTIMEN PÄÄLLE //
 
     //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
