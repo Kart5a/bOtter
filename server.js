@@ -7,7 +7,6 @@ const client = new Client();
 
 let dispatcher;
 var lastmessager;
-let msgqueue;
 let queue = {};
 
 const streamOptions = {
@@ -54,7 +53,7 @@ setInterval(function() {
   commands.start(lastmessager);
 
 
-}, 5000);
+}, 60000);
 
 
 const commands = {
@@ -68,84 +67,76 @@ const commands = {
     });
   },
 
-  'start': (msg) => {
-
-    if (msg === undefined || msg === null) {
-      return;
-    } else {
-    // LAITTAA SOITTIMEN PÄÄLLE //
-
-    //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
-    if (!msg.guild.voiceConnection) return commands.join(msg);
-    if (msgqueue.playing || msgqueue.playing == undefined) return;
-
-
-    msgqueue.playing = true;
-
-    (function play(song) {
-      console.log(song);
-      if (song === undefined) {
-        msgqueue.playing = false;
-        msg.member.voiceChannel.leave();
-      };
-      msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
-      dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
-      let collector = msg.channel.createCollector(m => m);
-      collector.on('message', m => {
-        if (m.content.startsWith(tokens.prefix + 'pause')) {
-          msg.channel.sendMessage('Pauseettu').then(() => {
-            dispatcher.pause();
-          });
-        } else if (m.content.startsWith(tokens.prefix + 'resume')) {
-          msg.channel.sendMessage('Jatketaan').then(() => {
-            dispatcher.resume();
-          });
-        } else if (m.content.startsWith(tokens.prefix + 'skip')) {
-          msg.channel.sendMessage('Skipattu').then(() => {
-            dispatcher.end();
-          });
-        } else if (m.content.startsWith(tokens.prefix + 'time')) {
-          msg.channel.sendMessage(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
-        }
-      });
-      dispatcher.on('end', () => {
-        collector.stop();
-        play(msgqueue.songs.shift());
-      });
-      dispatcher.on('error', (err) => {
-        return msg.channel.sendMessage('error: ' + err).then(() => {
-          collector.stop();
-          play(msgqueue.songs.shift());
-        });
-      });
-    })(msgqueue.songs.shift());
-  }
-  },
-
-
-  'play': (msg, manual=null) => {
-    lastmessager = msg;
+  'play': (msg, manual = null) => {
     // ADDAA TTUNEN JONOON //
-    let url;
-    if (manual !== null) {
-      url = manual;
-    } else {
-      url = msg.content.split(' ')[1];
-      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
-    }
-    yt.getInfo(url, (err, info) => {
-      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-      queue[msg.guild.id].songs.push({
-        url: url,
-        title: info.title,
-        requester: msg.author.username
-      });
-      console.log("Täällä");
-      msg.channel.sendMessage(`**${info.title}** jonossa!`);
 
-      msgqueue = queue[msg.guild.id];
-    });
+    function addQueue(_callback) {
+      let url;
+      if (manual !== null) {
+        url = manual;
+      } else {
+        url = msg.content.split(' ')[1];
+        if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
+      }
+      yt.getInfo(url, (err, info) => {
+          if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+          if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
+          queue[msg.guild.id].songs.push({
+            url: url,
+            title: info.title,
+            requester: msg.author.username
+          });
+        }
+        console.log("Täällä"); msg.channel.sendMessage(`**${info.title}** jonossa!`);
+        _callback();
+      }
+      // ALKAA SOITTAA QUEUEA //
+    function playQueue() {
+      if (!msg.guild.voiceConnection) return commands.join(msg);
+      if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
+
+
+      queue[msg.guild.id].playing = true;
+
+      (function play(song) {
+        console.log(song);
+        if (song === undefined) {
+          queue[msg.guild.id].playing = false;
+          msg.member.voiceChannel.leave();
+        };
+        msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
+        dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
+        let collector = msg.channel.createCollector(m => m);
+        collector.on('message', m => {
+          if (m.content.startsWith(tokens.prefix + 'pause')) {
+            msg.channel.sendMessage('Pauseettu').then(() => {
+              dispatcher.pause();
+            });
+          } else if (m.content.startsWith(tokens.prefix + 'resume')) {
+            msg.channel.sendMessage('Jatketaan').then(() => {
+              dispatcher.resume();
+            });
+          } else if (m.content.startsWith(tokens.prefix + 'skip')) {
+            msg.channel.sendMessage('Skipattu').then(() => {
+              dispatcher.end();
+            });
+          } else if (m.content.startsWith(tokens.prefix + 'time')) {
+            msg.channel.sendMessage(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
+          }
+        });
+        dispatcher.on('end', () => {
+          collector.stop();
+          play(queue[msg.guild.id].songs.shift());
+        });
+        dispatcher.on('error', (err) => {
+          return msg.channel.sendMessage('error: ' + err).then(() => {
+            collector.stop();
+            play(queue[msg.guild.id].songs.shift());
+          });
+        });
+      })(queue[msg.guild.id].songs.shift());
+    }
+    addQueue(playQueue);
   },
 
 
@@ -221,10 +212,9 @@ const commands = {
       pääpäivä = false;
       console.log("pääpäivä postettu");
 
-      if (dispatcher === null || dispatcher === undefined) {
-      } else {
-      dispatcher.end();
-    }
+      if (dispatcher === null || dispatcher === undefined) {} else {
+        dispatcher.end();
+      }
 
     } else {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
