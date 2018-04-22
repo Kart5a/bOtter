@@ -9,7 +9,7 @@ let queue = {};
 
 const streamOptions = {
   seek: 0,
-  volume: 0.1,
+  volume: 0.06,
   audioonly: true
 };
 
@@ -353,18 +353,29 @@ client.on('ready', () => {
   console.log('ready!');
 });
 
+
+function reagoi(sanalist, emojilist, msg) {
+  var f = false;
+  for (var sana of sanalist) {
+    console.log(sana+ " " + sana.test(msg.content));
+    if (sana.test(msg.content) === true) {
+      f = true;
+    }
+  }
+  if (!f) return;
+  for (var emo of emojilist) {
+    var emoji = msg.guild.emojis.find('name', emo);
+    msg.react(emoji);
+  }
+}
+
 client.on('message', msg => {
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
-  const sana1 = /homo/;
-  const sana2 = /autisti/;
-  if (sana1.test(msg.content) === true || sana2.test(msg.content) === true) {
-    const sasu_emoji = msg.guild.emojis.find('name', 'sasu');
-    const karvis_emoji = msg.guild.emojis.find('name', 'karvis');
+  var sanat = [/homo/, /autisti/];
+  var emojit = ["sasu", "karvis"];
 
-    msg.react(sasu_emoji);
-    msg.react(karvis_emoji);
-  }
+  reagoi(sanat, emojit, msg);
 
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
