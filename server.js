@@ -51,7 +51,7 @@ setInterval(function() {
     changeTitle("ttunes");
   }
 
-  if (!queue.hasOwnProperty(lastmessager.guild.id)) queue[lastmessager.guild.id] = {}) {
+  if (queue[lastmessager.guild.id] !== undefined){
     commands.start(lastmessager);
   };
 
