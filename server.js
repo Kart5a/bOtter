@@ -54,7 +54,7 @@ setInterval(function() {
   commands.start(lastmessager);
 
 
-}, 1000);
+}, 5000);
 
 
 const commands = {
