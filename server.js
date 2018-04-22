@@ -16,8 +16,6 @@ const streamOptions = {
 var pääpäivä = false;
 let date = [0, 0, 0];
 
-var title = "ttunes";
-
 
 function changeTitle(text) {
   client.user.setPresence({
@@ -29,7 +27,7 @@ function changeTitle(text) {
 }
 
 function setup() {
-  framerate(3);
+  frameRate(3);
 }
 
 function draw() {
@@ -236,12 +234,6 @@ const commands = {
       msg.channel.send("Tänään on pääpäivä!");
     } else if (pääpäivä == false) {
       msg.channel.send("Tänään ei ole pääpäivä :(");
-      client.user.setPresence({
-        game: {
-          name: "ttunes | !apustus",
-          type: 2
-        }
-      });
     }
   },
 
@@ -306,13 +298,6 @@ const commands = {
               });
             });
           })(queue[msg.guild.id].songs.shift());
-
-          client.user.setPresence({
-            game: {
-              name: "PÄÄPÄIVÄ | " + tokens.prefix + "apustus",
-              type: 2
-            }
-          });
         });
       }
     } else {
