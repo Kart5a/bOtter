@@ -176,12 +176,12 @@ const commands = {
             title: "PÄÄPÄIVÄ",
             requester: msg.author.username
           });
-          msg.channel.sendMessage(`Laitetaan **${info.title}** jonoon!`);
-        }).then(() =>
+        }).then(() = > jatka());
 
-        commands.join(msg).then(() => commands.play(msg));
+        function jatka() {
+        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
 
-      });
+      }};
 
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
