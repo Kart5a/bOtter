@@ -70,9 +70,9 @@ const commands = {
 
   'start': (msg) => {
 
-    if (msg === null) {
+    if (msg === undefined || msg === null) {
       return;
-    }
+    } else {
     // LAITTAA SOITTIMEN PÄÄLLE //
 
     //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
@@ -118,6 +118,7 @@ const commands = {
         });
       });
     })(queue[msg.guild.id].songs.shift());
+  }
   },
 
 
