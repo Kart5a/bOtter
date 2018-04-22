@@ -77,6 +77,7 @@ const commands = {
       if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
     }
     yt.getInfo(url, (err, info) => {
+      console.log(url);
       if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
       if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
       queue[msg.guild.id].songs.push({
