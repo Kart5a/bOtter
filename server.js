@@ -178,7 +178,7 @@ const commands = {
           });
         });
 
-        while (queue.length === 0) {
+        while (queue.length == 0) {
           console.log("loading");
         }
 
