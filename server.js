@@ -105,10 +105,10 @@ const commands = {
       voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
     });
   },
-  'add': (msg, manual = null) => {
-    if (manual != null) {
+  'add': (msg, manual) => {
+    if (manual !== null) {
       url = manual;
-    } else if (manual === null) {
+    } else if (manual == null) {
       let url = msg.content.split(' ')[1];
       if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
     }
