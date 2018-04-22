@@ -178,7 +178,7 @@ const commands = {
             title: "PÄÄPÄIVÄ",
             requester: msg.author.username
           });
-        };
+        });
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
