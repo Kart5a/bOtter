@@ -178,7 +178,9 @@ const commands = {
           });
         });
 
-        console.log(queue);
+        console.log(queue.length);
+
+        while (gueue.length === 0) continue;
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
@@ -359,7 +361,6 @@ client.on('ready', () => {
 function reagoi(sanalist, emojilist, msg) {
   var f = false;
   for (var sana of sanalist) {
-    console.log(sana+ " " + sana.test(msg.content));
     if (sana.test(msg.content) === true) {
       f = true;
     }
