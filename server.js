@@ -180,7 +180,9 @@ const commands = {
 
         console.log(queue.length);
 
-        while (gueue.length === 0) continue;
+        while (queue.length == 0) continue;
+
+        console.log(queue.length);
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
