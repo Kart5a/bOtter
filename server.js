@@ -53,6 +53,8 @@ setInterval(function() {
 
 
 const commands = {
+
+
   'join': (msg) => {
     return new Promise((resolve, reject) => {
       const voiceChannel = msg.member.voiceChannel;
@@ -60,6 +62,8 @@ const commands = {
       voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
     });
   },
+
+
   'play': (msg, manual=null) => {
     let url;
     if (manual !== null) {
@@ -80,12 +84,11 @@ const commands = {
     });
 
     //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
-    if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
+    if (!msg.guild.voiceConnection) return commands.join(msg));
     if (queue[msg.guild.id].playing) return;
 
     queue[msg.guild.id].playing = true;
 
-    console.log(queue);
     (function play(song) {
       console.log(song);
       if (song === undefined) return msg.channel.sendMessage('Jono on tyhjä').then(() => {
@@ -124,6 +127,8 @@ const commands = {
       });
     })(queue[msg.guild.id].songs.shift());
   },
+
+
   'queue': (msg) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja jonoon: ${tokens.prefix}add`);
     let tosend = [];
