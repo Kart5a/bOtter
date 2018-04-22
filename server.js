@@ -180,10 +180,10 @@ const commands = {
 
         console.log(queue[msg.guild.id]);
 
-        while (queue[msg.guild.id] == undefined) continue;
+        while (queue[msg.guild.id].songs.length == 0) continue;
 
-        console.log(queue[msg.guild.id]);
 
+        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
