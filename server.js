@@ -137,8 +137,6 @@ const commands = {
           });
         });
       })(queue[msg.guild.id].songs.shift());
-    }
-
     },
 
 
