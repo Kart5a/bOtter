@@ -66,6 +66,7 @@ const commands = {
 
   'play': (msg, manual=null) => {
     // ADDAA TTUNEN JONOON //
+    var flag = false;
     let url;
     if (manual !== null) {
       url = manual;
@@ -86,12 +87,15 @@ const commands = {
         continue;
       };
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
-      console.log("biisi ladannut");
-      jatkuu();
+      console.log("biisi ladannut" + queue[msg.guild.id].songs);
+      flag = true;
     });
 
-      function jatkuu() {
+      while (flag === false) {
+        continue;
+      }
       // ALKAA SOITTAA QUEUEA //
+      flag = false;
 
       if (!msg.guild.voiceConnection) return commands.join(msg);
       if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
@@ -138,7 +142,6 @@ const commands = {
           });
         });
       })(queue[msg.guild.id].songs.shift());
-    }
   },
 
 
