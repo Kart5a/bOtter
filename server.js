@@ -16,6 +16,47 @@ const streamOptions = {
 var pääpäivä = false;
 let date = [0, 0, 0];
 
+var title = "ttunes";
+
+
+function changeTitle(text) {
+  client.user.setPresence({
+    game: {
+      name: text + " | " + tokens.prefix + "apustus",
+      type: 2
+    }
+  });
+}
+
+function setup() {
+  framerate(3);
+}
+
+function draw() {
+  var pv = new Date();
+  pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
+  var day = pv.getDay();
+
+  if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
+    pääpäivä = true;
+  } else {
+    pääpäivä = false;
+    console.log("pääpäivä loppu");
+    date = [0, 0, 0];
+  }
+
+  if (pääpäivä) {
+    changeTitle("PÄÄPÄIVÄ");
+    return;
+  } else if (day === 3) {
+    changeTitle("Wednesday");
+    return;
+  } else {
+    changeTitle("ttunes");
+  }
+}
+
+
 const commands = {
   'play': (msg) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
@@ -291,12 +332,7 @@ const commands = {
       }
       pääpäivä = false;
       console.log("pääpäivä postettu");
-      client.user.setPresence({
-        game: {
-          name: "ttunes | !apustus",
-          type: 2
-        }
-      });
+
       dispatcher.end();
     } else {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
