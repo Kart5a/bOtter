@@ -173,11 +173,12 @@ const commands = {
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
         if (!msg.guild.voiceConnection) {
-          return commands.join(msg);
+          commands.join(msg);
         }
-        commands.add(msg, jonoon);
-        commands.play(msg);
+        if (true) {
+          return commands.add(msg, jonoon).then(() => commands.play(msg));
       }
+    }
   } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
