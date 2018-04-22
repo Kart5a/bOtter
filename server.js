@@ -177,11 +177,11 @@ const commands = {
             requester: msg.author.username
           });
           msg.channel.sendMessage(`Laitetaan **${info.title}** jonoon!`);
-        });
+        }).then(() =>
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
 
-      }
+      });
 
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
