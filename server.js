@@ -180,7 +180,7 @@ const commands = {
           commands.join(msg);
         }
 
-        while (queue.length === 0) {
+        while (queue[msg.guild.id] == null) {
           continue;
         }
 
