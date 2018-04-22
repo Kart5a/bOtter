@@ -176,7 +176,7 @@ const commands = {
             title: "PÄÄPÄIVÄ",
             requester: msg.author.username
           });
-        }).then(() = > jatka());
+        }).then(() => jatka());
 
         function jatka() {
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
