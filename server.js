@@ -56,7 +56,7 @@ function draw() {
 
 
 const commands = {
-  'play': (msg) => {
+  'play': (msg, skip=false) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
     if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
     if (queue[msg.guild.id].playing) return msg.channel.sendMessage('Soitetaan jo!');
@@ -173,11 +173,6 @@ const commands = {
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
         commands.add(msg, linkki);
-        console.log(queue[msg.guild.id]);
-
-        if (!msg.guild.voiceConnection) {
-          commands.join(msg);
-        }
 
         commands.play(msg);
 
