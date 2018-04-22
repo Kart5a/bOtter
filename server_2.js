@@ -53,36 +53,10 @@ setInterval(function() {
 
 
 const commands = {
-  'join': (msg) => {
-    return new Promise((resolve, reject) => {
-      const voiceChannel = msg.member.voiceChannel;
-      if (!voiceChannel || voiceChannel.type !== 'voice') return msg.reply('En voinut liittyä voicekannulle...');
-      voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
-    });
-  },
-  'play': (msg, manual=null) => {
-    let url;
-    if (manual !== null) {
-      url = manual;
-    } else {
-      url = msg.content.split(' ')[1];
-      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
-    }
-    yt.getInfo(url, (err, info) => {
-      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-      queue[msg.guild.id].songs.push({
-        url: url,
-        title: info.title,
-        requester: msg.author.username
-      });
-      msg.channel.sendMessage(`**${info.title}** jonossa!`);
-    });
-
-    //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
+  'play': (msg, skip=false) => {
+    if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
     if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
-    if (queue[msg.guild.id].playing) return;
-
+    if (queue[msg.guild.id].playing) return msg.channel.sendMessage('Soitetaan jo!');
     queue[msg.guild.id].playing = true;
 
     console.log(queue);
@@ -123,6 +97,32 @@ const commands = {
         });
       });
     })(queue[msg.guild.id].songs.shift());
+  },
+  'join': (msg) => {
+    return new Promise((resolve, reject) => {
+      const voiceChannel = msg.member.voiceChannel;
+      if (!voiceChannel || voiceChannel.type !== 'voice') return msg.reply('En voinut liittyä voicekannulle...');
+      voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
+    });
+  },
+  'add': (msg, manual=null) => {
+    let url;
+    if (manual !== null) {
+      url = manual;
+    } else {
+      url = msg.content.split(' ')[1];
+      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
+    }
+    yt.getInfo(url, (err, info) => {
+      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
+      queue[msg.guild.id].songs.push({
+        url: url,
+        title: info.title,
+        requester: msg.author.username
+      });
+      msg.channel.sendMessage(`Laitetaan **${info.title}** jonoon!`);
+    });
   },
   'queue': (msg) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja jonoon: ${tokens.prefix}add`);
