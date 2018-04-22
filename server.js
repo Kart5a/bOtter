@@ -51,7 +51,9 @@ setInterval(function() {
     changeTitle("ttunes");
   }
 
-  commands.start(lastmessager);
+  if (queue.length > 0) {
+    commands.start(lastmessager);
+  }
 
 
 }, 1000);
