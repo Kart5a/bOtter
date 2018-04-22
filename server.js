@@ -7,7 +7,7 @@ const client = new Client();
 
 let dispatcher;
 var lastmessager;
-
+let msgqueue;
 let queue = {};
 
 const streamOptions = {
@@ -77,16 +77,15 @@ const commands = {
 
     //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
     if (!msg.guild.voiceConnection) return commands.join(msg);
-    if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-    if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
-  
+    if (msgqueue.playing || msgqueue.playing == undefined) return;
 
-    queue[msg.guild.id].playing = true;
+
+    msgqueue.playing = true;
 
     (function play(song) {
       console.log(song);
       if (song === undefined) {
-        queue[msg.guild.id].playing = false;
+        msgqueue.playing = false;
         msg.member.voiceChannel.leave();
       };
       msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
@@ -111,15 +110,15 @@ const commands = {
       });
       dispatcher.on('end', () => {
         collector.stop();
-        play(queue[msg.guild.id].songs.shift());
+        play(msgqueue.songs.shift());
       });
       dispatcher.on('error', (err) => {
         return msg.channel.sendMessage('error: ' + err).then(() => {
           collector.stop();
-          play(queue[msg.guild.id].songs.shift());
+          play(msgqueue.songs.shift());
         });
       });
-    })(queue[msg.guild.id].songs.shift());
+    })(msgqueue.songs.shift());
   }
   },
 
@@ -143,6 +142,7 @@ const commands = {
         requester: msg.author.username
       });
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
+      msgqueue = queue[msg.guild.id];
     });
   },
 
