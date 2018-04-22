@@ -178,7 +178,7 @@ const commands = {
           });
         });
 
-        while (queue[msg.guild.id] == undefined) {
+        while (queue.length === 0) {
           console.log("loading");
         }
 
