@@ -178,7 +178,6 @@ const commands = {
         commands.add(msg, jonoon);
         commands.play(msg);
       }
-    }
   } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
