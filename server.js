@@ -111,7 +111,7 @@ const commands = {
   },
   'add': (msg, manual=null) => {
     if (manual != null ) {
-      url = msg;
+      url = manual;
     } else {
     let url = msg.content.split(' ')[1];
     if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
@@ -171,7 +171,7 @@ const commands = {
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
-        commands.add(jonoon, true);
+        commands.add(msg, jonoon);
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
