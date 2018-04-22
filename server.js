@@ -249,56 +249,8 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        msg.member.voiceChannel.join();
+        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play("!play https://www.youtube.com/watch?v=687_ZGkP6OU"));
 
-        yt.getInfo("https://www.youtube.com/watch?v=687_ZGkP6OU", (err, info) => {
-          if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-          if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-          queue[msg.guild.id].songs.push({
-            url: "https://www.youtube.com/watch?v=687_ZGkP6OU",
-            title: "PÄÄPÄIVÄ",
-            requester: "bOtter"
-          });
-
-          console.log(queue);
-          (function play(song) {
-            console.log(song);
-            if (song === undefined) return msg.channel.sendMessage('Jono on tyhjä').then(() => {
-              queue[msg.guild.id].playing = false;
-              msg.member.voiceChannel.leave();
-            });
-            msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
-            dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
-            let collector = msg.channel.createCollector(m => m);
-            collector.on('message', m => {
-              if (m.content.startsWith(tokens.prefix + 'pause')) {
-                msg.channel.sendMessage('Pauseettu').then(() => {
-                  dispatcher.pause();
-                });
-              } else if (m.content.startsWith(tokens.prefix + 'resume')) {
-                msg.channel.sendMessage('Jatketaan').then(() => {
-                  dispatcher.resume();
-                });
-              } else if (m.content.startsWith(tokens.prefix + 'skip')) {
-                msg.channel.sendMessage('Skipattu').then(() => {
-                  dispatcher.end();
-                });
-              } else if (m.content.startsWith(tokens.prefix + 'time')) {
-                msg.channel.sendMessage(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
-              }
-            });
-            dispatcher.on('end', () => {
-              collector.stop();
-              play(queue[msg.guild.id].songs.shift());
-            });
-            dispatcher.on('error', (err) => {
-              return msg.channel.sendMessage('error: ' + err).then(() => {
-                collector.stop();
-                play(queue[msg.guild.id].songs.shift());
-              });
-            });
-          })(queue[msg.guild.id].songs.shift());
-        });
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
