@@ -172,18 +172,18 @@ const commands = {
 
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
-
-        commands.add(msg, jonoon);
-
+        if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
+        queue[msg.guild.id].songs.push({
+          url: jonoon,
+          title: PÄÄPÄIVÄ,
+          requester: msg.author.username
+        });
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
         }
 
-        setTimeout(function(){console.log("loading")}, 3000);
-
-
-        commands.play(msg);
+        if (!queue[msg.guild.id].playing) return commands.play(msg);
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
