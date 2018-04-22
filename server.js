@@ -180,7 +180,7 @@ const commands = {
 
         console.log(queue.length);
 
-        while (queue.length == 0) continue;
+        while (queue == null) continue;
 
         console.log(queue.length);
 
