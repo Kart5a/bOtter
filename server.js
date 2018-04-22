@@ -170,22 +170,19 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        yt.getInfo("https://www.youtube.com/watch?v=687_ZGkP6OU", (err, info) => {
-          if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-          if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-          queue[msg.guild.id].songs.push({
-            url: "https://www.youtube.com/watch?v=687_ZGkP6OU",
-            title: "PÄÄPÄIVÄ",
-            requester: msg.author.username
-          });
-        });
+        var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
+        commands.add(msg, linkki);
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
         }
 
-        setTimeout(function() {commands.play(msg)}, 2000);
+        while (queue[msg.guild.id] === undefined) {
+          console.log("Venaillaan");
+        } else {
 
+        commands.play(msg);
+      }
 
       }
     } else {
