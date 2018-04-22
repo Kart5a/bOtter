@@ -178,12 +178,12 @@ const commands = {
           });
         });
 
-        console.log(queue[msg.guild.id].length);
+        console.log(queue[msg.guild.id]);
 
-        while (queue[msg.guild.id].length == 0) continue;
+        while (queue[msg.guild.id] == undefined) continue;
 
-        console.log(queue[msg.guild.id].length);
-        
+        console.log(queue[msg.guild.id]);
+
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
