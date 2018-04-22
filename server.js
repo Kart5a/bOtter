@@ -170,24 +170,19 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        var jonoon = "paapaiva.mp3";
+        var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
         }
 
-        function loading(_callback) {
-          commands.add(msg, jonoon);
-          _callback();
-        }
+        commands.add(msg, jonoon);
 
-        function lisätään() {
-          loading(function() { commands.play(msg)});
-        }
-
-        lisätään();
+        delay(1000);
+        
+        commands.play(msg);
       }
-  } else {
+    } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
   },
