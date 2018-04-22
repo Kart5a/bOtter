@@ -45,10 +45,8 @@ function draw() {
 
   if (pääpäivä) {
     changeTitle("PÄÄPÄIVÄ");
-    return;
   } else if (day === 3) {
     changeTitle("Wednesday");
-    return;
   } else {
     changeTitle("ttunes");
   }
