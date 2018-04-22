@@ -171,14 +171,12 @@ const commands = {
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
+
         commands.add(msg, linkki);
+        console.log(queue[msg.guild.id]);
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
-        }
-
-        while (queue[msg.guild.id] === undefined) {
-          console.log("Venaillaan");
         }
 
         commands.play(msg);
