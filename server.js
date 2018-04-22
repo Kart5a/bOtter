@@ -180,7 +180,7 @@ const commands = {
           commands.join(msg);
         }
 
-        setTimeout(function(){console.log("loading")}, 1500);
+        setTimeout(function(){console.log("loading")}, 3000);
 
 
         commands.play(msg);
