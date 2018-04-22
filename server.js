@@ -108,7 +108,7 @@ const commands = {
   'add': (msg, manual = null) => {
     if (manual != null) {
       url = manual;
-    } else {
+    } else if (manual === null) {
       let url = msg.content.split(' ')[1];
       if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
     }
@@ -170,8 +170,9 @@ const commands = {
 
         commands.add(msg, linkki);
 
+        /////////////////
         commands.play(msg);
-
+        /////////////////
 
       }
     } else {
