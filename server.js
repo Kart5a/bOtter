@@ -143,6 +143,7 @@ const commands = {
       });
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
       msgqueue = queue[msg.guild.id];
+      msgqueue.playing = queue[msg.guild.id].playing;
     });
   },
 
