@@ -180,6 +180,10 @@ const commands = {
           commands.join(msg);
         }
 
+        while (queue.length === 0) {
+          continue;
+        }
+
         commands.play(msg);
       }
     } else {
