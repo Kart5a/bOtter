@@ -88,10 +88,10 @@ const commands = {
 
       while (queue[msg.guild.id].songs.length = 0) {
         continue;
-      }
-    });
-      console.log("Täällä");
+      };
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
+    });
+
 
       // ALKAA SOITTAA QUEUEA //
 
