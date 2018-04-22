@@ -178,9 +178,7 @@ const commands = {
           });
         });
 
-        while (queue.length < 1) {
-          console.log("loading");
-        }
+        console.log(queue);
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
@@ -202,7 +200,10 @@ const commands = {
       pääpäivä = false;
       console.log("pääpäivä postettu");
 
-      dispatcher.end();
+      if (dispatcher != null) {
+        dispatcher.end();
+      };
+
     } else {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
     }
