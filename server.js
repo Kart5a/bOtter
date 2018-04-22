@@ -87,9 +87,10 @@ const commands = {
       };
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
       console.log("biisi ladannut");
+      jatkuu();
     });
 
-
+      function jatkuu() {
       // ALKAA SOITTAA QUEUEA //
 
       if (!msg.guild.voiceConnection) return commands.join(msg);
@@ -137,7 +138,8 @@ const commands = {
           });
         });
       })(queue[msg.guild.id].songs.shift());
-    },
+    }
+  },
 
 
   'queue': (msg) => {
