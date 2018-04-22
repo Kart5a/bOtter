@@ -174,18 +174,20 @@ const commands = {
           if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
           if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
           queue[msg.guild.id].songs.push({
-            url: url,
+            url: "https://www.youtube.com/watch?v=687_ZGkP6OU",
             title: "PÄÄPÄIVÄ",
             requester: msg.author.username
           });
-        }
+        };
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
         }
 
-        if (!queue[msg.guild.id].playing) {commands.play(msg);
+        if (!queue[msg.guild.id].playing) {
+          commands.play(msg);
         }
+
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
