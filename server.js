@@ -249,13 +249,13 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        var url = "https://www.youtube.com/watch?v=687_ZGkP6OU";
+        var urlz = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
         yt.getInfo(url, (err, info) => {
           if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
           if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
           queue[msg.guild.id].songs.push({
-            url: url,
+            url: urlz,
             title: "PÄÄPÄIVÄ",
             requester: msg.author.username
           });
