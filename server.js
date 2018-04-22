@@ -141,9 +141,10 @@ const commands = {
         title: info.title,
         requester: msg.author.username
       });
+      console.log("Täällä");
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
+
       msgqueue = queue[msg.guild.id];
-      msgqueue.playing = queue[msg.guild.id].playing;
     });
   },
 
