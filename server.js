@@ -175,13 +175,12 @@ const commands = {
             url: linkki,
             title: "PÄÄPÄIVÄ",
             requester: msg.author.username
-          });
-        }).then(() => jatka());
+          }).then(() => soita());
+        });
 
-        function jatka() {
+        function soita() {
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
-
-      }};
+      }
 
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
