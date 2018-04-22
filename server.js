@@ -184,7 +184,7 @@ const commands = {
 
         console.log(queue.length);
 
-        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
+        //if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
