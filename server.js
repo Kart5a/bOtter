@@ -86,8 +86,8 @@ const commands = {
             title: info.title,
             requester: msg.author.username
           });
-        }
-        console.log("Täällä"); msg.channel.sendMessage(`**${info.title}** jonossa!`);
+        });
+        msg.channel.sendMessage(`**${info.title}** jonossa!`);
         _callback();
       }
       // ALKAA SOITTAA QUEUEA //
