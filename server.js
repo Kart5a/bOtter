@@ -173,7 +173,7 @@ const commands = {
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
         if (!msg.guild.voiceConnection) {
-          return command.join(msg)
+          return commands.join(msg);
         }
         if (msg.guild.voiceConnection) {
         return commands.add(msg, jonoon).then(() => commands.play(msg));
