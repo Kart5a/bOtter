@@ -84,7 +84,7 @@ const commands = {
     });
 
     //if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja kirjoittamalla ${tokens.prefix}add ja yt-linkki!`);
-    if (!msg.guild.voiceConnection) return commands.join(msg));
+    if (!msg.guild.voiceConnection) return commands.join(msg);
     if (queue[msg.guild.id].playing) return;
 
     queue[msg.guild.id].playing = true;
