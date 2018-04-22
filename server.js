@@ -344,7 +344,7 @@ const commands = {
 },
 'onkovammanen': (msg) => {
   let jaba = msg.content.split(' ')[1];
-  if ((jaba == '' || jaba === undefined) && str.includes("@")) return msg.channel.sendMessage(`Ketä tarkoitat?`);
+  if ((jaba == '' || jaba === undefined) && jaba.includes("@")) return msg.channel.sendMessage(`Ketä tarkoitat?`);
 
   tulos = Math.floor(Math.random() * Math.floor(2));
 
