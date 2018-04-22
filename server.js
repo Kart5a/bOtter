@@ -176,7 +176,7 @@ const commands = {
           return commands.join(msg);
         }
         commands.add(msg, jonoon);
-        commands.play(msg));
+        commands.play(msg);
       }
     }
   } else {
