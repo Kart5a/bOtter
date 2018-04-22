@@ -131,6 +131,138 @@ const commands = {
     });
     msg.channel.sendMessage(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
   },
+  'reboot': (msg) => {
+    if (msg.author.id == tokens.adminID) process.exit(); //Requires a node module like Forever to work.
+  },
+
+  'pääpäivä': (msg) => {
+    var pv = new Date();
+    pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
+
+    if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
+      pääpäivä = true;
+    } else {
+      pääpäivä = false;
+      console.log("pääpäivä loppu");
+      date = [0, 0, 0];
+    }
+
+    if (pääpäivä == true) {
+      msg.channel.send("Tänään on pääpäivä!");
+    } else if (pääpäivä == false) {
+      msg.channel.send("Tänään ei ole pääpäivä :(");
+    }
+  },
+
+  'pääpäivä_on': (msg) => {
+    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
+      var d = new Date();
+      date = [d.getDate(), d.getMonth(), d.getYear()];
+      if (pääpäivä == true) {
+        msg.channel.send("Tänään on jo pääpäivä!");
+
+      } else {
+        pääpäivä = true;
+        console.log("pääpäivä asetettu " + date);
+        msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
+
+        var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
+
+        yt.getInfo(linkki, (err, info) => {
+          if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+          if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
+          queue[msg.guild.id].songs.push({
+            url: linkki,
+            title: "PÄÄPÄIVÄ",
+            requester: msg.author.username
+          });
+          msg.channel.sendMessage(`Laitetaan **${info.title}** jonoon!`);
+        });
+
+        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
+
+      }
+
+    } else {
+      msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
+    }
+  },
+  'pääpäivä_ei': (msg) => {
+    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
+
+      date = [0, 0, 0];
+
+      if (pääpäivä) {
+        msg.channel.send("pääpäivä on peruttu :(");
+      } else {
+        msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
+
+      }
+      pääpäivä = false;
+      console.log("pääpäivä postettu");
+
+      dispatcher.end();
+    } else {
+      msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
+    }
+  },
+  'wednesday': (msg) => {
+
+    //IS IT WEDNESDAY MY DUDES?
+    let pvmaara = new Date();
+
+    let day = pvmaara.getDay();
+    console.log(pvmaara + " " + day);
+
+    if (day == 3) {
+      msg.channel.send({
+        files: ["https://imgur.com/NcE2HFK"]
+      });
+    } else {
+      msg.channel.send({
+        files: ["https://imgur.com/hlNUbYt"]
+      });
+    }
+
+  },
+  'kruuna': (msg) => {
+
+    tulos = Math.floor(Math.random() * Math.floor(2));
+
+    if (tulos === 1) {
+      msg.channel.send("Klaava, " + "hävisit " + msg.author.username);
+    } else {
+      msg.channel.send("Kkruuna, " + "voitit " + msg.author.username);
+    }
+  },
+  'klaava': (msg) => {
+
+    tulos = Math.floor(Math.random() * Math.floor(2));
+
+    if (tulos === 1) {
+      msg.channel.send("Kruuna, " + "hävisit " + msg.author.username);
+    } else {
+      msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
+    }
+  },
+
+  'onkokarvisvammanen': (msg) => {
+    msg.channel.send("ON");
+  },
+
+  'onkovammanen': (msg) => {
+    let jaba = msg.content.split(' ')[1];
+    if ((jaba == '' || jaba === undefined)) return msg.channel.sendMessage(`Ketä tarkoitat?`);
+
+    tulos = Math.floor(Math.random() * Math.floor(2));
+
+    if (tulos === 1) {
+      msg.channel.send(jaba + " on vammanen.");
+    } else {
+      msg.channel.send(jaba + " ei ole vammanen");
+    }
+
+  },
   'apustus': (msg) => {
     msg.channel.send({
       embed: {
@@ -213,134 +345,7 @@ const commands = {
         }
       }
     });
-  },
-  'reboot': (msg) => {
-    if (msg.author.id == tokens.adminID) process.exit(); //Requires a node module like Forever to work.
-  },
-
-  'pääpäivä': (msg) => {
-    var pv = new Date();
-    pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
-
-    if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
-      pääpäivä = true;
-    } else {
-      pääpäivä = false;
-      console.log("pääpäivä loppu");
-      date = [0, 0, 0];
-    }
-
-    if (pääpäivä == true) {
-      msg.channel.send("Tänään on pääpäivä!");
-    } else if (pääpäivä == false) {
-      msg.channel.send("Tänään ei ole pääpäivä :(");
-    }
-  },
-
-  'pääpäivä_on': (msg) => {
-    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
-      var d = new Date();
-      date = [d.getDate(), d.getMonth(), d.getYear()];
-      if (pääpäivä == true) {
-        msg.channel.send("Tänään on jo pääpäivä!");
-
-      } else {
-        pääpäivä = true;
-        console.log("pääpäivä asetettu " + date);
-        msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
-
-        var urlz = "https://www.youtube.com/watch?v=687_ZGkP6OU";
-
-        yt.getInfo(url, (err, info) => {
-          if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-          if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-          queue[msg.guild.id].songs.push({
-            url: urlz,
-            title: "PÄÄPÄIVÄ",
-            requester: msg.author.username
-          });
-          msg.channel.sendMessage(`Laitetaan **${info.title}** jonoon!`);
-        });
-
-        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
-
-      }
-    } else {
-      msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
-    }
-  },
-  'pääpäivä_ei': (msg) => {
-    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
-
-      date = [0, 0, 0];
-
-      if (pääpäivä) {
-        msg.channel.send("pääpäivä on peruttu :(");
-      } else {
-        msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
-
-      }
-      pääpäivä = false;
-      console.log("pääpäivä postettu");
-
-      dispatcher.end();
-    } else {
-      msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
-    }
-  },
-  'wednesday': (msg) => {
-
-    //IS IT WEDNESDAY MY DUDES?
-    let pvmaara = new Date();
-
-    let day = pvmaara.getDay();
-    console.log(pvmaara + " " + day);
-
-      if (day == 3) {
-        msg.channel.send({files: ["https://imgur.com/NcE2HFK"]});
-      } else {
-        msg.channel.send({files: ["https://imgur.com/hlNUbYt"]});
-      }
-
-  },
-  'kruuna': (msg) => {
-
-    tulos = Math.floor(Math.random() * Math.floor(2));
-
-    if (tulos === 1) {
-      msg.channel.send("Klaava, " + "hävisit " + msg.author.username);
-    } else {
-      msg.channel.send("Kkruuna, " + "voitit " + msg.author.username);
-    }
-  },
-  'klaava': (msg) => {
-
-    tulos = Math.floor(Math.random() * Math.floor(2));
-
-    if (tulos === 1) {
-      msg.channel.send("Kruuna, " + "hävisit " + msg.author.username);
-    } else {
-      msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
-    }
   }
-  ,
-  'onkokarvisvammanen': (msg) => {
-
-    msg.channel.send("ON");
-},
-'onkovammanen': (msg) => {
-  let jaba = msg.content.split(' ')[1];
-  if ((jaba == '' || jaba === undefined)) return msg.channel.sendMessage(`Ketä tarkoitat?`);
-
-  tulos = Math.floor(Math.random() * Math.floor(2));
-
-  if (tulos === 1) {
-    msg.channel.send(jaba + " on vammanen.");
-  } else {
-    msg.channel.send(jaba + " ei ole vammanen");
-  }
-
-}
 
 };
 
