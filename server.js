@@ -170,7 +170,7 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        var jonoon = "/paapaiva.mp3";
+        var jonoon = "/home/pi/bOtter/paapaiva.mp3";
 
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
