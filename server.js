@@ -171,11 +171,11 @@ const commands = {
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
-        commands.add(msg, jonoon).then(() =>
-          (if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg)))
+        commands.add(msg, jonoon).then(jatka());
 
-
-        );
+        function jatka() {
+          if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
+        }
       }
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
