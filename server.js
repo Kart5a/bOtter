@@ -175,7 +175,7 @@ const commands = {
         if (msg.guild.voiceConnection) {
           return commands.join(msg).then(() => commands.play(msg));
         } else {
-        commands.add(msg, jonoon).then(return function() {
+        return commands.add(msg, jonoon).then(function() {
           return commands.join(msg).then(() => commands.play(msg));
 
         });
