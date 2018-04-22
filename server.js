@@ -180,8 +180,6 @@ const commands = {
           commands.join(msg);
         }
 
-        delay(1500);
-
         commands.play(msg);
       }
     } else {
