@@ -136,7 +136,7 @@ const commands = {
           play(queue[msg.guild.id].songs.shift());
         });
       });
-    })(queue[msg.guild.id].songs.shift());}, 3000);
+    })(queue[msg.guild.id].songs.shift());}, 10000);
   },
 
 
