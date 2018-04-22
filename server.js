@@ -184,7 +184,7 @@ const commands = {
           commands.join(msg);
         }
 
-        commands.play(msg);
+        setTimeout(funtionn() {commands.play(msg)}, 2000);
 
 
       }
