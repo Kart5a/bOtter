@@ -175,8 +175,17 @@ const commands = {
         if (!msg.guild.voiceConnection) {
           commands.join(msg);
         }
-        commands.add(msg, jonoon);
-        commands.play(msg);
+
+        function loading(_callback) {
+          commands.add(msg, jonoon);
+          _callback();
+        }
+
+        function lisätään() {
+          loading(function() { commands.play(msg)});
+        }
+
+        lisätään();
       }
   } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
