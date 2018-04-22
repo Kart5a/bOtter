@@ -180,9 +180,8 @@ const commands = {
           commands.join(msg);
         }
 
-        while (queue[msg.guild.id] == null) {
-          continue;
-        }
+        setTimeout(console.log("loading"), 1500);
+
 
         commands.play(msg);
       }
