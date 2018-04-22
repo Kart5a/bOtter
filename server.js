@@ -172,13 +172,11 @@ const commands = {
 
         var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
+        if (!msg.guild.voiceConnection) {
+          return command.join(msg)
+        }
         if (msg.guild.voiceConnection) {
-          return commands.join(msg).then(() => commands.play(msg));
-        } else {
-        return commands.add(msg, jonoon).then(function() {
-          return commands.join(msg).then(() => commands.play(msg));
-
-        });
+        return commands.add(msg, jonoon).then(() => commands.play(msg));
       }
     }
   } else {
