@@ -179,7 +179,7 @@ const commands = {
           msg.channel.sendMessage(`Laitetaan **${info.title}** jonoon!`);
         }).then(() =>
 
-        if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
+        commands.join(msg).then(() => commands.play(msg));
 
       });
 
