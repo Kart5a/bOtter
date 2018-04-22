@@ -109,9 +109,13 @@ const commands = {
       voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
     });
   },
-  'add': (msg) => {
+  'add': (msg, manual=null) => {
+    if (manual != null ) {
+      url = msg;
+    } else {
     let url = msg.content.split(' ')[1];
     if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai id tämän jälkeen: ${tokens.prefix}add`);
+    }
     yt.getInfo(url, (err, info) => {
       if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
       if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
@@ -166,8 +170,8 @@ const commands = {
         console.log("pääpäivä asetettu " + date);
         msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
 
-        var jonoon = "!add https://www.youtube.com/watch?v=687_ZGkP6OU";
-        commands.add(jonoon);
+        var jonoon = "https://www.youtube.com/watch?v=687_ZGkP6OU";
+        commands.add(jonoon, true);
 
         if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg));
       }
