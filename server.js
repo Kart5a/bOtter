@@ -316,12 +316,8 @@ const commands = {
             value: "ttuneBotti tulee kannulle"
           },
           {
-            name: tokens.prefix + "add",
-            value: "Laittaa ttunen jonoon"
-          },
-          {
             name: tokens.prefix + "play",
-            value: "Alkaa soittamaan ttuneja jonosta"
+            value: "Laittaa ttunen jonoon ja soittaa sen"
           },
           {
             name: tokens.prefix + "queue",
