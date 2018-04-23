@@ -75,26 +75,22 @@ const commands = {
       if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
     }
     console.log("aloitetaan lataus");
-    console.log("1")
     yt.getInfo(url, (err, info) => {
-      console.log("2")
       if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-      console.log("3")
       if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-      console.log("4")
       queue[msg.guild.id].songs.push({
         url: url,
         title: info.title,
         requester: msg.author.username
       });
-      console.log("5")
       msg.channel.sendMessage(`**${info.title}** jonossa!`);
-      console.log("6")
       console.log("biisi ladannut" + queue[msg.guild.id].songs);
+      startplay();
     });
 
 
     // ALKAA SOITTAA QUEUEA //
+    function startPlay() {
       console.log("Soitetaan!");
       if (!msg.guild.voiceConnection) return commands.join(msg);
       if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
@@ -141,6 +137,7 @@ const commands = {
           });
         });
       })(queue[msg.guild.id].songs.shift());
+    }
   },
 
 
