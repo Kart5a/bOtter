@@ -212,10 +212,6 @@ const commands = {
       pääpäivä = false;
       console.log("pääpäivä postettu");
 
-      if (dispatcher === null || dispatcher === undefined) {} else {
-        dispatcher.end();
-      }
-
     } else {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
     }
