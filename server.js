@@ -67,7 +67,7 @@ const commands = {
   'play': (msg, manual = null, skip = false) => {
 
     if (skip === true) {
-      startPlay();
+      startPlay(msg);
       return;
     }
 
