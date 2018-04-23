@@ -61,6 +61,7 @@ const commands = {
       const voiceChannel = msg.member.voiceChannel;
       if (!voiceChannel || voiceChannel.type !== 'voice') return msg.reply('En voinut liittyä voicekannulle...');
       voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
+      console.log("Liityttiin voicekanavalle!");
     });
   },
 
@@ -191,13 +192,7 @@ const commands = {
 
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
-        commands.add(msg, linkki);
-
-        /////////////////
-        /////////////////
         commands.play(msg);
-        /////////////////
-        /////////////////
 
       }
     } else {
