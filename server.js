@@ -64,12 +64,17 @@ const commands = {
     });
   },
 
-  'play': (msg, manual = null) => {
+  'play': (msg, manual = null, skip = false) => {
+
+    if (skip === true) {
+      startPlay();
+      return;
+    }
 
     // ALKAA SOITTAA QUEUEA //
     function startPlay(msg) {
       console.log("Soitetaan!");
-      if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.startPlay(msg));
+      if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg, null, true));
       if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
 
 
