@@ -65,32 +65,9 @@ const commands = {
   },
 
   'play': (msg, manual = null) => {
-    // ADDAA TTUNEN JONOON //
-    var flag = false;
-    let url;
-    if (manual !== null) {
-      url = manual;
-    } else {
-      url = msg.content.split(' ')[1];
-      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
-    }
-    console.log("aloitetaan lataus");
-    yt.getInfo(url, (err, info) => {
-      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
-      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-      queue[msg.guild.id].songs.push({
-        url: url,
-        title: info.title,
-        requester: msg.author.username
-      });
-      msg.channel.sendMessage(`**${info.title}** jonossa!`);
-      console.log("biisi ladannut" + queue[msg.guild.id].songs);
-      startplay();
-    });
-
 
     // ALKAA SOITTAA QUEUEA //
-    function startPlay() {
+    function startPlay(msg) {
       console.log("Soitetaan!");
       if (!msg.guild.voiceConnection) return commands.join(msg);
       if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
@@ -138,6 +115,29 @@ const commands = {
         });
       })(queue[msg.guild.id].songs.shift());
     }
+
+    // ADDAA TTUNEN JONOON //
+    var flag = false;
+    let url;
+    if (manual !== null) {
+      url = manual;
+    } else {
+      url = msg.content.split(' ')[1];
+      if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
+    }
+    console.log("aloitetaan lataus");
+    yt.getInfo(url, (err, info) => {
+      if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+      if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
+      queue[msg.guild.id].songs.push({
+        url: url,
+        title: info.title,
+        requester: msg.author.username
+      });
+      msg.channel.sendMessage(`**${info.title}** jonossa!`);
+      console.log("biisi ladannut" + queue[msg.guild.id].songs);
+      startPlay(msg);
+    });
   },
 
 
