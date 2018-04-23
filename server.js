@@ -191,7 +191,7 @@ const commands = {
 
         var linkki = "https://www.youtube.com/watch?v=687_ZGkP6OU";
 
-        commands.play(msg);
+        commands.play(msg, linkki);
 
       }
     } else {
