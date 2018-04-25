@@ -3,6 +3,7 @@ const {
 } = require('discord.js');
 const yt = require('ytdl-core');
 const tokens = require('./tokens.json');
+var fs = require('fs');
 const client = new Client();
 
 let dispatcher;
@@ -26,6 +27,53 @@ function changeTitle(text) {
       type: 2
     }
   });
+}
+
+function printProfile(target_id, msg) {
+
+  var data = JSON.parse(fs.readFileSync('profiles.json'));
+
+  var nimi = data[target_id]["name"];
+  var motto = data[target_id]["motto"];
+  var kuvaus = data[target_id]["kuvaus"];
+
+  var avatar;
+
+  client.fetchUser(target_id).then(myUser => {
+    avatar = myUser.avatarURL;
+    laheta(avatar);
+  });
+
+  function laheta(avatar) {
+
+    msg.channel.send({
+      "embed": {
+        "title": "***DISCORDPROFIILI***",
+        "color": 15466496,
+        "timestamp": new Date(),
+        "footer": {
+          "icon_url": client.user.avatarURL,
+          "text": "© Kart5a & ddosSasu"
+        },
+        "thumbnail": {
+          "url": avatar
+        },
+        "fields": [{
+            "name": "***___Nimi:___***",
+            "value": nimi
+          },
+          {
+            "name": "***___Motto:___***",
+            "value": motto
+          },
+          {
+            "name": "***___Kuvaus:___***",
+            "value": kuvaus
+          }
+        ]
+      }
+    });
+  }
 }
 
 setInterval(function() {
@@ -55,6 +103,99 @@ setInterval(function() {
 
 const commands = {
 
+  'profile': (msg) => {
+
+    let name = msg.content.split(' ')[1];
+    let category = msg.content.split(' ')[2];
+    let all = msg.content.split(' ');
+    let edit = "";
+    for (var i = 3; i < all.length; i++) {
+      edit += all[i] + " ";
+    }
+
+    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !profile ja discordnimi`);
+
+    name = name.replace(/\D/g, '');
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+
+    var data = JSON.parse(fs.readFileSync('profiles.json'));
+
+    var target_id = name;
+    var sender_id = msg.author.id;
+
+
+    if ((category == '' || category === undefined)) {
+
+      printProfile(target_id, msg);
+
+    } else {
+
+      if ((category == "luo")) {
+
+        var profile_name = msg.content.split(' ')[1];
+
+        if (data[target_id] != undefined) return msg.channel.send("Käyttäjällä " + profile_name + " on jo profiili!");
+
+        var empty = {
+          "name": profile_name,
+          "motto": "Tyhjä",
+          "kuvaus": "Tyhjä"
+        };
+
+        data[target_id] = empty;
+
+        var temp = JSON.stringify(data);
+        fs.writeFile('profiles.json', temp, (error) => {});
+
+        msg.channel.send("Profiili " + profile_name + " luotu!");
+
+        return;
+      }
+
+      if (target_id === sender_id) return msg.channel.sendMessage("Et voi muokata omaa profiiliasi...");
+
+      if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
+
+        data = JSON.parse(fs.readFileSync('profiles.json'));
+
+        if (category == "nimi") {
+
+          data[target_id]["name"] = edit;
+          msg.channel.send("Nimi vaihdettu!");
+
+        } else if (category == "motto") {
+
+          data[target_id]["motto"] = edit;
+          msg.channel.send("Motto vaihdettu!");
+
+        } else if (category == "kuvaus") {
+
+          data[target_id]["kuvaus"] = edit;
+          msg.channel.send("Kuvaus vaihdettu!");
+
+        } else {
+          msg.channel.sendMessage("Vialliset komennot...");
+          return;
+        }
+
+        var temp = JSON.stringify(data);
+        fs.writeFile('profiles.json', temp, (error) => {});
+
+      } else {
+        msg.channel.sendMessage("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
+      }
+    }
+  },
 
   'join': (msg) => {
     return new Promise((resolve, reject) => {
@@ -154,6 +295,7 @@ const commands = {
     });
     msg.channel.sendMessage(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
   },
+
   'reboot': (msg) => {
     if (msg.author.id == tokens.adminID) process.exit(); //Requires a node module like Forever to work.
   },
