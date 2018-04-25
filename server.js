@@ -49,25 +49,25 @@ function printProfile(target_id, msg) {
     msg.channel.send({
       "embed": {
         "title": "***DISCORDPROFIILI***",
-        "color": 15466496
-      },
-      "thumbnail": {
-        "url": avatar
-      },
-      "fields": [{
-          "name": "***___Nimi:___***",
-          "value": nimi
+        "color": 15466496,
+        "thumbnail": {
+          "url": avatar
         },
-        {
-          "name": "***___Motto:___***",
-          "value": motto
-        },
-        {
-          "name": "***___Kuvaus:___***",
-          "value": kuvaus
-        }
-      ]
-    })
+        "fields": [{
+            "name": "***___Nimi:___***",
+            "value": nimi
+          },
+          {
+            "name": "***___Motto:___***",
+            "value": motto
+          },
+          {
+            "name": "***___Kuvaus:___***",
+            "value": kuvaus
+          }
+        ]
+      }
+    });
   }
 }
 
@@ -106,13 +106,11 @@ const commands = {
       all_profiles += data[id]['name'] + "\n";
     }
 
-    console.log(all_profiles);
-
     msg.channel.send({
       "embed": {
         "title": "***KAIKKI PROFIILIT***",
         "color": 15466496,
-        "description" : all_profiles
+        "description": all_profiles
       },
     });
   },
