@@ -227,9 +227,9 @@ const commands = {
 
     if (day == 3) {
 
-      msg.channel.send("https://imgur.com/NcE2HFK");
+      msg.channel.send("Valitettavasti wednesdayn aplikaatio on viellä work in procress, mutta ON WEDNESDAY");
     } else {
-      msg.channel.send("https://imgur.com/hlNUbYt");
+      msg.channel.send("Valitettavasti wednesdayn aplikaatio on viellä work in procress, mutta ei oo wednesday");
     }
 
   },
