@@ -227,12 +227,12 @@ const commands = {
 
     if (day == 3) {
 
-      msg.channel.send({
-          file: "https://imgur.com/NcE2HFK" // Or replace with FileOptions object
+      msg.channel.send("", {
+          files: ["https://imgur.com/NcE2HFK"] // Or replace with FileOptions object
       });
     } else {
-      msg.channel.send({
-          file: "https://imgur.com/hlNUbYt" // Or replace with FileOptions object
+      msg.channel.send("", {
+          files: ["https://imgur.com/hlNUbYt"] // Or replace with FileOptions object
       });
     }
 
