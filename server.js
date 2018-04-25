@@ -49,30 +49,25 @@ function printProfile(target_id, msg) {
     msg.channel.send({
       "embed": {
         "title": "***DISCORDPROFIILI***",
-        "color": 15466496,
-        "timestamp": new Date(),
-        "footer": {
-          "icon_url": client.user.avatarURL,
-          "text": "© Kart5a & ddosSasu"
+        "color": 15466496
+      },
+      "thumbnail": {
+        "url": avatar
+      },
+      "fields": [{
+          "name": "***___Nimi:___***",
+          "value": nimi
         },
-        "thumbnail": {
-          "url": avatar
+        {
+          "name": "***___Motto:___***",
+          "value": motto
         },
-        "fields": [{
-            "name": "***___Nimi:___***",
-            "value": nimi
-          },
-          {
-            "name": "***___Motto:___***",
-            "value": motto
-          },
-          {
-            "name": "***___Kuvaus:___***",
-            "value": kuvaus
-          }
-        ]
-      }
-    });
+        {
+          "name": "***___Kuvaus:___***",
+          "value": kuvaus
+        }
+      ]
+    })
   }
 }
 
@@ -102,6 +97,25 @@ setInterval(function() {
 
 
 const commands = {
+
+  'profiles': (msg) => {
+    var data = JSON.parse(fs.readFileSync('profiles.json'));
+
+    var all_profiles = "";
+    for (var id in data) {
+      all_profiles += data[id]['name'] + "\n";
+    }
+
+    console.log(all_profiles);
+
+    msg.channel.send({
+      "embed": {
+        "title": "***KAIKKI PROFIILIT***",
+        "color": 15466496,
+        "description" : all_profiles
+      },
+    });
+  },
 
   'profile': (msg) => {
 
@@ -423,6 +437,14 @@ const commands = {
 
         title: "**__Komennot:__**",
         fields: [{
+            name: tokens.prefix + "profile + jäbän username + (luo / nimi / motto / kuvaus)",
+            value: "Näyttää käyttäjän profiilin. Suluissa olevilla voi muokata."
+          },
+          {
+            name: tokens.prefix + "profiles",
+            value: "Näyttää kaikki tarjolla olevat profiilit."
+          },
+          {
             name: tokens.prefix + "pääpäivä",
             value: "Kertoo onko pääpäivä."
           },
