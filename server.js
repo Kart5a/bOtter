@@ -19,7 +19,16 @@ const streamOptions = {
 var pääpäivä = false;
 let date = [0, 0, 0];
 
-firebase.initializeApp("config.json");
+var config = {
+    apiKey: "AIzaSyCRlwc_0YwgbeY12i9Bhe3oIcCHwyJbcm8",
+    authDomain: "botter-bot.firebaseapp.com",
+    databaseURL: "https://botter-bot.firebaseio.com",
+    projectId: "botter-bot",
+    storageBucket: "botter-bot.appspot.com",
+    messagingSenderId: "963103793875"
+  };
+
+firebase.initializeApp(config);
 
 var database = firebase.database();
 var ref = database.ref('botter-bot');
