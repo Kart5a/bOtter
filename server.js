@@ -227,13 +227,9 @@ const commands = {
 
     if (day == 3) {
 
-      msg.channel.send("", {
-          files: ["./img/isWednesday.jpg"] // Or replace with FileOptions object
-      });
+      msg.channel.send("./img/isWednesday.jpg");
     } else {
-      msg.channel.send("", {
-          files: ["./img/notWednesday.jpg"] // Or replace with FileOptions object
-      });
+      msg.channel.send("./img/notWednesday.jpg");
     }
 
   },
