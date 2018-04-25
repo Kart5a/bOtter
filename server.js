@@ -181,6 +181,7 @@ const commands = {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
       var d = new Date();
       date = [d.getDate(), d.getMonth(), d.getYear()];
+      changeTitle("PÄÄPÄIVÄ");
       if (pääpäivä == true) {
         msg.channel.send("Tänään on jo pääpäivä!");
 
@@ -225,16 +226,18 @@ const commands = {
     console.log(pvmaara + " " + day);
 
     if (day == 3) {
+
       msg.channel.send({
-        files: ["https://imgur.com/NcE2HFK"]
+          file: "https://imgur.com/NcE2HFK" // Or replace with FileOptions object
       });
     } else {
       msg.channel.send({
-        files: ["https://imgur.com/hlNUbYt"]
+          file: "https://imgur.com/hlNUbYt" // Or replace with FileOptions object
       });
     }
 
   },
+
   'kruuna': (msg) => {
 
     tulos = Math.floor(Math.random() * Math.floor(2));
@@ -245,6 +248,7 @@ const commands = {
       msg.channel.send("Kkruuna, " + "voitit " + msg.author.username);
     }
   },
+
   'klaava': (msg) => {
 
     tulos = Math.floor(Math.random() * Math.floor(2));
@@ -273,6 +277,7 @@ const commands = {
     }
 
   },
+
   'apustus': (msg) => {
     msg.channel.send({
       embed: {
@@ -377,10 +382,9 @@ function reagoi(sanalist, emojilist, msg) {
 client.on('message', msg => {
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
-  var sanat = [/homo/, /autisti/];
-  var emojit = ["sasu", "karvis"];
+  reagoi([/homo/, /autisti/], ["sasu", "karvis"], msg);
+  reagoi([/kys/], ["kys2", "protect"];, msg);
 
-  reagoi(sanat, emojit, msg);
 
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
