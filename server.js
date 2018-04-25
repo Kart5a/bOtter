@@ -3,7 +3,7 @@ const {
 } = require('discord.js');
 const yt = require('ytdl-core');
 const tokens = require('./tokens.json');
-var fs = require('fs');
+var firebase = require('firebase');
 const client = new Client();
 
 let dispatcher;
@@ -19,6 +19,25 @@ const streamOptions = {
 var pääpäivä = false;
 let date = [0, 0, 0];
 
+firebase.initializeApp({
+    databaseURL: 'https://botter-bot.firebaseio.com/',
+    serviceAccount: 'serviceAcc.json', //this is file that I downloaded from Firebase Console
+});
+
+var database = firebase.database();
+var ref = database.ref('profiles');
+
+var data;
+
+function gotData(_data) {
+   data = _data.val();
+
+}
+
+function errData(err) {
+   console.log("Error!");
+   console.log(err);
+}
 
 function changeTitle(text) {
   client.user.setPresence({
@@ -31,7 +50,7 @@ function changeTitle(text) {
 
 function printProfile(target_id, msg) {
 
-  var data = JSON.parse(fs.readFileSync('profiles.json'));
+  ref.on('value', gotData, errData);
 
   var nimi = data[target_id]["name"];
   var motto = data[target_id]["motto"];
@@ -99,7 +118,7 @@ setInterval(function() {
 const commands = {
 
   'profiles': (msg) => {
-    var data = JSON.parse(fs.readFileSync('profiles.json'));
+    ref.on('value', gotData, errData);
 
     var all_profiles = "";
     for (var id in data) {
@@ -140,7 +159,7 @@ const commands = {
 
     if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
 
-    var data = JSON.parse(fs.readFileSync('profiles.json'));
+    ref.on('value', gotData, errData);
 
     var target_id = name;
     var sender_id = msg.author.id;
@@ -167,8 +186,7 @@ const commands = {
 
         data[target_id] = empty;
 
-        var temp = JSON.stringify(data);
-        fs.writeFile('profiles.json', temp, (error) => {});
+        firebase.database().ref('profile').set(data);
 
         msg.channel.send("Profiili " + profile_name + " luotu!");
 
@@ -179,7 +197,7 @@ const commands = {
 
       if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
-        data = JSON.parse(fs.readFileSync('profiles.json'));
+        ref.on('value', gotData, errData);
 
         if (category == "nimi") {
 
@@ -201,8 +219,7 @@ const commands = {
           return;
         }
 
-        var temp = JSON.stringify(data);
-        fs.writeFile('profiles.json', temp, (error) => {});
+        firebase.database().ref('profile').set(data);
 
       } else {
         msg.channel.sendMessage("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
