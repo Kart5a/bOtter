@@ -228,11 +228,11 @@ const commands = {
     if (day == 3) {
 
       msg.channel.send("", {
-          files: ["https://imgur.com/NcE2HFK"] // Or replace with FileOptions object
+          files: ["./img/isWednesday.jpg"] // Or replace with FileOptions object
       });
     } else {
       msg.channel.send("", {
-          files: ["https://imgur.com/hlNUbYt"] // Or replace with FileOptions object
+          files: ["./img/notWednesday.jpg"] // Or replace with FileOptions object
       });
     }
 
