@@ -34,6 +34,7 @@ var database = firebase.database();
 var ref = database.ref('profiles');
 
 var data;
+ref.on('value', gotData, errData);
 
 function gotData(_data) {
    data = _data.val();
@@ -99,6 +100,7 @@ function printProfile(target_id, msg) {
 }
 
 setInterval(function() {
+  ref.on('value', gotData, errData);
   var pv = new Date();
   pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
   var day = pv.getDay();
