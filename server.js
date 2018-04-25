@@ -227,9 +227,9 @@ const commands = {
 
     if (day == 3) {
 
-      msg.channel.send("./img/isWednesday.jpg");
+      msg.channel.send("https://imgur.com/NcE2HFK");
     } else {
-      msg.channel.send("./img/notWednesday.jpg");
+      msg.channel.send("https://imgur.com/hlNUbYt");
     }
 
   },
