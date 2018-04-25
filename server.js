@@ -31,7 +31,7 @@ var config = {
 firebase.initializeApp(config);
 
 var database = firebase.database();
-var ref = database.ref('botter-bot');
+var ref = database.ref('profiles');
 
 var data;
 
@@ -194,7 +194,7 @@ const commands = {
 
         data[target_id] = empty;
 
-        firebase.database().ref('botter-bot').set(data);
+        firebase.database().ref('profiles').set(data);
 
         msg.channel.send("Profiili " + profile_name + " luotu!");
 
@@ -227,7 +227,7 @@ const commands = {
           return;
         }
 
-        firebase.database().ref('botter-bot').set(data);
+        firebase.database().ref('profiles').set(data);
 
       } else {
         msg.channel.sendMessage("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
