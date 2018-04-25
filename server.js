@@ -58,6 +58,8 @@ function printProfile(target_id, msg) {
 
   ref.on('value', gotData, errData);
 
+  console.log(data);
+
   var nimi = data[target_id]["name"];
   var motto = data[target_id]["motto"];
   var kuvaus = data[target_id]["kuvaus"];
