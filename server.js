@@ -37,7 +37,7 @@ var data;
 
 function gotData(_data) {
    data = _data.val();
-
+   console.log(data);
 }
 
 function errData(err) {
