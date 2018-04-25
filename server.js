@@ -383,7 +383,7 @@ client.on('message', msg => {
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   reagoi([/homo/, /autisti/], ["sasu", "karvis"], msg);
-  reagoi([/kys/], ["kys2", "protect"];, msg);
+  reagoi([/kys/], ["kys2", "protect"], msg);
 
 
   if (!msg.content.startsWith(tokens.prefix)) return;
