@@ -145,6 +145,7 @@ const commands = {
     var target_id = name;
     var sender_id = msg.author.id;
 
+    if ((data[target_id] == undefined || data[target_id] == null) && category !== "luo") return msg.channel.send("Käyttäjällä ei ole profiilia! Luo profiili komennolla " + tokens.prefix + "profile <username> luo")
 
     if ((category == '' || category === undefined)) {
 
