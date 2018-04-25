@@ -19,13 +19,10 @@ const streamOptions = {
 var pääpäivä = false;
 let date = [0, 0, 0];
 
-firebase.initializeApp({
-    databaseURL: 'https://botter-bot.firebaseio.com/',
-    serviceAccount: 'serviceAcc.json', //this is file that I downloaded from Firebase Console
-});
+firebase.initializeApp("config.json");
 
 var database = firebase.database();
-var ref = database.ref('profiles');
+var ref = database.ref('botter-bot');
 
 var data;
 
@@ -186,7 +183,7 @@ const commands = {
 
         data[target_id] = empty;
 
-        firebase.database().ref('profile').set(data);
+        firebase.database().ref('botter-bot').set(data);
 
         msg.channel.send("Profiili " + profile_name + " luotu!");
 
@@ -219,7 +216,7 @@ const commands = {
           return;
         }
 
-        firebase.database().ref('profile').set(data);
+        firebase.database().ref('botter-bot').set(data);
 
       } else {
         msg.channel.sendMessage("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
