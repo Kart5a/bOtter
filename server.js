@@ -20,13 +20,13 @@ var pääpäivä = false;
 let date = [0, 0, 0];
 
 var config = {
-    apiKey: "AIzaSyCRlwc_0YwgbeY12i9Bhe3oIcCHwyJbcm8",
-    authDomain: "botter-bot.firebaseapp.com",
-    databaseURL: "https://botter-bot.firebaseio.com",
-    projectId: "botter-bot",
-    storageBucket: "botter-bot.appspot.com",
-    messagingSenderId: "963103793875"
-  };
+  apiKey: "AIzaSyCRlwc_0YwgbeY12i9Bhe3oIcCHwyJbcm8",
+  authDomain: "botter-bot.firebaseapp.com",
+  databaseURL: "https://botter-bot.firebaseio.com",
+  projectId: "botter-bot",
+  storageBucket: "botter-bot.appspot.com",
+  messagingSenderId: "963103793875"
+};
 
 firebase.initializeApp(config);
 
@@ -37,13 +37,12 @@ var data;
 ref.on('value', gotData, errData);
 
 function gotData(_data) {
-   data = _data.val();
-   console.log(data);
+  data = _data.val();
 }
 
 function errData(err) {
-   console.log("Error!");
-   console.log(err);
+  console.log("Error!");
+  console.log(err);
 }
 
 function changeTitle(text) {
@@ -59,11 +58,10 @@ function printProfile(target_id, msg) {
 
   ref.on('value', gotData, errData);
 
-  console.log(data);
-
   var nimi = data[target_id]["name"];
   var motto = data[target_id]["motto"];
   var kuvaus = data[target_id]["kuvaus"];
+  var kuva = data[target_id]["kuva"];
 
   var avatar;
 
@@ -80,6 +78,9 @@ function printProfile(target_id, msg) {
         "color": 15466496,
         "thumbnail": {
           "url": avatar
+        },
+        "image": {
+        "url": kuva
         },
         "fields": [{
             "name": "***___Nimi:___***",
@@ -191,7 +192,8 @@ const commands = {
         var empty = {
           "name": profile_name,
           "motto": "Tyhjä",
-          "kuvaus": "Tyhjä"
+          "kuvaus": "Tyhjä",
+          "kuva": null
         };
 
         data[target_id] = empty;
@@ -223,6 +225,11 @@ const commands = {
 
           data[target_id]["kuvaus"] = edit;
           msg.channel.send("Kuvaus vaihdettu!");
+
+        } else if (category == "kuva") {
+
+          data[target_id]["kuva"] = edit;
+          msg.channel.send("Kuva vaihdettu!");
 
         } else {
           msg.channel.sendMessage("Vialliset komennot...");
@@ -463,7 +470,7 @@ const commands = {
 
         title: "**__Komennot:__**",
         fields: [{
-            name: tokens.prefix + "profile + jäbän username + (luo / nimi / motto / kuvaus)",
+            name: tokens.prefix + "profile + jäbän username + (luo / nimi / motto / kuvaus / kuva)",
             value: "Näyttää käyttäjän profiilin. Suluissa olevilla voi muokata."
           },
           {
