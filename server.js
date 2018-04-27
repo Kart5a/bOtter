@@ -128,6 +128,15 @@ setInterval(function() {
 
 const commands = {
 
+  'dj': (msg) => {
+    var kannulla = msg.member.voiceChannel.members.keyArray();
+
+    var rnd =  Math.floor(Math.random() * Math.floor(kannulla.length + 1));
+
+    msg.channel.send("Pääpäivän DJ on <@" + kannulla[rnd] + ">!");
+
+  },
+
   'profiles': (msg) => {
     ref.on('value', gotData, errData);
 
@@ -488,6 +497,10 @@ const commands = {
           {
             name: tokens.prefix + "pääpäivä_ei",
             value: "Lopettaa pääpäivän."
+          },
+          {
+            name: tokens.prefix + "DJ",
+            value: "Arpoo pääpäivälle DJ:n!"
           },
           {
             name: tokens.prefix + "wednesday",
