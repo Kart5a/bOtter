@@ -6,6 +6,7 @@ const tokens = require('./tokens.json');
 var firebase = require('firebase');
 const client = new Client();
 
+let voiceChannel;
 let dispatcher;
 var lastmessager;
 let queue = {};
@@ -17,6 +18,7 @@ const streamOptions = {
 };
 
 var pääpäivä = false;
+var dj = null;
 let date = [0, 0, 0];
 
 var config = {
@@ -80,7 +82,7 @@ function printProfile(target_id, msg) {
           "url": avatar
         },
         "image": {
-        "url": kuva
+          "url": kuva
         },
         "fields": [{
             "name": "***___Nimi:___***",
@@ -110,6 +112,7 @@ setInterval(function() {
     pääpäivä = true;
   } else {
     pääpäivä = false;
+    dj = null;
     date = [0, 0, 0];
   }
 
@@ -129,11 +132,15 @@ setInterval(function() {
 const commands = {
 
   'dj': (msg) => {
-    var kannulla = msg.member.voiceChannel.members.keyArray();
-
-    var rnd =  Math.floor(Math.random() * Math.floor(kannulla.length + 1));
-
-    msg.channel.send("Pääpäivän DJ on <@" + kannulla[rnd] + ">!");
+    if (dj == null) {
+      if (msg.member.voiceChannel === undefined) return msg.channel.send("Kaikkien ehdokkaiden pitää olla voicekannulla, myös sun!");
+      var kannulla = msg.member.voiceChannel.members.keyArray();
+      var rnd = Math.floor(Math.random() * Math.floor(kannulla.length + 1));
+      dj = "<@" + kannulla[rnd] + ">";
+      msg.channel.send("Pääpäivän DJ on " + dj + "!");
+    } else {
+      msg.channel.send("Pääpäivän DJ on jo valittu, ttunettaja on " + dj + "!");
+    }
 
   },
 
@@ -255,7 +262,7 @@ const commands = {
 
   'join': (msg) => {
     return new Promise((resolve, reject) => {
-      const voiceChannel = msg.member.voiceChannel;
+      voiceChannel = msg.member.voiceChannel;
       if (!voiceChannel || voiceChannel.type !== 'voice') return msg.reply('En voinut liittyä voicekannulle...');
       voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
       console.log("Liityttiin voicekanavalle!");
@@ -305,7 +312,7 @@ const commands = {
         if (song === undefined) {
           console.log("biisi ei ollut havaiitavissa");
           queue[msg.guild.id].playing = false;
-          msg.member.voiceChannel.leave();
+          voiceChannel.leave();
         };
         msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
         dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
@@ -425,9 +432,9 @@ const commands = {
 
     if (day == 3) {
 
-      msg.channel.send("Valitettavasti wednesdayn aplikaatio on viellä work in procress, mutta ON WEDNESDAY");
+      msg.channel.send("Valitettavasti wednesdayn aplikaatio on vielä work in progress, mutta ON WEDNESDAY");
     } else {
-      msg.channel.send("Valitettavasti wednesdayn aplikaatio on viellä work in procress, mutta ei oo wednesday");
+      msg.channel.send("Valitettavasti wednesdayn aplikaatio on vielä work in progress, mutta ei oo wednesday :(");
     }
 
   },
