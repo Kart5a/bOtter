@@ -193,6 +193,29 @@ const commands = {
   'pelidata': (msg) => {
 
     ref.on('value', gotData, errData);
+
+    var w_l = {};
+    for (var id in data) {
+      if (data[id]["rahat"] == null || data[id]["rahat"] == undefined) {
+        data[id]["rahat"] = 300;
+      }
+      key = id;
+      value = data[id]["rahat"];
+      w_l[key] = value;
+    }
+
+    var items = Object.keys(w_l).map(function(key) {
+      return {
+        id: key,
+        val: w_l[key]
+      };
+    });
+
+
+    items = items.sort(function(a, b) {
+      return ((a.val > b.val) ? -1 : ((a.val == b.val) ? 0 : 1));
+    });
+
     let name = msg.content.split(' ')[1];
 
     if (name == undefined || name == "") {
@@ -200,6 +223,12 @@ const commands = {
     }
     name = name.replace(/\D/g, '');
     var target_id = name;
+
+    if (target_id == itmes[0]) {
+      massimies = "MASSIKEISARI (RIKKAIN JA PARAS)";
+    } else {
+      massimies = "";
+    }
 
     if (data[target_id]["pelit"] == undefined || data[target_id]["pelit"] == null) {
       data[target_id]["pelit"] = {
@@ -253,7 +282,7 @@ const commands = {
     var kaikkithäv = data[target_id]["pelit"]["kaikkitaieimitäänhäviöt"];
     var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetut"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + "\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
+    msg.channel.send("```Nimi: " + data[target_id]["name"]  " " + massimies+ "\nPelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + "\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
 
     firebase.database().ref('profiles').set(data);
 
