@@ -347,7 +347,7 @@ const commands = {
       firebase.database().ref('profiles').set(data);
     }
 
-    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Sulla on rahaa ` + data[sender_id]["rahat"]);
+    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Sulla on ` + data[sender_id]["rahat"] + " rahea.");
 
     name = name.replace(/\D/g, '');
 
@@ -369,7 +369,7 @@ const commands = {
       data[target_id]["rahat"] = 100;
     }
 
-    msg.channel.send("Hänellä on rahaa " + data[target_id]["rahat"]);
+    msg.channel.send("Hänellä on " + data[target_id]["rahat"] + " rahea.");
   },
 
   'slot': (msg) => {
