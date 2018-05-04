@@ -586,10 +586,10 @@ const commands = {
 
     if (rnd >= 51) {
       data[pelaaja]["rahat"] *= 2;
-      msg.channel.sendMessage("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
+      msg.channel.send("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
     } else {
-      data[pelaaja]["rahat"] == 0;
-      msg.channel.sendMessage("Päin vittua... Onnea kannulla hillumiseen.");
+      data[pelaaja]["rahat"] = 0;
+      msg.channel.send("Päin vittua... Onnea kannulla hillumiseen.");
     }
 
     firebase.database().ref('profiles').set(data);
