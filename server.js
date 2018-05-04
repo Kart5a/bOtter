@@ -634,15 +634,16 @@ const commands = {
     if (rnd >= 51) {
       data[pelaaja]["rahat"] *= 2;
       msg.channel.send("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
-      data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] += 1;
+
       data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] += 1;
       data[pelaaja]["pelit"]["kaikkitaieimitään"] += data[pelaaja]["rahat"]/2;
     } else {
-      data[pelaaja]["rahat"]["kaikkitaieimitäänpelit"] += 1;
+
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
       data[pelaaja]["rahat"] = 0;
       msg.channel.send("Päin vittua... Onnea kannulla hillumiseen.");
     }
+    data[pelaaja]["rahat"]["kaikkitaieimitäänpelit"] += 1;
 
     firebase.database().ref('profiles').set(data);
   },
