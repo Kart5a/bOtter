@@ -823,7 +823,7 @@ const commands = {
     }
   },
 
-  'liity': (msg) => {
+  'join': (msg) => {
     return new Promise((resolve, reject) => {
       voiceChannel = msg.member.voiceChannel;
       if (!voiceChannel || voiceChannel.type !== 'voice') return msg.reply('En voinut liittyä voicekannulle...');
@@ -832,7 +832,7 @@ const commands = {
     });
   },
 
-  'soita': (msg, manual = null, joining = false) => {
+  'play': (msg, manual = null, joining = false) => {
 
     if (joining === true) {
       startPlay(msg);
@@ -913,7 +913,7 @@ const commands = {
   },
 
 
-  'jono': (msg) => {
+  'queue': (msg) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja jonoon: ${tokens.prefix}add`);
     let tosend = [];
     queue[msg.guild.id].songs.forEach((song, i) => {
@@ -1112,15 +1112,15 @@ const commands = {
             value: "Tässä kaikki ttuneBottiin liittyvät komennot:"
           },
           {
-            name: tokens.prefix + "liity",
+            name: tokens.prefix + "join",
             value: "ttuneBotti tulee kannulle"
           },
           {
-            name: tokens.prefix + "soita",
+            name: tokens.prefix + "play",
             value: "Laittaa ttunen jonoon ja soittaa sen"
           },
           {
-            name: tokens.prefix + "jono",
+            name: tokens.prefix + "queue",
             value: "Näyttää ttunejonon"
           },
           {
@@ -1136,7 +1136,7 @@ const commands = {
             value: "Hheittää ttunen rroskiin"
           },
           {
-            name: tokens.prefix + "aika",
+            name: tokens.prefix + "time",
             value: "Näyttää biisin soitetun ajan"
           },
           {
