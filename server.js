@@ -251,28 +251,6 @@ const commands = {
     firebase.database().ref('profiles').set(data);
 
   },
-  'kaikkitaieimitään' : (msg) => {
-
-    console.log("kaikki tai ei mitään aktivoitu");
-
-    var pelaaja = msg.authot.id;
-
-    if (data[pelaaja]["rahat"] == null || data[pelaaja]["rahat"] == undefined) {
-      data[pelaaja]["rahat"] = 100;
-    }
-
-    var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-
-    if (rnd >= 51) {
-      data[pelaaja]["rahat"] *= 2;
-      msg.channel.sendMessage("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
-    } else {
-      data[pelaaja]["rahat"] == 0;
-      msg.channel.sendMessage("Päin vittua... Onnea kannulla hillumiseen.");
-    }
-
-    firebase.database().ref('profiles').set(data);  
-  },
 
   'anna': (msg) => {
     let name = msg.content.split(' ')[1];
@@ -593,6 +571,28 @@ const commands = {
     printSlot(rulla[0], rulla[1], rulla[2], voitto, msg.author.id, msg, panos);
 
 
+  },
+  'kaikkitaieimitään' : (msg) => {
+
+    console.log("kaikki tai ei mitään aktivoitu");
+
+    var pelaaja = msg.authot.id;
+
+    if (data[pelaaja]["rahat"] == null || data[pelaaja]["rahat"] == undefined) {
+      data[pelaaja]["rahat"] = 100;
+    }
+
+    var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+
+    if (rnd >= 51) {
+      data[pelaaja]["rahat"] *= 2;
+      msg.channel.sendMessage("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
+    } else {
+      data[pelaaja]["rahat"] == 0;
+      msg.channel.sendMessage("Päin vittua... Onnea kannulla hillumiseen.");
+    }
+
+    firebase.database().ref('profiles').set(data);
   },
 
   'dj': (msg) => {
