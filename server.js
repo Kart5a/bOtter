@@ -56,6 +56,18 @@ function changeTitle(text) {
   });
 }
 
+function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg) {
+
+  ref.on('value', gotData, errData);
+
+  var rahat = "" + data[target_id]["rahat"];
+  var väli1 = " ".repeat(8 - rahat.length);
+  var str = "Rahat: " + rahat + väli1 + "|▇ " + _eka + " ▇▇ " + _toka + " ▇▇ " + _kolmas + " ▇|" + "\nVoitit: " + _voitto;
+
+  msg.channel.send(str);
+
+}
+
 function printProfile(target_id, msg) {
 
   ref.on('value', gotData, errData);
@@ -64,6 +76,7 @@ function printProfile(target_id, msg) {
   var motto = data[target_id]["motto"];
   var kuvaus = data[target_id]["kuvaus"];
   var kuva = data[target_id]["kuva"];
+  var rahat = data[target_id]["rahat"];
 
   var avatar;
 
@@ -95,6 +108,10 @@ function printProfile(target_id, msg) {
           {
             "name": "***___Kuvaus:___***",
             "value": kuvaus
+          },
+          {
+            "name": "***___Rahat:___***",
+            "value": rahat
           }
         ]
       }
@@ -130,6 +147,146 @@ setInterval(function() {
 
 
 const commands = {
+  'give': (msg) => {
+    let name = msg.content.split(' ')[1];
+    let amount = msg.content.split(' ')[2];
+
+    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !give ja summa`);
+    if (isNaN(amount)) return msg.channel.sendMessage(`Voit siirtää vain rahea, et muuta...`);
+
+    name = name.replace(/\D/g, '');
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+
+    ref.on('value', gotData, errData);
+
+    var target_id = name;
+    var sender_id = msg.author.id;
+
+    if (data[sender_id]["rahat"] == null || data[sender_id]["rahat"] == undefined) {
+      data[sender_id]["rahat"] = 100;
+    }
+    if (data[sender_id]["rahat"] < parseInt(amount)) return msg.channel.sendMessage(`Sulla ei oo tarpeeks rahea...`);
+    if (data[target_id]["rahat"] == null || data[target_id]["rahat"] == undefined) {
+      data[target_id]["rahat"] = 100;
+    }
+
+    data[target_id]["rahat"] += parseInt(amount);
+    data[sender_id]["rahat"] -= parseInt(amount);
+
+    firebase.database().ref('profiles').set(data);
+    msg.channel.send("Rahet siirretty!");
+
+  },
+
+  'money': (msg) => {
+
+    let name = msg.content.split(' ')[1];
+    ref.on('value', gotData, errData);
+    var sender_id = msg.author.id;
+
+    if (data[sender_id]["rahat"] == null || data[sender_id]["rahat"] == undefined) {
+      data[sender_id]["rahat"] = 100;
+    }
+
+    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Sulla on rahaa ` + data[sender_id]["rahat"]);
+
+    name = name.replace(/\D/g, '');
+
+    var target_id = name;
+
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+
+    if (data[target_id]["rahat"] == null || data[target_id]["rahat"] == undefined) {
+      data[target_id]["rahat"] = 100;
+    }
+
+    msg.channel.send("Hänellä on rahaa " + data[target_id]["rahat"]);
+  },
+
+  'slot': (msg) => {
+    const karvis = msg.guild.emojis.find("name", "karvis");
+    const sasu = msg.guild.emojis.find("name", "sasu");
+    const protect = msg.guild.emojis.find("name", "protect");
+    const poggers = msg.guild.emojis.find("name", "poggers");
+    const kys = msg.guild.emojis.find("name", "kys2");
+
+
+
+    ref.on('value', gotData, errData);
+
+    if (data[msg.author.id]["rahat"] < 10) return msg.channel.sendMessage(`Sulla ei oo varaa uhkapelata.`);
+    data[msg.author.id]["rahat"] -= 10;
+
+    var rulla = [];
+    for (var i = 0; i < 3; i++) {
+      var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+      if (rnd <= 40) {
+        rulla.push(karvis);
+
+      } else if (rnd <= 60) {
+        rulla.push(sasu);
+      } else if (rnd <= 80) {
+        rulla.push(kys);
+      } else if (rnd <= 90) {
+        rulla.push(protect);
+      } else {
+        rulla.push(poggers);
+      }
+    }
+
+    var voitto;
+    if (rulla[0] == poggers && rulla[1] == poggers && rulla[2] == poggers) {
+      voitto = 1000;
+      data[msg.author.id]["rahat"] += voitto;
+    } else if (rulla[0] == poggers && rulla[1] == poggers) {
+      voitto = 30;
+      data[msg.author.id]["rahat"] += voitto;
+      // poggers x 2
+    } else if (rulla[0] == poggers) {
+      voitto = 10;
+      data[msg.author.id]["rahat"] += voitto;
+      // poggers x 1
+    } else if (rulla[0] == rulla[1] && rulla[0] == rulla[2] && rulla[1] == rulla[2]) {
+
+        if (rulla[0] == kys) {
+          voitto = 40;
+          data[msg.author.id]["rahat"] += voitto;
+        } else if (rulla[0] == karvis || rulla[0] == sasu) {
+          voitto = 100;
+          data[msg.author.id]["rahat"] += voitto;
+        } else if (rulla[0] == protect) {
+          voitto = 60;
+          data[msg.author.id]["rahat"] += voitto;
+        }
+      } else {
+      voitto = 0;
+    }
+
+    firebase.database().ref('profiles').set(data);
+    printSlot(rulla[0], rulla[1], rulla[2], voitto, msg.author.id, msg);
+
+
+  },
 
   'dj': (msg) => {
     if (dj == null) {
@@ -142,6 +299,45 @@ const commands = {
       msg.channel.send("Pääpäivän DJ on jo valittu, ttunettaja on " + dj + "!");
     }
 
+  },
+  'wealthiest': (msg) => {
+    ref.on('value', gotData, errData);
+
+    var w_l = {};
+    for (var id in data) {
+      if (data[id]["rahat"] == null || data[id]["rahat"] == undefined) {
+        data[id]["rahat"] = 100;
+      }
+      key = id;
+      value = data[id]["rahat"];
+      w_l[key] = value;
+    }
+
+    var items = Object.keys(w_l).map(function(key) {
+      return {
+        id: key,
+        val: w_l[key]
+      };
+    });
+
+
+    items = items.sort(function(a, b) {
+      return ((a.val > b.val) ? -1 : ((a.val == b.val) ? 0 : 1));
+    });
+
+    lista = "";
+
+    for (var i = 0; i < 5; i++) {
+      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + "\n";
+    }
+
+    msg.channel.send({
+      "embed": {
+        "title": "***RIKKAIMMAT***",
+        "color": 15466496,
+        "description": lista
+      },
+    });
   },
 
   'profiles': (msg) => {
@@ -160,6 +356,7 @@ const commands = {
       },
     });
   },
+
 
   'profile': (msg) => {
 
@@ -209,7 +406,8 @@ const commands = {
           "name": profile_name,
           "motto": "Tyhjä",
           "kuvaus": "Tyhjä",
-          "kuva": null
+          "kuva": null,
+          "rahat": 100
         };
 
         data[target_id] = empty;
@@ -516,6 +714,26 @@ const commands = {
           {
             name: tokens.prefix + "kruuna/klaava",
             value: "Heittää rahea"
+          },
+          {
+            name: tokens.prefix + "money + nimi",
+            value: "Näyttää rahat"
+          },
+          {
+            name: tokens.prefix + "wealthiest",
+            value: "Näyttää listan rikkaimmista."
+          },
+          {
+            name: tokens.prefix + "give + nimi",
+            value: "Antaa rahaasi henkilölle."
+          },
+          {
+            name: tokens.prefix + "slot",
+            value: "Uhkapelaa rahaasi"
+          },
+          {
+            name: tokens.prefix + "voittotaulu",
+            value: "Näyttää voittotaulun (tulossa)"
           },
           {
             name: tokens.prefix + "onkokarvisvammanen",
