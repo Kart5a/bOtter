@@ -252,6 +252,7 @@ const commands = {
   },
 
   "kaikkitaieimitään" : (msg) => {
+    console.log("kaikki tai ei mitään aktivoitu");
 
     var pelaaja = msg.authot.id;
 
