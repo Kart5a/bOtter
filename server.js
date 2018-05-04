@@ -11,7 +11,7 @@ let dispatcher;
 var lastmessager;
 let queue = {};
 
-var coin = client.emojis.find('name', "coin");
+var coins = client.emojis.find('name', "coin");
 
 const streamOptions = {
   seek: 0,
