@@ -251,7 +251,7 @@ const commands = {
     firebase.database().ref('profiles').set(data);
   },
 
-  "kaikkitaieimitään" : (msg) => {
+  "KTEM" : (msg) => {
     console.log("kaikki tai ei mitään aktivoitu");
 
     var pelaaja = msg.authot.id;
