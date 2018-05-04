@@ -574,13 +574,13 @@ const commands = {
   },
   'kaikkitaieimitään' : (msg) => {
 
-    console.log("kaikki tai ei mitään aktivoitu");
-
     var pelaaja = msg.author.id;
 
     if (data[pelaaja]["rahat"] == null || data[pelaaja]["rahat"] == undefined) {
       data[pelaaja]["rahat"] = 100;
     }
+
+    if (data[pelaaja]["rahat"] == 0) return msg.channel.send("Et voi tuplata ilman raheita...");
 
     var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
 
