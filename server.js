@@ -11,7 +11,7 @@ let dispatcher;
 var lastmessager;
 let queue = {};
 
-var coin = msg.guild.emojis.find('name', "coin");
+var coin = client.guild.emojis.find('name', "coin");
 
 const streamOptions = {
   seek: 0,
