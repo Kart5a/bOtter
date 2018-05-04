@@ -576,7 +576,7 @@ const commands = {
 
     console.log("kaikki tai ei mitään aktivoitu");
 
-    var pelaaja = msg.authot.id;
+    var pelaaja = msg.author.id;
 
     if (data[pelaaja]["rahat"] == null || data[pelaaja]["rahat"] == undefined) {
       data[pelaaja]["rahat"] = 100;
