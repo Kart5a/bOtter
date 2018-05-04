@@ -249,8 +249,10 @@ const commands = {
     msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit: " + voitot + "\n" + "Kaikki voitot: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
 
     firebase.database().ref('profiles').set(data);
+
   },
   'kaikkitaieimitään' : (msg) => {
+
     console.log("kaikki tai ei mitään aktivoitu");
 
     var pelaaja = msg.authot.id;
@@ -265,11 +267,11 @@ const commands = {
       data[pelaaja]["rahat"] *= 2;
       msg.channel.sendMessage("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
     } else {
-      data[pelaaja]["rahat"] *= 0;
+      data[pelaaja]["rahat"] == 0;
       msg.channel.sendMessage("Päin vittua... Onnea kannulla hillumiseen.");
     }
 
-    firebase.database().ref('profiles').set(data);
+    firebase.database().ref('profiles').set(data);  
   },
 
   'anna': (msg) => {
