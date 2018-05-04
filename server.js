@@ -251,6 +251,26 @@ const commands = {
     firebase.database().ref('profiles').set(data);
   },
 
+  "kaikkitaieimitään" : (msg) => {
+
+    var pelaaja = msg.authot.id;
+
+    if (data[pelaaja]["rahat"] == null || data[pelaaja]["rahat"] == undefined) {
+      data[pelaaja]["rahat"] = 100;
+    }
+
+    var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+
+    if (rnd >= 51) {
+      data[pelaaja]["rahat"] *= 2;
+      msg.channel.sendMessage("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
+    } else {
+      data[pelaaja]["rahat"] *= 0;
+      msg.channel.sendMessage("Päin vittua... Onnea kannulla hillumiseen.");
+    }
+
+    firebase.database().ref('profiles').set(data);
+  },
 
   'anna': (msg) => {
     let name = msg.content.split(' ')[1];
@@ -1012,6 +1032,10 @@ const commands = {
           {
             name: tokens.prefix + "slot",
             value: "Uhkapelaa rahaasi"
+          },
+          {
+            name: tokens.prefix + "kaikkitaieimitään",
+            value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
           {
             name: tokens.prefix + "voittotaulu",
