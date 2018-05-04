@@ -164,12 +164,11 @@ setInterval(function() {
 
   var keyarr = client.channels.keyArray();
   var v_channels = [];
-  for (var i of keyarr) {
 
-    if (i == "300242143702679552") {
-      return;
-    }
-    
+  var poistettava = keyarr.indexOf("300242143702679552")
+  keyarr = keyarr.splice(poistettava, 1);
+
+  for (var i of keyarr) {
     var kan = client.channels.get(i);
 
     if (kan.type == 'voice') {
