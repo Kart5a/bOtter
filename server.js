@@ -11,7 +11,7 @@ let dispatcher;
 var lastmessager;
 let queue = {};
 
-var coins = client.emojis.find('name', "coin");
+const coins = client.emojis.find('name', "coin");
 
 const streamOptions = {
   seek: 0,
@@ -672,9 +672,8 @@ const commands = {
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
       msg.channel.send("Pelasit: " + data[pelaaja]["rahat"] + coins + ". Päin vittua... Onnea kannulla hillumiseen. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
-    }
       data[pelaaja]["rahat"] = 0;
-
+    }
 
     data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] += 1;
 
