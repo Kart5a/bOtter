@@ -39,7 +39,7 @@ var ref = database.ref('profiles');
 
 var data;
 ref.on('value', gotData, errData);
-const coins = " <:coin:442105100698255361>";
+const coins = client.emojis.get("442105100698255361");
 
 function gotData(_data) {
   data = _data.val();
