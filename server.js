@@ -160,7 +160,7 @@ setInterval(function() {
     changeTitle("ttunes");
   }
 
-// antaa kaikille channelilla oleville rahaa 1/minuutti
+  // antaa kaikille channelilla oleville rahaa 1/minuutti
 
   var keyarr = client.channels.keyArray();
   var v_channels = [];
@@ -210,8 +210,8 @@ const commands = {
         "poggers1": 0,
         "poggers2": 0,
         "poggers3": 0,
-        "annetut" : 0,
-        "vastaanotetut" : 0
+        "annetut": 0,
+        "vastaanotetut": 0
       };
     }
 
@@ -243,7 +243,7 @@ const commands = {
     var vast = data[target_id]["pelit"]["vastaanotetut"];
     var ann = data[target_id]["pelit"]["annetut"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit: " + voitot + "\n" + "Kaikki voitot: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" +"Protect: " + protect1 + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
+    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit: " + voitot + "\n" + "Kaikki voitot: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
 
     firebase.database().ref('profiles').set(data);
   },
@@ -293,8 +293,8 @@ const commands = {
         "poggers1": 0,
         "poggers2": 0,
         "poggers3": 0,
-        "annetut" : 0,
-        "vastaanotetut" : 0
+        "annetut": 0,
+        "vastaanotetut": 0
       };
     }
     if (data[sender_id]["pelit"] == undefined || data[sender_id]["pelit"] == null) {
@@ -309,8 +309,8 @@ const commands = {
         "poggers1": 0,
         "poggers2": 0,
         "poggers3": 0,
-        "annetut" : 0,
-        "vastaanotetut" : 0
+        "annetut": 0,
+        "vastaanotetut": 0
       };
     }
 
@@ -372,6 +372,61 @@ const commands = {
     msg.channel.send("Hänellä on " + data[target_id]["rahat"] + " rahea.");
   },
 
+  'voittotaulu' : (msg) => {
+
+    const karvis = msg.guild.emojis.find("name", "karvis");
+    const sasu = msg.guild.emojis.find("name", "sasu");
+    const protect = msg.guild.emojis.find("name", "protect");
+    const poggers = msg.guild.emojis.find("name", "poggers");
+    const kys = msg.guild.emojis.find("name", "kys2");
+
+    msg.channel.send({
+      "embed": {
+        "color": 15466496,
+        "author": {
+          "name": "SLOTTIPOTTI - VOITOT:",
+          "icon_url": "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
+        },
+        "fields": [{
+          "name": (sasu+" ").repeat(3) + ":",
+          "value": "8 x panos\n"
+        },
+        {
+          "name": (karvis+" ").repeat(3) + ":",
+          "value": "10 x panos\n"
+        }
+        ,
+        {
+          "name": (kys+" ").repeat(3) + ":",
+          "value": "15 x panos\n"
+        }
+        ,
+        {
+          "name": (protect+" ").repeat(3) + ":",
+          "value": "40 x panos\n"
+        }
+        ,
+        {
+          "name": poggers + " X X" + ":",
+          "value": "2 x panos\n"
+        }
+        ,
+        {
+          "name": poggers + " " + poggers + " X" + ":",
+          "value": "25 x panos\n"
+        }
+        ,
+        {
+          "name":  (poggers+" ").repeat(3) + ":",
+          "value": "100 x panos\n"
+        }
+      ]
+      }
+    });
+
+
+  },
+
   'slot': (msg) => {
 
     let panos = msg.content.split(' ')[1];
@@ -392,17 +447,30 @@ const commands = {
     if (data[msg.author.id]["rahat"] < panos) return msg.channel.sendMessage(`Sulla ei oo varaa uhkapelata.`);
     data[msg.author.id]["rahat"] -= panos;
 
+    const tpog = 10;
+    const tsasu = 35;
+    const tkarvis = 25;
+    const tkys = 17.5;
+    const tprotect = 12.6;
+
+    const pog1_v = 2;
+    const pog2_v = 25;
+    const pog3_v = 100;
+    const sasu_v = 8;
+    const karvis_v = 10;
+    const kys_v = 15;
+    const protect_v = 40;
+
     var rulla = [];
     for (var i = 0; i < 3; i++) {
       var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-      if (rnd <= 30) {
+      if (rnd <= tkarvis) {
         rulla.push(karvis);
-
-      } else if (rnd <= 60) {
+      } else if (rnd <= tsasu + tkarvis) {
         rulla.push(sasu);
-      } else if (rnd <= 80) {
+      } else if (rnd <= tsasu + tkarvis + tkys) {
         rulla.push(kys);
-      } else if (rnd <= 90) {
+      } else if (rnd <= tsasu + tkarvis + tprotect + tkys) {
         rulla.push(protect);
       } else {
         rulla.push(poggers);
@@ -422,20 +490,20 @@ const commands = {
         "poggers1": 0,
         "poggers2": 0,
         "poggers3": 0,
-        "annetut" : 0,
-        "vastaanotetut" : 0
+        "annetut": 0,
+        "vastaanotetut": 0
       };
     }
 
     if (rulla[0] == poggers && rulla[1] == poggers && rulla[2] == poggers) {
-      voitto = 100 * panos;
+      voitto = pog3_v * panos;
       data[msg.author.id]["rahat"] += voitto;
       if (data[msg.author.id]["pelit"]["poggers3"] == undefined) {
         data[msg.author.id]["pelit"]["poggers3"] = 0;
       }
       data[msg.author.id]["pelit"]["poggers3"] += 1;
     } else if (rulla[0] == poggers && rulla[1] == poggers) {
-      voitto = 5 * panos;
+      voitto = pog2_v * panos;
       data[msg.author.id]["rahat"] += voitto;
       if (data[msg.author.id]["pelit"]["poggesr2"] == undefined) {
         data[msg.author.id]["pelit"]["poggers2"] = 0;
@@ -443,7 +511,7 @@ const commands = {
       data[msg.author.id]["pelit"]["poggers2"] += 1;
       // poggers x 2
     } else if (rulla[0] == poggers) {
-      voitto = 1 * panos;
+      voitto = pog1_v * panos;
       data[msg.author.id]["rahat"] += voitto;
       if (data[msg.author.id]["pelit"]["poggers1"] == undefined) {
         data[msg.author.id]["pelit"]["poggers1"] = 0;
@@ -453,37 +521,38 @@ const commands = {
     } else if (rulla[0] == rulla[1] && rulla[0] == rulla[2] && rulla[1] == rulla[2]) {
 
       if (rulla[0] == kys) {
-        voitto = 6 * panos;
-        data[msg.author.id]["rahat"] += voitto;
+        voitto = kys_v * panos;
 
         if (data[msg.author.id]["pelit"]["kys"] == undefined) {
           data[msg.author.id]["pelit"]["kys"] = 0;
         }
-
         data[msg.author.id]["pelit"]["kys"] += 1;
-      } else if (rulla[0] == karvis || rulla[0] == sasu) {
-        voitto = 12 * panos;
         data[msg.author.id]["rahat"] += voitto;
-        if (rulla[0] == sasu) {
-          if (data[msg.author.id]["pelit"]["sasu"] == undefined) {
-            data[msg.author.id]["pelit"]["sasu"] = 0;
-          }
-          data[msg.author.id]["pelit"]["sasu"] += 1;
-        } else {
-          if (data[msg.author.id]["pelit"]["karvis"] == undefined) {
-            data[msg.author.id]["pelit"]["karvis"] = 0;
-          }
-          data[msg.author.id]["pelit"]["karvis"] += 1;
+
+      } else if (rulla[0] == karvis) {
+        voitto = karvis_v * panos;
+        if (data[msg.author.id]["pelit"]["karvis"] == undefined) {
+          data[msg.author.id]["pelit"]["karvis"] = 0;
         }
-      } else if (rulla[0] == protect) {
-        voitto = 20 * panos;
+        data[msg.author.id]["pelit"]["karvis"] += 1;
         data[msg.author.id]["rahat"] += voitto;
+
+      } else if (rulla[0] == sasu) {
+        voitto = sasu_v * panos;
+        if (data[msg.author.id]["pelit"]["sasu"] == undefined) {
+          data[msg.author.id]["pelit"]["sasu"] = 0;
+        }
+        data[msg.author.id]["pelit"]["sasu"] += 1;
+        data[msg.author.id]["rahat"] += voitto;
+
+      } else if (rulla[0] == protect) {
+        voitto = protect_v * panos;
         if (data[msg.author.id]["pelit"]["protect"] == undefined) {
           data[msg.author.id]["pelit"]["protect"] = 0;
         }
         data[msg.author.id]["pelit"]["protect"] += 1;
-      }
-    } else {
+        data[msg.author.id]["rahat"] += voitto;
+    } }else {
       voitto = 0;
     }
 
@@ -895,23 +964,23 @@ const commands = {
         title: "**__Komennot:__**",
         fields: [{
             name: tokens.prefix + "profiili + jäbän username + (luo / nimi / motto / kuvaus / kuva)",
-            value: "Näyttää käyttäjän profiilin. Suluissa olevilla voi muokata."
+            value: "Näyttää käyttäjän profiilin. Suluissa olevilla voi muokata"
           },
           {
             name: tokens.prefix + "profiilit",
-            value: "Näyttää kaikki tarjolla olevat profiilit."
+            value: "Näyttää kaikki tarjolla olevat profiilit"
           },
           {
             name: tokens.prefix + "pääpäivä",
-            value: "Kertoo onko pääpäivä."
+            value: "Kertoo onko pääpäivä"
           },
           {
             name: tokens.prefix + "pääpäivä_on",
-            value: "Asettaa kyseisen päivän pääpäiväksi."
+            value: "Asettaa kyseisen päivän pääpäiväksi"
           },
           {
             name: tokens.prefix + "pääpäivä_ei",
-            value: "Lopettaa pääpäivän."
+            value: "Lopettaa pääpäivän"
           },
           {
             name: tokens.prefix + "DJ",
@@ -919,7 +988,7 @@ const commands = {
           },
           {
             name: tokens.prefix + "wednesday",
-            value: "Tarkistaa onko keskiviikko."
+            value: "Tarkistaa onko keskiviikko"
           },
           {
             name: tokens.prefix + "kruuna/klaava",
@@ -931,11 +1000,11 @@ const commands = {
           },
           {
             name: tokens.prefix + "rikkaimmat",
-            value: "Näyttää listan rikkaimmista."
+            value: "Näyttää listan rikkaimmista"
           },
           {
             name: tokens.prefix + "anna + nimi",
-            value: "Antaa rahaasi henkilölle."
+            value: "Antaa rahaasi henkilölle"
           },
           {
             name: tokens.prefix + "slot",
@@ -943,7 +1012,7 @@ const commands = {
           },
           {
             name: tokens.prefix + "voittotaulu",
-            value: "Näyttää voittotaulun (tulossa)"
+            value: "Näyttää voittotaulun"
           },
           {
             name: tokens.prefix + "onkokarvisvammanen",
