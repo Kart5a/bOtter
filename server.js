@@ -165,10 +165,18 @@ setInterval(function() {
   var keyarr = client.channels.keyArray();
   var v_channels = [];
   for (var i of keyarr) {
+
+    if (i == "300242143702679552") {
+      return;
+    }
+    
     var kan = client.channels.get(i);
+
     if (kan.type == 'voice') {
       var membrs = kan.members.keyArray();
       for (var m of membrs) {
+
+
         if (data[m]["rahat"] == undefined) {
           data[m]["rahat"] = 0;
         }
