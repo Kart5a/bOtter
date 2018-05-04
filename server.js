@@ -214,7 +214,10 @@ const commands = {
         "poggers2": 0,
         "poggers3": 0,
         "annetut": 0,
-        "vastaanotetut": 0
+        "vastaanotetut": 0,
+        "kaikkitaieimitäänpelit": 0,
+        "kaikkitaieimitään" : 0,
+        "kaikkitaieimitäänhäviöt" = 0
       };
     }
 
@@ -245,8 +248,12 @@ const commands = {
     var protect1 = data[target_id]["pelit"]["protect"];
     var vast = data[target_id]["pelit"]["vastaanotetut"];
     var ann = data[target_id]["pelit"]["annetut"];
+    var kaikkit = data[target_id]["pelit"]["kaikkitaieimitään"];
+    var kaikkitpelit = data[target_id]["pelit"]["kaikkitaieimitäänpelit"];
+    var kaikkithäv = data[target_id]["pelit"]["kaikkitaieimitäänhäviöt"];
+    var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetut"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit: " + voitot + "\n" + "Kaikki voitot: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
+    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voitot: " + kaikkit + "\n" + "\nKaikki tai ei mitään voitettujen pelien määrä: " + kaikkitvoit + "\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
 
     firebase.database().ref('profiles').set(data);
 
@@ -297,7 +304,11 @@ const commands = {
         "poggers2": 0,
         "poggers3": 0,
         "annetut": 0,
-        "vastaanotetut": 0
+        "vastaanotetut": 0,
+        "kaikkitaieimitäänpelit": 0,
+        "kaikkitaieimitäänvoitetut" : 0,
+        "kaikkitaieimitään" : 0,
+        "kaikkitaieimitäänhäviöt" = 0
       };
     }
     if (data[sender_id]["pelit"] == undefined || data[sender_id]["pelit"] == null) {
@@ -313,7 +324,11 @@ const commands = {
         "poggers2": 0,
         "poggers3": 0,
         "annetut": 0,
-        "vastaanotetut": 0
+        "vastaanotetut": 0,
+        "kaikkitaieimitäänpelit": 0,
+        "kaikkitaieimitäänvoitetut" : 0,
+        "kaikkitaieimitään" : 0,
+        "kaikkitaieimitäänhäviöt" = 0
       };
     }
 
@@ -494,7 +509,11 @@ const commands = {
         "poggers2": 0,
         "poggers3": 0,
         "annetut": 0,
-        "vastaanotetut": 0
+        "vastaanotetut": 0,
+        "kaikkitaieimitäänpelit": 0,
+        "kaikkitaieimitäänvoitetut" : 0,
+        "kaikkitaieimitään" : 0,
+        "kaikkitaieimitäänhäviöt" = 0
       };
     }
 
@@ -576,6 +595,27 @@ const commands = {
 
     var pelaaja = msg.author.id;
 
+    if (data[msg.author.id]["pelit"] == undefined || data[msg.author.id]["pelit"] == null) {
+      data[msg.author.id]["pelit"] = {
+        "pelit": 0,
+        "voitot": 0,
+        "yhtsumma": 0,
+        "sasu": 0,
+        "karvis": 0,
+        "kys": 0,
+        "protect": 0,
+        "poggers1": 0,
+        "poggers2": 0,
+        "poggers3": 0,
+        "annetut": 0,
+        "vastaanotetut": 0,
+        "kaikkitaieimitäänpelit": 0,
+        "kaikkitaieimitäänvoitetut" : 0,
+        "kaikkitaieimitään" : 0,
+        "kaikkitaieimitäänhäviöt" = 0
+      };
+    }
+
     if (data[pelaaja]["rahat"] == null || data[pelaaja]["rahat"] == undefined) {
       data[pelaaja]["rahat"] = 100;
     }
@@ -587,7 +627,12 @@ const commands = {
     if (rnd >= 51) {
       data[pelaaja]["rahat"] *= 2;
       msg.channel.send("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + ".");
+      data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] += 1;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] += 1;
+      data[pelaaja]["pelit"]["kaikkitaieimitään"] += data[pelaaja]["rahat"]/2;
     } else {
+      data[pelaaja]["rahat"]["kaikkitaieimitäänpelit"] += 1;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
       data[pelaaja]["rahat"] = 0;
       msg.channel.send("Päin vittua... Onnea kannulla hillumiseen.");
     }
