@@ -398,7 +398,7 @@ const commands = {
         ,
         {
           "name": (kys+" ").repeat(3) + ":",
-          "value": "15 x panos\n"
+          "value": "12 x panos\n"
         }
         ,
         {
@@ -458,7 +458,7 @@ const commands = {
     const pog3_v = 100;
     const sasu_v = 8;
     const karvis_v = 10;
-    const kys_v = 15;
+    const kys_v = 12;
     const protect_v = 40;
 
     var rulla = [];
