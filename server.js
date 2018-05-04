@@ -581,9 +581,11 @@ const commands = {
       edit += all[i] + " ";
     }
 
-    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !profile ja discordnimi`);
-
+    if ((name == '' || name === undefined)) {
+      name = msg.author.id;
+    }
     name = name.replace(/\D/g, '');
+
 
     var u;
     var flag = false;
