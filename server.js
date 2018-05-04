@@ -11,7 +11,7 @@ let dispatcher;
 var lastmessager;
 let queue = {};
 
-const coins = client.emojis.find('name', "coin");
+
 
 const streamOptions = {
   seek: 0,
@@ -39,6 +39,7 @@ var ref = database.ref('profiles');
 
 var data;
 ref.on('value', gotData, errData);
+const coins = client.emojis.find('name', "coin");
 
 function gotData(_data) {
   data = _data.val();
