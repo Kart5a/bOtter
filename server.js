@@ -698,6 +698,7 @@ const commands = {
         "description": lista
       },
     });
+    firebase.database().ref('profiles').set(data);
   },
 
   'profiilit': (msg) => {
