@@ -217,7 +217,7 @@ const commands = {
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
         "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" = 0
+        "kaikkitaieimitäänhäviöt" : 0
       };
     }
 
@@ -253,7 +253,7 @@ const commands = {
     var kaikkithäv = data[target_id]["pelit"]["kaikkitaieimitäänhäviöt"];
     var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetut"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voitot: " + kaikkit + "\n" + "\nKaikki tai ei mitään voitettujen pelien määrä: " + kaikkitvoit + "\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
+    msg.channel.send("```Nimi: " + data[target_id]["name"] + "\nPelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + "\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
 
     firebase.database().ref('profiles').set(data);
 
@@ -308,7 +308,7 @@ const commands = {
         "kaikkitaieimitäänpelit": 0,
         "kaikkitaieimitäänvoitetut" : 0,
         "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" = 0
+        "kaikkitaieimitäänhäviöt" : 0
       };
     }
     if (data[sender_id]["pelit"] == undefined || data[sender_id]["pelit"] == null) {
@@ -328,7 +328,7 @@ const commands = {
         "kaikkitaieimitäänpelit": 0,
         "kaikkitaieimitäänvoitetut" : 0,
         "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" = 0
+        "kaikkitaieimitäänhäviöt" : 0
       };
     }
 
@@ -513,7 +513,7 @@ const commands = {
         "kaikkitaieimitäänpelit": 0,
         "kaikkitaieimitäänvoitetut" : 0,
         "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" = 0
+        "kaikkitaieimitäänhäviöt" : 0
       };
     }
 
@@ -612,7 +612,7 @@ const commands = {
         "kaikkitaieimitäänpelit": 0,
         "kaikkitaieimitäänvoitetut" : 0,
         "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" = 0
+        "kaikkitaieimitäänhäviöt" : 0
       };
     }
 
@@ -623,6 +623,13 @@ const commands = {
     if (data[pelaaja]["rahat"] == 0) return msg.channel.send("Et voi tuplata ilman raheita...");
 
     var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+
+    if (data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitään"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
+      data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] = 0;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] = 0;
+      data[pelaaja]["pelit"]["kaikkitaieimitään"] = 0;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] = 0;
+    }
 
     if (rnd >= 51) {
       data[pelaaja]["rahat"] *= 2;
