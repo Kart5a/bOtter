@@ -631,9 +631,9 @@ const commands = {
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] = 0;
     }
 
-    if (rnd >= 51) {
+    if (rnd > 51) {
       data[pelaaja]["rahat"] *= 2;
-      msg.channel.send("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + " rahea.");
+      msg.channel.send("Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + " rahea. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] += 1;
       data[pelaaja]["pelit"]["kaikkitaieimitään"] += data[pelaaja]["rahat"]/2;
@@ -641,7 +641,7 @@ const commands = {
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
       data[pelaaja]["rahat"] = 0;
-      msg.channel.send("Päin vittua... Onnea kannulla hillumiseen.");
+      msg.channel.send("Päin vittua... Onnea kannulla hillumiseen. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
     }
 
     data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] += 1;
