@@ -224,7 +224,7 @@ const commands = {
     name = name.replace(/\D/g, '');
     var target_id = name;
 
-    if (target_id == itmes[0]) {
+    if (target_id == items[0]) {
       massimies = "MASSIKEISARI (RIKKAIN JA PARAS)";
     } else {
       massimies = "";
