@@ -11,6 +11,8 @@ let dispatcher;
 var lastmessager;
 let queue = {};
 
+var coin = msg.guild.emojis.find('name', "coin");
+
 const streamOptions = {
   seek: 0,
   volume: 0.06,
@@ -62,7 +64,7 @@ function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
   var rahat = "" + data[target_id]["rahat"];
   var väli1 = " ".repeat(8 - rahat.length);
-  var str = "Rahat: " + rahat + ", Panos: " + _panos + "\n\n" + "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas + "    -    |" + "\n\nVoitit: " + _voitto;
+  var str = "Rahat: " + rahat + coins + ", Panos: " + _panos + "\n\n" + "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas + "    -    |" + "\n\nVoitit: " + _voitto + coins;
 
   msg.channel.send({
     "embed": {
@@ -124,7 +126,7 @@ function printProfile(target_id, msg) {
           },
           {
             "name": "***___Rahat:___***",
-            "value": rahat
+            "value": rahat + coins
           },
           {
             "name": "***___Aika kannulla:___***",
@@ -282,7 +284,7 @@ const commands = {
     var kaikkithäv = data[target_id]["pelit"]["kaikkitaieimitäänhäviöt"];
     var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetut"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["name"] +  " " + massimies+ "\nPelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + "\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + "\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + "\n\nAnnetut rahet: " + ann + "\nVastaanotetut rahet: " + vast + "```");
+    msg.channel.send("```Nimi: " + data[target_id]["name"] +  " " + massimies+ "\nSlotpelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + " coins\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + " coins\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + " coins\n\nAnnetut rahet: " + ann + " coins\nVastaanotetut rahet: " + vast + " coins```");
 
     firebase.database().ref('profiles').set(data);
 
@@ -394,7 +396,7 @@ const commands = {
       firebase.database().ref('profiles').set(data);
     }
 
-    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Sulla on ` + data[sender_id]["rahat"] + " rahea.");
+    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Sulla on ` + data[sender_id]["rahat"] + coins);
 
     name = name.replace(/\D/g, '');
 
@@ -416,7 +418,7 @@ const commands = {
       data[target_id]["rahat"] = 100;
     }
 
-    msg.channel.send("Hänellä on " + data[target_id]["rahat"] + " rahea.");
+    msg.channel.send("Hänellä on " + data[target_id]["rahat"] + coins);
   },
 
   'voittotaulu' : (msg) => {
@@ -662,14 +664,14 @@ const commands = {
 
     if (rnd > 51) {
       data[pelaaja]["rahat"] *= 2;
-      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"]/2 + " rahea. Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + " rahea. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
+      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"]/2 + coins +". Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] +  coins ". Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] += 1;
       data[pelaaja]["pelit"]["kaikkitaieimitään"] += data[pelaaja]["rahat"]/2;
     } else {
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
-      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"] + " rahea. Päin vittua... Onnea kannulla hillumiseen. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
+      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"] + coins +". Päin vittua... Onnea kannulla hillumiseen. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
     }
       data[pelaaja]["rahat"] = 0;
 
@@ -719,7 +721,7 @@ const commands = {
     lista = "";
 
     for (var i = 0; i < 5; i++) {
-      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + "\n";
+      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + "\n";
     }
 
     msg.channel.send({
