@@ -160,25 +160,20 @@ setInterval(function() {
     changeTitle("ttunes");
   }
 
-  // antaa kaikille channelilla oleville rahaa 1/minuutti
 
   var keyarr = client.channels.keyArray();
   var v_channels = [];
-
-  var poistettava = keyarr.indexOf("300242143702679552")
-  keyarr = keyarr.splice(poistettava, 1);
-
   for (var i of keyarr) {
     var kan = client.channels.get(i);
 
-    if (kan.type == 'voice') {
+    if (kan.type == 'voice' && kan.id != "300242143702679552") {
       var membrs = kan.members.keyArray();
       for (var m of membrs) {
-
 
         if (data[m]["rahat"] == undefined) {
           data[m]["rahat"] = 0;
         }
+
         data[m]["rahat"] += 1;
         if (data[m]["aikakannuilla"] == undefined) {
           data[m]["aikakannuilla"] = 0;
@@ -187,6 +182,7 @@ setInterval(function() {
       }
     }
   }
+  console.log("intervallin loppu")
   firebase.database().ref('profiles').set(data);
 
 }, 60000);
