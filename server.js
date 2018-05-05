@@ -159,6 +159,7 @@ const commands = {
   'kauppa': (msg) => {
 
     var käyttäjä = msg.author.id;
+      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     if (data[käyttäjä]["pelit"] == undefined || data[käyttäjä]["pelit"] == null) {
       data[käyttäjä]["pelit"] = {
@@ -210,6 +211,8 @@ const commands = {
     let ostos = msg.content.split(' ')[1];
     var ostaja = msg.author.id;
 
+      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
+
     if ((ostos == '' || ostos === undefined)) return msg.channel.sendMessage(`Kirjoita !osta ja tuotteen nimi`);
     var rahat = data[ostaja]["rahat"];
 
@@ -234,6 +237,8 @@ const commands = {
   'pelidata': (msg) => {
 
     ref.on('value', gotData, errData);
+
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     var w_l = {};
     for (var id in data) {
@@ -339,6 +344,7 @@ const commands = {
     let name = msg.content.split(' ')[1];
     let amount = msg.content.split(' ')[2];
 
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !anna ja summa`);
     if (isNaN(amount)) return msg.channel.sendMessage(amount + ` ei voida antaa :D`);
@@ -439,6 +445,8 @@ const commands = {
     ref.on('value', gotData, errData);
     var sender_id = msg.author.id;
 
+      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
+
     if (data[sender_id]["rahat"] == null || data[sender_id]["rahat"] == undefined) {
       data[sender_id]["rahat"] = 100;
       firebase.database().ref('profiles').set(data);
@@ -515,7 +523,7 @@ const commands = {
   'slot': (msg) => {
 
     let panos = msg.content.split(' ')[1];
-
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     if ((panos == '' || panos === undefined)) {
       panos = 10;
@@ -661,6 +669,7 @@ const commands = {
 
   'kaikkitaieimitään': (msg) => {
 
+      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
     var pelaaja = msg.author.id;
 
     if (data[msg.author.id]["pelit"] == undefined || data[msg.author.id]["pelit"] == null) {
@@ -1290,7 +1299,7 @@ setInterval(function() {
   for (var i of keyarr) {
     var kan = client.channels.get(i);
 
-    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "404378873380470786") {
+    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "404378873380470786" && kan.id != "422007359507005440")  {
       var membrs = kan.members.keyArray();
       for (var m of membrs) {
         var usr = kan.members.get(m);
