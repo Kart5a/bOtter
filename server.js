@@ -1,28 +1,29 @@
+// ALKUHÖMPÖNPÖMPÄT
 const {
   Client
 } = require('discord.js');
 const yt = require('ytdl-core');
 const tokens = require('./tokens.json');
-var firebase = require('firebase');
+const firebase = require('firebase');
 const client = new Client();
 
+// MUSABOTIN VARIABLEJA
 let voiceChannel;
 let dispatcher;
-var lastmessager;
 let queue = {};
-
-
-
 const streamOptions = {
   seek: 0,
   volume: 0.06,
   audioonly: true
 };
 
+// SERVERIN VARIABLEJA
 var pääpäivä = false;
 var dj = null;
-let date = [0, 0, 0];
+var date = [0, 0, 0];
+var coins;
 
+// FIREBASEN SETUP
 var config = {
   apiKey: "AIzaSyCRlwc_0YwgbeY12i9Bhe3oIcCHwyJbcm8",
   authDomain: "botter-bot.firebaseapp.com",
@@ -31,25 +32,14 @@ var config = {
   storageBucket: "botter-bot.appspot.com",
   messagingSenderId: "963103793875"
 };
-
 firebase.initializeApp(config);
-
 var database = firebase.database();
 var ref = database.ref('profiles');
 
 var data;
 ref.on('value', gotData, errData);
 
-
-function gotData(_data) {
-  data = _data.val();
-}
-
-function errData(err) {
-  console.log("Error!");
-  console.log(err);
-}
-
+// VAIHTAA BOTIN TEKSTIÄ
 function changeTitle(text) {
   client.user.setPresence({
     game: {
@@ -59,8 +49,7 @@ function changeTitle(text) {
   });
 }
 
-var coins;
-
+// LÄHETTÄÄ PELIAUTOMAATTITIEDOT
 function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
   ref.on('value', gotData, errData);
@@ -86,6 +75,7 @@ function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
 }
 
+// LÄHETTÄÄ PROFIILIN TIEDOT
 function printProfile(target_id, msg) {
 
   ref.on('value', gotData, errData);
@@ -142,58 +132,22 @@ function printProfile(target_id, msg) {
   }
 }
 
-setInterval(function() {
-  ref.on('value', gotData, errData);
-  var pv = new Date();
-  pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
-  var day = pv.getDay();
-
-  if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
-    pääpäivä = true;
-  } else {
-    pääpäivä = false;
-    dj = null;
-    date = [0, 0, 0];
-  }
-
-  if (pääpäivä == true) {
-    changeTitle("PÄÄPÄIVÄ");
-    return;
-  } else if (day === 3) {
-    changeTitle("Wednesday");
-    return;
-  } else {
-    changeTitle("ttunes");
-  }
-
-
-  var keyarr = client.channels.keyArray();
-  var v_channels = [];
-  for (var i of keyarr) {
-    var kan = client.channels.get(i);
-
-    if (kan.type == 'voice' && kan.id != "300242143702679552") {
-      var membrs = kan.members.keyArray();
-      for (var m of membrs) {
-
-        if (data[m]["rahat"] == undefined) {
-          data[m]["rahat"] = 0;
-        }
-
-        data[m]["rahat"] += 1;
-        if (data[m]["aikakannuilla"] == undefined) {
-          data[m]["aikakannuilla"] = 0;
-        }
-        data[m]["aikakannuilla"] += 1;
-      }
+// REAGOI VIESTEIHIN EMOJIEILLA
+function reagoi(sanalist, emojilist, msg) {
+  var f = false;
+  for (var sana of sanalist) {
+    if (sana.test(msg.content) === true) {
+      f = true;
     }
   }
-  console.log("intervallin loppu")
-  firebase.database().ref('profiles').set(data);
+  if (!f) return;
+  for (var emo of emojilist) {
+    var emoji = msg.guild.emojis.find('name', emo);
+    msg.react(emoji);
+  }
+}
 
-}, 60000);
-
-
+// KAIKKI KOMENNOT
 const commands = {
 
   'pelidata': (msg) => {
@@ -427,13 +381,6 @@ const commands = {
   },
 
   'voittotaulu' : (msg) => {
-
-    const karvis = msg.guild.emojis.find("name", "karvis");
-    const sasu = msg.guild.emojis.find("name", "sasu");
-    const protect = msg.guild.emojis.find("name", "protect");
-    const poggers = msg.guild.emojis.find("name", "poggers");
-    const kys = msg.guild.emojis.find("name", "kys2");
-
     msg.channel.send({
       "embed": {
         "color": 15466496,
@@ -490,15 +437,9 @@ const commands = {
       panos = 10;
     }
     if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla positiivinen luku");
-    if (panos <= 0) return msg.channel.sendMessage(`Panos pitää olla positiivinen luku!`);
+    if (panos < 5) return msg.channel.sendMessage(`Panos pitää olla vähintään 5 ` + coins);
 
     panos = Math.floor(panos);
-
-    const karvis = msg.guild.emojis.find("name", "karvis");
-    const sasu = msg.guild.emojis.find("name", "sasu");
-    const protect = msg.guild.emojis.find("name", "protect");
-    const poggers = msg.guild.emojis.find("name", "poggers");
-    const kys = msg.guild.emojis.find("name", "kys2");
 
     ref.on('value', gotData, errData);
 
@@ -631,6 +572,7 @@ const commands = {
 
 
   },
+
   'kaikkitaieimitään' : (msg) => {
 
     var pelaaja = msg.author.id;
@@ -660,7 +602,7 @@ const commands = {
       data[pelaaja]["rahat"] = 100;
     }
 
-    if (data[pelaaja]["rahat"] == 0) return msg.channel.send("Et voi tuplata ilman raheita...");
+    if (data[pelaaja]["rahat"] < 500) return msg.channel.send("Tarvitset vähintään 500" + coins + " pelataksesi kaikki tai ei mitään.");
 
     var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
 
@@ -701,6 +643,7 @@ const commands = {
     }
 
   },
+
   'rikkaimmat': (msg) => {
     ref.on('value', gotData, errData);
 
@@ -758,7 +701,6 @@ const commands = {
       },
     });
   },
-
 
   'profiili': (msg) => {
 
@@ -951,7 +893,6 @@ const commands = {
     }
   },
 
-
   'queue': (msg) => {
     if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja jonoon: ${tokens.prefix}add`);
     let tosend = [];
@@ -960,6 +901,7 @@ const commands = {
     });
     msg.channel.sendMessage(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
   },
+
   'pääpäivä': (msg) => {
     var pv = new Date();
     pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
@@ -1001,6 +943,7 @@ const commands = {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
   },
+
   'pääpäivä_ei': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
@@ -1019,6 +962,7 @@ const commands = {
       msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
     }
   },
+
   'wednesday': (msg) => {
 
     //IS IT WEDNESDAY MY DUDES?
@@ -1194,35 +1138,103 @@ const commands = {
 
 };
 
+// CLIENTIN OLLESSA VALMIS
 client.on('ready', () => {
   console.log('ready!');
+  coins = client.emojis.find("name", "coin");
+
+  karvis = client.emojis.find("name", "karvis");
+  sasu = client.emojis.find("name", "sasu");
+  protect = client.emojis.find("name", "protect");
+  //poggers =  "<a:popoggers:442267614979293202>";
+  poggers = client.emojis.find("name", "poggers");
+  kys = client.emojis.find("name", "kys2");
+
 });
 
-
-function reagoi(sanalist, emojilist, msg) {
-  var f = false;
-  for (var sana of sanalist) {
-    if (sana.test(msg.content) === true) {
-      f = true;
-    }
-  }
-  if (!f) return;
-  for (var emo of emojilist) {
-    var emoji = msg.guild.emojis.find('name', emo);
-    msg.react(emoji);
-  }
-}
-
+// CLIENTIN VASTAANOTTESSA VIESTIN
 client.on('message', msg => {
-  coins = msg.guild.emojis.find("name", "coin");
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   reagoi([/homo/, /autisti/], ["sasu", "karvis"], msg);
   //reagoi([/kys/], ["kys2", "protect"], msg);
 
-
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
 });
 
+// INTERVALLIFUNKTIO MINUUTIN VÄLEIN
+setInterval(function() {
+  ref.on('value', gotData, errData);
+  var pv = new Date();
+  pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
+  var day = pv.getDay();
+
+  if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
+    pääpäivä = true;
+  } else {
+    pääpäivä = false;
+    dj = null;
+    date = [0, 0, 0];
+  }
+
+  if (pääpäivä == true) {
+    changeTitle("PÄÄPÄIVÄ");
+    return;
+  } else if (day === 3) {
+    changeTitle("Wednesday");
+    return;
+  } else {
+    changeTitle("ttunes");
+  }
+
+
+  var keyarr = client.channels.keyArray();
+  var v_channels = [];
+  for (var i of keyarr) {
+    var kan = client.channels.get(i);
+
+    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "404378873380470786") {
+      var membrs = kan.members.keyArray();
+      for (var m of membrs) {
+        var usr = kan.members.get(m);
+        if (!usr.deaf) {
+
+        if (data[m]["rahat"] == undefined) {
+          data[m]["rahat"] = 0;
+        }
+
+        data[m]["rahat"] += 10;
+        if (data[m]["aikakannuilla"] == undefined) {
+          data[m]["aikakannuilla"] = 0;
+        }
+        data[m]["aikakannuilla"] += 1;
+      } else {
+        console.log(data[m]["name"]+ " oli kuuro");
+      }
+    }
+    }
+  }
+  console.log("intervallin loppu")
+  firebase.database().ref('profiles').set(data);
+
+}, 60000);
+
+// FIREBASEN DATAKÄSITTELYFUNKTIOITA
+function gotData(_data) {
+  data = _data.val();
+}
+function errData(err) {
+  console.log("Error!");
+  console.log(err);
+}
+
+// emojilist
+var karvis;
+var sasu;
+var protect;
+var poggers;
+var kys;
+
+// BOTIN KIRJAUTUMINEN
 client.login(tokens.d_token);
