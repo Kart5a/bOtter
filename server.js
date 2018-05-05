@@ -39,7 +39,7 @@ var ref = database.ref('profiles');
 
 var data;
 ref.on('value', gotData, errData);
-const coins = client.emojis.get("442105100698255361");
+
 
 function gotData(_data) {
   data = _data.val();
@@ -59,13 +59,16 @@ function changeTitle(text) {
   });
 }
 
+var coins;
+
 function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
   ref.on('value', gotData, errData);
 
+
   var rahat = "" + data[target_id]["rahat"];
   var väli1 = " ".repeat(8 - rahat.length);
-  var str = "Rahat: " + rahat + coins + ", Panos: " + _panos + "\n\n" + "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas + "    -    |" + "\n\nVoitit: " + _voitto + coins;
+  var str = "Rahat: " + rahat + coins + ", Panos: " + _panos + coins +"\n\n" + "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas + "    -    |" + "\n\nVoitit: " + _voitto + coins;
 
   msg.channel.send({
     "embed": {
@@ -296,8 +299,9 @@ const commands = {
     let amount = msg.content.split(' ')[2];
 
 
-    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !give ja summa`);
+    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !anna ja summa`);
     if (isNaN(amount)) return msg.channel.sendMessage(amount + ` ei voida antaa :D`);
+    if (amount == undefined || amount == "") return msg.channel.sendMessage(`Laita summa!!!`);
 
     if (parseInt(amount) < 0) {
       return msg.channel.sendMessage("Älä saatana yritä viedä toisilta kädestä");
@@ -480,10 +484,14 @@ const commands = {
   'slot': (msg) => {
 
     let panos = msg.content.split(' ')[1];
+
+
     if ((panos == '' || panos === undefined)) {
       panos = 10;
     }
+    if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla positiivinen luku");
     if (panos <= 0) return msg.channel.sendMessage(`Panos pitää olla positiivinen luku!`);
+
     panos = Math.floor(panos);
 
     const karvis = msg.guild.emojis.find("name", "karvis");
@@ -1206,6 +1214,7 @@ function reagoi(sanalist, emojilist, msg) {
 }
 
 client.on('message', msg => {
+  coins = msg.guild.emojis.find("name", "coin");
 
   //REAGOI EMOTEJA VALITTUIHIN SANOIHIN
   reagoi([/homo/, /autisti/], ["sasu", "karvis"], msg);
