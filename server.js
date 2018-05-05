@@ -1294,6 +1294,16 @@ setInterval(function() {
         var usr = kan.members.get(m);
         if (!usr.deaf) {
 
+          if (data[m] == undefined || data[m] == null) {
+            data[m] = {
+              "name": msg.author.username,
+              "motto": "Tyhjä",
+              "kuvaus": "Tyhjä",
+              "kuva": null,
+              "rahat": 300
+            };
+          }
+
           if (data[m]["pelit"] == undefined || data[m]["pelit"] == null) {
             data[m]["pelit"] = {
               "pelit": 0,
