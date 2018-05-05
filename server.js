@@ -1000,7 +1000,7 @@ const commands = {
     var pv = new Date();
     pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
 
-    if (pvd[0] == date[0] && pvd[1] == date[1] && pvd[2] == date[2]) {
+    if (pvd[0] == bottidata["date"][0] && pvd[1] == bottidata["date"][1] && pvd[2] == bottidata["date"][2]) {
       pääpäivä = true;
     } else {
       pääpäivä = false;
