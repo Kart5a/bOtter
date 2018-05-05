@@ -28,6 +28,8 @@ var poggers;
 var kys;
 
 // FIREBASEN SETUP
+var data;
+
 var config = {
   apiKey: "AIzaSyCRlwc_0YwgbeY12i9Bhe3oIcCHwyJbcm8",
   authDomain: "botter-bot.firebaseapp.com",
@@ -39,13 +41,8 @@ var config = {
 firebase.initializeApp(config);
 var database = firebase.database();
 var ref = database.ref('profiles');
-var ref2 = database.ref('botti');
-
-var data;
-var bottidata;
 
 ref.on('value', gotData, errData);
-ref2.on('value', gotData2, errData);
 
 // VAIHTAA BOTIN TEKSTIÄ
 function changeTitle(text) {
@@ -65,7 +62,7 @@ function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
   var rahat = "" + data[target_id]["rahat"];
   var väli1 = " ".repeat(8 - rahat.length);
-  var str = "Rahat: " + rahat + coins + ", Panos: " + _panos + coins +"\n\n" + "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas + "    -    |" + "\n\nVoitit: " + _voitto + coins;
+  var str = "Rahat: " + rahat + coins + ", Panos: " + _panos + coins + "\n\n" + "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas + "    -    |" + "\n\nVoitit: " + _voitto + coins;
 
   msg.channel.send({
     "embed": {
@@ -75,7 +72,7 @@ function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
         "icon_url": "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
       },
       "fields": [{
-        "name": "***" + data[target_id]["name"] + "***",
+        "name": "***" + data[target_id]["nimi"] + "***",
         "value": str
       }]
     }
@@ -88,7 +85,7 @@ function printProfile(target_id, msg) {
 
   ref.on('value', gotData, errData);
 
-  var nimi = data[target_id]["name"];
+  var nimi = data[target_id]["nimi"];
   var motto = data[target_id]["motto"];
   var kuvaus = data[target_id]["kuvaus"];
   var kuva = data[target_id]["kuva"];
@@ -129,7 +126,7 @@ function printProfile(target_id, msg) {
           },
           {
             "name": "***___Rahat:___***",
-            "value": rahat + coins + " (Perustulo: " + perustulo +")"
+            "value": rahat + coins + " (Perustulo: " + perustulo + ")"
           },
           {
             "name": "***___Aika kannulla:___***",
@@ -159,15 +156,15 @@ function reagoi(sanalist, emojilist, msg) {
 // KAIKKI KOMENNOT
 const commands = {
 
-  'kauppa' : (msg) => {
+  'kauppa': (msg) => {
 
     var käyttäjä = msg.author.id;
 
     if (data[käyttäjä]["pelit"] == undefined || data[käyttäjä]["pelit"] == null) {
       data[käyttäjä]["pelit"] = {
-        "pelit": 0,
-        "voitot": 0,
-        "yhtsumma": 0,
+        "slotpelit": 0,
+        "slotvoitot": 0,
+        "slotvoittosumma": 0,
         "sasu": 0,
         "karvis": 0,
         "kys": 0,
@@ -178,10 +175,10 @@ const commands = {
         "annetut": 0,
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
-        "kaikkitaieimitäänvoitetut" : 0,
-        "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" : 0,
-        "perustulo" : 10
+        "kaikkitaieimitäänvoitetutpelit": 0,
+        "kaikkitaieimitäänvoitot": 0,
+        "kaikkitaieimitäänhäviöt": 0,
+        "perustulo": 10
       };
     }
 
@@ -192,25 +189,24 @@ const commands = {
     firebase.database().ref('profiles').set(data);
 
     var palkka = Math.floor(data[käyttäjä]["pelit"]["perustulo"]);
-    var hintapalkka = 100*Math.pow(palkka, 2);
+    var hintapalkka = 100 * Math.pow(palkka, 2);
 
     msg.channel.send({
       "embed": {
-        "title": "***KAUPPA*** (" + data[käyttäjä]["name"] + ")" ,
+        "title": "***KAUPPA*** (" + data[käyttäjä]["nimi"] + ")",
         "color": 15466496,
         "thumbnail": {
           "url": "https://upload.wikimedia.org/wikipedia/fi/thumb/3/3a/Lidlin_logo.svg/1024px-Lidlin_logo.svg.png"
         },
         "fields": [{
-            "name": "***___Perustulo +5:___***",
-            "value": "___Hinta:___ " + hintapalkka + coins + ". Se olisi sun " + (((palkka - 10)/5)+1) + ". perustulon korotus."
-          }
-        ]
+          "name": "***___Perustulo +5:___***",
+          "value": "___Hinta:___ " + hintapalkka + coins + ". Se olisi sun " + (((palkka - 10) / 5) + 1) + ". perustulon korotus."
+        }]
       }
     });
   },
 
-  'osta' : (msg) => {
+  'osta': (msg) => {
     let ostos = msg.content.split(' ')[1];
     var ostaja = msg.author.id;
 
@@ -220,13 +216,13 @@ const commands = {
     // PERUSTULO
     if (ostos == "perustulo") {
       var perustulonyt = data[ostaja]["pelit"]["perustulo"];
-      var perustulohinta = 100*Math.pow(perustulonyt, 2);
+      var perustulohinta = 100 * Math.pow(perustulonyt, 2);
       if (rahat < perustulohinta) return msg.channel.sendMessage("Ei ole varaa ostaa... nyt keräämään, tarvitset: " + perustulohinta + coins + ".");
 
       data[ostaja]["pelit"]["perustulo"] += 5;
       data[ostaja]["rahat"] -= perustulohinta;
 
-      msg.channel.sendMessage("Onnittelut, perustuloa ostettu! Maksoi: " + perustulohinta + coins + ". Seuraava perustulon korotus maksaa: " + 100*Math.pow(perustulonyt+5, 2) + coins + ".");
+      msg.channel.sendMessage("Onnittelut, perustuloa ostettu! Maksoi: " + perustulohinta + coins + ". Seuraava perustulon korotus maksaa: " + 100 * Math.pow(perustulonyt + 5, 2) + coins + ".");
 
     } else {
       msg.channel.sendMessage("Et voi ostaa mitään ihme " + ostos + " -juttua...");
@@ -241,6 +237,9 @@ const commands = {
 
     var w_l = {};
     for (var id in data) {
+
+      if (isNaN(id)) continue;
+
       if (data[id]["rahat"] == null || data[id]["rahat"] == undefined) {
         data[id]["rahat"] = 300;
       }
@@ -270,16 +269,16 @@ const commands = {
     var target_id = name;
 
     if (target_id == items[0]["id"]) {
-      massimies = "MASSIKEISARI (RIKKAIN JA PARAS)";
+      massikeisari = "MASSIKEISARI (RIKKAIN JA PARAS)";
     } else {
-      massimies = "";
+      massikeisari = "";
     }
 
     if (data[target_id]["pelit"] == undefined || data[target_id]["pelit"] == null) {
       data[käyttäjä]["pelit"] = {
-        "pelit": 0,
-        "voitot": 0,
-        "yhtsumma": 0,
+        "slotpelit": 0,
+        "slotvoitot": 0,
+        "slotvoittosumma": 0,
         "sasu": 0,
         "karvis": 0,
         "kys": 0,
@@ -290,10 +289,10 @@ const commands = {
         "annetut": 0,
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
-        "kaikkitaieimitäänvoitetut" : 0,
-        "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" : 0,
-        "perustulo" : 10
+        "kaikkitaieimitäänvoitetutpelit": 0,
+        "kaikkitaieimitäänvoitot": 0,
+        "kaikkitaieimitäänhäviöt": 0,
+        "perustulo": 10
       };
     }
 
@@ -312,9 +311,9 @@ const commands = {
     if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
 
     var money = data[target_id]["rahat"];
-    var pelit = data[target_id]["pelit"]["pelit"];
-    var voitot = data[target_id]["pelit"]["voitot"];
-    var yht = data[target_id]["pelit"]["yhtsumma"];
+    var pelit = data[target_id]["pelit"]["slotpelit"];
+    var voitot = data[target_id]["pelit"]["slotvoitot"];
+    var yht = data[target_id]["pelit"]["slotvoittosumma"];
     var poggers3 = data[target_id]["pelit"]["poggers3"];
     var poggers2 = data[target_id]["pelit"]["poggers2"];
     var poggers1 = data[target_id]["pelit"]["poggers1"];
@@ -324,13 +323,13 @@ const commands = {
     var protect1 = data[target_id]["pelit"]["protect"];
     var vast = data[target_id]["pelit"]["vastaanotetut"];
     var ann = data[target_id]["pelit"]["annetut"];
-    var kaikkit = data[target_id]["pelit"]["kaikkitaieimitään"];
+    var kaikkit = data[target_id]["pelit"]["kaikkitaieimitäänvoitot"];
     var kaikkitpelit = data[target_id]["pelit"]["kaikkitaieimitäänpelit"];
     var kaikkithäv = data[target_id]["pelit"]["kaikkitaieimitäänhäviöt"];
-    var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetut"];
+    var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetutpelit"];
     var perustulo = data[target_id]["pelit"]["perustulo"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["name"] + massimies + "\nPerustulo: " + perustulo + " coins/min\nSlotpelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + " coins\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + " coins\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + " coins\n\nAnnetut rahet: " + ann + " coins\nVastaanotetut rahet: " + vast + " coins```");
+    msg.channel.send("```Nimi: " + data[target_id]["nimi"] + massikeisari + "\nPerustulo: " + perustulo + " coins/min\nSlotpelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + " coins\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Kys: " + kys1 + "\n" + "Protect: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + " coins\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + " coins\n\nAnnetut rahet: " + ann + " coins\nVastaanotetut rahet: " + vast + " coins```");
 
     firebase.database().ref('profiles').set(data);
 
@@ -371,9 +370,9 @@ const commands = {
 
     if (data[target_id]["pelit"] == undefined || data[target_id]["pelit"] == null) {
       data[target_id]["pelit"] = {
-        "pelit": 0,
-        "voitot": 0,
-        "yhtsumma": 0,
+        "slotpelit": 0,
+        "slotvoitot": 0,
+        "slotvoittosumma": 0,
         "sasu": 0,
         "karvis": 0,
         "kys": 0,
@@ -384,17 +383,17 @@ const commands = {
         "annetut": 0,
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
-        "kaikkitaieimitäänvoitetut" : 0,
-        "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" : 0,
-        "perustulo" : 10
+        "kaikkitaieimitäänvoitetutpelit": 0,
+        "kaikkitaieimitäänvoitot": 0,
+        "kaikkitaieimitäänhäviöt": 0,
+        "perustulo": 10
       };
     }
     if (data[sender_id]["pelit"] == undefined || data[sender_id]["pelit"] == null) {
       data[sender_id]["pelit"] = {
-        "pelit": 0,
-        "voitot": 0,
-        "yhtsumma": 0,
+        "slotpelit": 0,
+        "slotvoitot": 0,
+        "slotvoittosumma": 0,
         "sasu": 0,
         "karvis": 0,
         "kys": 0,
@@ -405,10 +404,10 @@ const commands = {
         "annetut": 0,
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
-        "kaikkitaieimitäänvoitetut" : 0,
-        "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" : 0,
-        "perustulo" : 10
+        "kaikkitaieimitäänvoitetutpelit": 0,
+        "kaikkitaieimitäänvoitot": 0,
+        "kaikkitaieimitäänhäviöt": 0,
+        "perustulo": 10
       };
     }
 
@@ -470,7 +469,7 @@ const commands = {
     msg.channel.send("Hänellä on " + data[target_id]["rahat"] + coins);
   },
 
-  'voittotaulu' : (msg) => {
+  'voittotaulu': (msg) => {
     msg.channel.send({
       "embed": {
         "color": 15466496,
@@ -479,39 +478,34 @@ const commands = {
           "icon_url": "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
         },
         "fields": [{
-          "name": (sasu+" ").repeat(3) + ":",
-          "value": "8 x panos\n"
-        },
-        {
-          "name": (karvis+" ").repeat(3) + ":",
-          "value": "10 x panos\n"
-        }
-        ,
-        {
-          "name": (kys+" ").repeat(3) + ":",
-          "value": "12 x panos\n"
-        }
-        ,
-        {
-          "name": (protect+" ").repeat(3) + ":",
-          "value": "40 x panos\n"
-        }
-        ,
-        {
-          "name": poggers + " X X" + ":",
-          "value": "2 x panos\n"
-        }
-        ,
-        {
-          "name": poggers + " " + poggers + " X" + ":",
-          "value": "25 x panos\n"
-        }
-        ,
-        {
-          "name":  (poggers+" ").repeat(3) + ":",
-          "value": "100 x panos\n"
-        }
-      ]
+            "name": (sasu + " ").repeat(3) + ":",
+            "value": "8 x panos\n"
+          },
+          {
+            "name": (karvis + " ").repeat(3) + ":",
+            "value": "10 x panos\n"
+          },
+          {
+            "name": (kys + " ").repeat(3) + ":",
+            "value": "12 x panos\n"
+          },
+          {
+            "name": (protect + " ").repeat(3) + ":",
+            "value": "40 x panos\n"
+          },
+          {
+            "name": poggers + " X X" + ":",
+            "value": "2 x panos\n"
+          },
+          {
+            "name": poggers + " " + poggers + " X" + ":",
+            "value": "25 x panos\n"
+          },
+          {
+            "name": (poggers + " ").repeat(3) + ":",
+            "value": "100 x panos\n"
+          }
+        ]
       }
     });
 
@@ -569,9 +563,9 @@ const commands = {
     var voitto;
     if (data[msg.author.id]["pelit"] == undefined || data[msg.author.id]["pelit"] == null) {
       data[msg.author.id]["pelit"] = {
-        "pelit": 0,
-        "voitot": 0,
-        "yhtsumma": 0,
+        "slotpelit": 0,
+        "slotvoitot": 0,
+        "slotvoittosumma": 0,
         "sasu": 0,
         "karvis": 0,
         "kys": 0,
@@ -582,10 +576,10 @@ const commands = {
         "annetut": 0,
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
-        "kaikkitaieimitäänvoitetut" : 0,
-        "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" : 0,
-        "perustulo" : 10
+        "kaikkitaieimitäänvoitetutpelit": 0,
+        "kaikkitaieimitäänvoitot": 0,
+        "kaikkitaieimitäänhäviöt": 0,
+        "perustulo": 10
       };
     }
 
@@ -646,16 +640,17 @@ const commands = {
         }
         data[msg.author.id]["pelit"]["protect"] += 1;
         data[msg.author.id]["rahat"] += voitto;
-    } }else {
+      }
+    } else {
       voitto = 0;
     }
 
     if (voitto > 0) {
-      data[msg.author.id]["pelit"]["yhtsumma"] += voitto;
-      data[msg.author.id]["pelit"]["voitot"] += 1;
-      data[msg.author.id]["pelit"]["pelit"] += 1;
+      data[msg.author.id]["pelit"]["slotvoittosumma"] += voitto;
+      data[msg.author.id]["pelit"]["slotvoitot"] += 1;
+      data[msg.author.id]["pelit"]["slotpelit"] += 1;
     } else {
-      data[msg.author.id]["pelit"]["pelit"] += 1;
+      data[msg.author.id]["pelit"]["slotpelit"] += 1;
     }
 
     firebase.database().ref('profiles').set(data);
@@ -664,15 +659,15 @@ const commands = {
 
   },
 
-  'kaikkitaieimitään' : (msg) => {
+  'kaikkitaieimitään': (msg) => {
 
     var pelaaja = msg.author.id;
 
     if (data[msg.author.id]["pelit"] == undefined || data[msg.author.id]["pelit"] == null) {
       data[msg.author.id]["pelit"] = {
-        "pelit": 0,
-        "voitot": 0,
-        "yhtsumma": 0,
+        "slotpelit": 0,
+        "slotvoitot": 0,
+        "slotvoittosumma": 0,
         "sasu": 0,
         "karvis": 0,
         "kys": 0,
@@ -683,10 +678,10 @@ const commands = {
         "annetut": 0,
         "vastaanotetut": 0,
         "kaikkitaieimitäänpelit": 0,
-        "kaikkitaieimitäänvoitetut" : 0,
-        "kaikkitaieimitään" : 0,
-        "kaikkitaieimitäänhäviöt" : 0,
-        "perustulo" : 10
+        "kaikkitaieimitäänvoitetutpelit": 0,
+        "kaikkitaieimitäänvoitot": 0,
+        "kaikkitaieimitäänhäviöt": 0,
+        "perustulo": 10
       };
     }
 
@@ -698,19 +693,19 @@ const commands = {
 
     var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
 
-    if (data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitään"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
+    if (data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitot"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
       data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] = 0;
-      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] = 0;
-      data[pelaaja]["pelit"]["kaikkitaieimitään"] = 0;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] = 0;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitot"] = 0;
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] = 0;
     }
 
     if (rnd > 51) {
       data[pelaaja]["rahat"] *= 2;
-      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"]/2 + coins + ". Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] +  coins + ". Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
+      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"] / 2 + coins + ". Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + coins + ". Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
 
-      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetut"] += 1;
-      data[pelaaja]["pelit"]["kaikkitaieimitään"] += data[pelaaja]["rahat"]/2;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] += 1;
+      data[pelaaja]["pelit"]["kaikkitaieimitäänvoitot"] += data[pelaaja]["rahat"] / 2;
     } else {
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
@@ -724,18 +719,19 @@ const commands = {
   },
 
   'dj': (msg) => {
+    ref.on('value', gotData, errData);
 
-    firebase.database().ref('botti').set(bottidata);
-
-    if (bottidata["dj"] == null) {
+    if (data["dj"] == undefined) {
       if (msg.member.voiceChannel === undefined) return msg.channel.send("Kaikkien ehdokkaiden pitää olla voicekannulla, myös sun!");
       var kannulla = msg.member.voiceChannel.members.keyArray();
       var rnd = Math.floor(Math.random() * Math.floor(kannulla.length + 1));
-      bottidata["dj"] = "<@" + kannulla[rnd] + ">";
-      msg.channel.send("Pääpäivän DJ on " + bottidata["dj"] + "!");
+      data["dj"] = "<@" + kannulla[rnd] + ">";
+      msg.channel.send("Pääpäivän DJ on " + data["dj"] + "!");
     } else {
-      msg.channel.send("Pääpäivän DJ on jo valittu, ttunettaja on " + bottidata["dj"] + "!");
+      msg.channel.send("Pääpäivän DJ on jo valittu, ttunettaja on " + data["dj"] + "!");
     }
+    firebase.database().ref('profiles').set(data);
+
 
   },
 
@@ -744,6 +740,9 @@ const commands = {
 
     var w_l = {};
     for (var id in data) {
+
+      if (isNaN(id)) continue;
+
       if (data[id]["rahat"] == null || data[id]["rahat"] == undefined) {
         data[id]["rahat"] = 300;
       }
@@ -785,7 +784,9 @@ const commands = {
 
     var all_profiles = "";
     for (var id in data) {
-      all_profiles += data[id]['name'] + "\n";
+      if (isNaN(id)) continue;
+
+      all_profiles += "<@" + id + ">\n";
     }
 
     msg.channel.send({
@@ -832,7 +833,7 @@ const commands = {
 
     if ((category == '' || category === undefined)) {
 
-      printProfile(target_id, msg);
+    printProfile(target_id, msg);
 
     } else {
 
@@ -843,7 +844,7 @@ const commands = {
         if (data[target_id] != undefined) return msg.channel.send("Käyttäjällä " + profile_name + " on jo profiili!");
 
         var empty = {
-          "name": profile_name,
+          "nimi": profile_name,
           "motto": "Tyhjä",
           "kuvaus": "Tyhjä",
           "kuva": null,
@@ -867,7 +868,7 @@ const commands = {
 
         if (category == "nimi") {
 
-          data[target_id]["name"] = edit;
+          data[target_id]["nimi"] = edit;
           msg.channel.send("Nimi vaihdettu!");
 
         } else if (category == "motto") {
@@ -1000,12 +1001,12 @@ const commands = {
     var pv = new Date();
     pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
 
-    if (pvd[0] == bottidata["date"][0] && pvd[1] == bottidata["date"][1] && pvd[2] == bottidata["date"][2]) {
+    if (pvd[0] == data["date"][0] && pvd[1] == data["date"][1] && pvd[2] == data["date"][2]) {
       pääpäivä = true;
     } else {
       pääpäivä = false;
       console.log("pääpäivä loppu");
-      bottidata["date"] = [0, 0, 0];
+      data["date"] = [0, 0, 0];
     }
 
     if (pääpäivä == true) {
@@ -1018,7 +1019,7 @@ const commands = {
   'pääpäivä_on': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
       var d = new Date();
-      bottidata["date"] = [d.getDate(), d.getMonth(), d.getYear()];
+      data["date"] = [d.getDate(), d.getMonth(), d.getYear()];
       changeTitle("PÄÄPÄIVÄ");
       if (pääpäivä == true) {
         msg.channel.send("Tänään on jo pääpäivä!");
@@ -1035,13 +1036,13 @@ const commands = {
     } else {
       msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
     }
-    firebase.database().ref('botti').set(bottidata);
+    firebase.database().ref('profiles').set(data);
   },
 
   'pääpäivä_ei': (msg) => {
     if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
-      bottidata["date"] = [0, 0, 0];
+      data["date"] = [0, 0, 0];
 
       if (pääpäivä) {
         msg.channel.send("pääpäivä on peruttu :(");
@@ -1169,7 +1170,7 @@ const commands = {
             value: "Uhkapelaa rahaasi"
           },
           {
-            name: tokens.prefix + "kaikkitaieimitään",
+            name: tokens.prefix + "kaikkitaieimitäänvoitot",
             value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
           {
@@ -1235,6 +1236,9 @@ const commands = {
 // CLIENTIN OLLESSA VALMIS
 client.on('ready', () => {
   console.log('ready!');
+
+  ref.on('value', gotData, errData);
+
   coins = client.emojis.find("name", "coin");
 
   karvis = client.emojis.find("name", "karvis");
@@ -1260,31 +1264,29 @@ client.on('message', msg => {
 // INTERVALLIFUNKTIO MINUUTIN VÄLEIN
 setInterval(function() {
   ref.on('value', gotData, errData);
+
   var pv = new Date();
-  pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
+  var pvd = [pv.getDate(), pv.getMonth(), pv.getYear()];
   var day = pv.getDay();
 
-  if (pvd[0] == bottidata["date"][0] && pvd[1] == bottidata["date"][1] && pvd[2] == bottidata["date"][2]) {
+  if (pvd[0] == data["date"][0] && pvd[1] == data["date"][1] && pvd[2] == data["date"][2]) {
     pääpäivä = true;
   } else {
     pääpäivä = false;
-    dj = null;
-    bottidata["date"] = [0, 0, 0];
+    data["dj"] = null;
+    data["date"] = [0, 0, 0];
   }
 
   if (pääpäivä == true) {
     changeTitle("PÄÄPÄIVÄ");
-    return;
   } else if (day === 3) {
     changeTitle("Wednesday");
-    return;
   } else {
     changeTitle("ttunes");
   }
 
-
   var keyarr = client.channels.keyArray();
-  var v_channels = [];
+
   for (var i of keyarr) {
     var kan = client.channels.get(i);
 
@@ -1293,10 +1295,15 @@ setInterval(function() {
       for (var m of membrs) {
         var usr = kan.members.get(m);
         if (!usr.deaf) {
-
-          if (data[m] == undefined || data[m] == null) {
+          if (usr.id == "430827809418772481" || usr.id == "232916519594491906" || usr.id == "155149108183695360") continue;
+          if (data[m] === undefined) {
+            if (usr.nickname != undefined) {
+              var name1 = usr.nickname;
+            } else {
+              var name1 = "<@" + usr.id + ">"
+            }
             data[m] = {
-              "name": msg.author.username,
+              "nimi": name1,
               "motto": "Tyhjä",
               "kuvaus": "Tyhjä",
               "kuva": null,
@@ -1304,11 +1311,11 @@ setInterval(function() {
             };
           }
 
-          if (data[m]["pelit"] == undefined || data[m]["pelit"] == null) {
+          if (data[m]["pelit"] == undefined) {
             data[m]["pelit"] = {
-              "pelit": 0,
-              "voitot": 0,
-              "yhtsumma": 0,
+              "slotpelit": 0,
+              "slotvoitot": 0,
+              "slotvoittosumma": 0,
               "sasu": 0,
               "karvis": 0,
               "kys": 0,
@@ -1319,35 +1326,35 @@ setInterval(function() {
               "annetut": 0,
               "vastaanotetut": 0,
               "kaikkitaieimitäänpelit": 0,
-              "kaikkitaieimitäänvoitetut" : 0,
-              "kaikkitaieimitään" : 0,
-              "kaikkitaieimitäänhäviöt" : 0,
-              "perustulo" : 10
+              "kaikkitaieimitäänvoitetutpelit": 0,
+              "kaikkitaieimitäänvoitot": 0,
+              "kaikkitaieimitäänhäviöt": 0,
+              "perustulo": 10
             };
           }
 
-        if (data[m]["rahat"] == undefined) {
-          data[m]["rahat"] = 0;
-        }
-        if (data[m]["pelit"]["perustulo"] == undefined) {
-          data[m]["pelit"]["perustulo"] = 10;
-        }
+          if (data[m]["rahat"] == undefined) {
+            data[m]["rahat"] = 0;
+          }
+          if (data[m]["pelit"]["perustulo"] == undefined) {
+            data[m]["pelit"]["perustulo"] = 10;
+          }
+
+          data[m]["rahat"] += data[m]["pelit"]["perustulo"];
 
 
-        data[m]["rahat"] += data[m]["pelit"]["perustulo"];
-        if (data[m]["aikakannuilla"] == undefined) {
-          data[m]["aikakannuilla"] = 0;
+          if (data[m]["aikakannuilla"] == undefined) {
+            data[m]["aikakannuilla"] = 0;
+          }
+          data[m]["aikakannuilla"] += 1;
+        } else {
+          console.log(data[m]["nimi"] + " oli kuuro");
         }
-        data[m]["aikakannuilla"] += 1;
-      } else {
-        console.log(data[m]["name"]+ " oli kuuro");
       }
     }
-    }
   }
-  console.log("intervallin loppu")
+  console.log("Intervalli meni!")
   firebase.database().ref('profiles').set(data);
-  firebase.database().ref('botti').set(bottidata);
 
 }, 60000);
 
@@ -1355,16 +1362,11 @@ setInterval(function() {
 function gotData(_data) {
   data = _data.val();
 }
+
 function errData(err) {
   console.log("Error!");
   console.log(err);
 }
-function gotData2(_data) {
-  bottidata = _data.val();
-}
-
-// emojilist
-
 
 // BOTIN KIRJAUTUMINEN
 client.login(tokens.d_token);
