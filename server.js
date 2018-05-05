@@ -22,6 +22,11 @@ var pääpäivä = false;
 var dj = null;
 var date = [0, 0, 0];
 var coins;
+var karvis;
+var sasu;
+var protect;
+var poggers;
+var kys;
 
 // FIREBASEN SETUP
 var config = {
@@ -717,7 +722,6 @@ const commands = {
     }
     name = name.replace(/\D/g, '');
 
-
     var u;
     var flag = false;
     for (u in client.users.array()) {
@@ -1230,11 +1234,7 @@ function errData(err) {
 }
 
 // emojilist
-var karvis;
-var sasu;
-var protect;
-var poggers;
-var kys;
+
 
 // BOTIN KIRJAUTUMINEN
 client.login(tokens.d_token);
