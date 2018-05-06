@@ -871,7 +871,7 @@ const commands = {
             "value": "Rollasit: " + rnd + ". (1-51 Häviö, 52-100 Voitto)"
           },{
             "name": "Rahat nyt:",
-            "value": ""+data[pelaaja]["rahat"] + coins;
+            "value": ""+data[pelaaja]["rahat"] + coins
           }
         ]
         }
@@ -894,7 +894,7 @@ const commands = {
           },
           {
             "name": "Rahat nyt:",
-            "value": "0" + coins;
+            "value": "0" + coins
           }]
         }
       });
