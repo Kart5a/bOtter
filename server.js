@@ -869,7 +869,11 @@ const commands = {
           "fields": [{
             "name": "***VOITIT: " + data[pelaaja]["rahat"]/2 + coins + "***",
             "value": "Rollasit: " + rnd + ". (1-51 Häviö, 52-100 Voitto)"
-          }]
+          },{
+            "name": "Rahat nyt:",
+            "value": ""+data[pelaaja]["rahat"] + coins;
+          }
+        ]
         }
       });
 
@@ -887,6 +891,10 @@ const commands = {
           "fields": [{
             "name": "***HÄVISIT: " + data[pelaaja]["rahat"] + coins + "***",
             "value": "Rollasit: " + rnd +". (1-51 Häviö, 52-100 Voitto)"
+          },
+          {
+            "name": "Rahat nyt:",
+            "value": "0" + coins;
           }]
         }
       });
