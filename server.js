@@ -274,7 +274,7 @@ const commands = {
       data[voittaja]["pelit"]["ryhmäpelivoitot"] += 1;
       data[voittaja]["rahat"] += potti;
 
-      msg.channel.send("Ryhmäpelin potti: " + potti + coins + "\nVoittaja on: <@" + voittaja + ">\n\nOsallistuneet pelajat:\n" + onnistui + "\n" + ra + ep);
+      msg.channel.send("Ryhmäpelin potti: " + potti + coins + "\nVoittaja on: <@" + voittaja + ">\n\nOsallistuneet pelaajat:\n" + onnistui + "\n" + ra + ep);
       firebase.database().ref('profiles').set(data);
 
     }
