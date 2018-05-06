@@ -1252,7 +1252,7 @@ client.on('ready', () => {
 
   karvis = client.emojis.find("name", "karvis");
   sasu = client.emojis.find("name", "sasu");
-  protect = client.emojis.find("name", "protect");
+  protect = "\:watermelon:"//client.emojis.find("name", "protect");
   //poggers =  "<a:popoggers:442267614979293202>";
   poggers = client.emojis.find("name", "poggers");
   kys = client.emojis.find("name", "alfa");
