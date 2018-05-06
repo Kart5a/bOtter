@@ -158,6 +158,7 @@ function reagoi(sanalist, emojilist, msg) {
 const commands = {
   'ryhmäpeli': (msg) => {
     var viesti;
+    ref.on('value', gotData, errData);
 
     let panos = msg.content.split(' ')[1];
     if ((panos == '' || panos === undefined)) {
@@ -244,11 +245,37 @@ const commands = {
       var voittaja = onnistujat[rnd];
 
       for (var o of onnistujat) {
+
         data[o]["rahat"] -= panos;
+
+        if (data[o]["pelit"]["ryhmäpelit"] == undefined) {
+          data[o]["pelit"]["ryhmäpelit"] = 0;
+        }
+        data[o]["pelit"]["ryhmäpelit"] += 1;
+
+
+        if (data[o]["pelit"]["ryhmäpelihäviötsumma"] == undefined) {
+            data[o]["pelit"]["ryhmäpelihäviötsumma"] = 0;
+        }
+
+        if (o != voittaja) {
+        data[o]["pelit"]["ryhmäpelihäviötsumma"] += panos;
       }
+
+
+      }
+      if (data[voittaja]["pelit"]["ryhmäpelivoitot"] == undefined) {
+        data[voittaja]["pelit"]["ryhmäpelivoitot"] = 0;
+      }
+      if (data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] == undefined) {
+        data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] = 0;
+      }
+      data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] += potti;
+      data[voittaja]["pelit"]["ryhmäpelivoitot"] += 1;
       data[voittaja]["rahat"] += potti;
 
       msg.channel.send("Ryhmäpelin potti: " + potti + coins + "\nVoittaja on: <@" + voittaja + ">\n\nOsallistuneet pelajat:\n" + onnistui + "\n" + ra + ep);
+      firebase.database().ref('profiles').set(data);
 
     }
 
@@ -277,7 +304,10 @@ const commands = {
         "kaikkitaieimitäänvoitetutpelit": 0,
         "kaikkitaieimitäänvoitot": 0,
         "kaikkitaieimitäänhäviöt": 0,
-        "perustulo": 10
+        "perustulo": 10,
+        "ryhmäpelit": 0,
+        "ryhmäpelivoitot":0,
+        "ryhmäpelivoitotsumma":0
       };
     }
 
@@ -395,7 +425,11 @@ const commands = {
         "kaikkitaieimitäänvoitetutpelit": 0,
         "kaikkitaieimitäänvoitot": 0,
         "kaikkitaieimitäänhäviöt": 0,
-        "perustulo": 10
+        "perustulo": 10,
+        "ryhmäpelit": 0,
+        "ryhmäpelivoitot":0,
+        "ryhmäpelivoitotsumma":0,
+        "ryhmäpelihäviötsumma":0
       };
     }
 
@@ -431,8 +465,12 @@ const commands = {
     var kaikkithäv = data[target_id]["pelit"]["kaikkitaieimitäänhäviöt"];
     var kaikkitvoit = data[target_id]["pelit"]["kaikkitaieimitäänvoitetutpelit"];
     var perustulo = data[target_id]["pelit"]["perustulo"];
+    var ryhmäpelit= data[target_id]["pelit"]["ryhmäpelit"];
+    var ryhmäpelivoitot = data[target_id]["pelit"]["ryhmäpelivoitot"];
+    var ryhmäpelivoittosumma = data[target_id]["pelit"]["ryhmäpelivoitotsumma"];
+    var ryhmäpelihäviösumma = data[target_id]["pelit"]["ryhmäpelihäviötsumma"];
 
-    msg.channel.send("```Nimi: " + data[target_id]["nimi"] + massikeisari + "\nPerustulo: " + perustulo + " coins/min\nSlotpelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + " coins\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Alfa: " + kys1 + "\n" + "Vesimeloni: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + " coins\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + " coins\n\nAnnetut rahet: " + ann + " coins\nVastaanotetut rahet: " + vast + " coins```");
+    msg.channel.send("```Nimi: " + data[target_id]["nimi"] + massikeisari + "\nPerustulo: " + perustulo + " coins/min\nSlotpelit: " + pelit + "\n" + "Voitetut pelit sloteista: " + voitot + "\n" + "Kaikki voitot sloteista: " + yht + " coins\n\n" + "Poggers x 3: " + poggers3 + "\n" + "Poggers x 2: " + poggers2 + "\n" + "Poggers x 1: " + poggers1 + "\n" + "Karvis: " + karvis1 + "\n" + "Sasu: " + sasu1 + "\n" + "Alfa: " + kys1 + "\n" + "Vesimeloni: " + protect1 + "\n\nKaikki tai ei mitään pelit: " + kaikkitpelit + "\nKaikki tai ei mitään voittojen määrät: " + kaikkitvoit + "\nKaikki tai ei mitään voitetut rahat: " + kaikkit + " coins\nKaikki tai ei mitään hävityt rahat: " + kaikkithäv + " coins\n\nRyhmäpelit: "+ ryhmäpelit +"\nRyhmäpelivoitot: " + ryhmäpelivoitot + "\nRyhmäpelivoittosumma: " + ryhmäpelivoittosumma + "\nRyhmäpelihäviösumma: " + ryhmäpelihäviösumma + "\n\nAnnetut rahet: " + ann + " coins\nVastaanotetut rahet: " + vast + " coins```");
 
     firebase.database().ref('profiles').set(data);
 
@@ -490,7 +528,11 @@ const commands = {
         "kaikkitaieimitäänvoitetutpelit": 0,
         "kaikkitaieimitäänvoitot": 0,
         "kaikkitaieimitäänhäviöt": 0,
-        "perustulo": 10
+        "perustulo": 10,
+        "ryhmäpelit": 0,
+        "ryhmäpelivoitot":0,
+        "ryhmäpelivoitotsumma":0,
+        "ryhmäpelihäviötsumma":0
       };
     }
     if (data[sender_id]["pelit"] == undefined || data[sender_id]["pelit"] == null) {
@@ -511,7 +553,11 @@ const commands = {
         "kaikkitaieimitäänvoitetutpelit": 0,
         "kaikkitaieimitäänvoitot": 0,
         "kaikkitaieimitäänhäviöt": 0,
-        "perustulo": 10
+        "perustulo": 10,
+        "ryhmäpelit": 0,
+        "ryhmäpelivoitot":0,
+        "ryhmäpelivoitotsumma":0,
+        "ryhmäpelihäviötsumma":0
       };
     }
 
@@ -685,7 +731,11 @@ const commands = {
         "kaikkitaieimitäänvoitetutpelit": 0,
         "kaikkitaieimitäänvoitot": 0,
         "kaikkitaieimitäänhäviöt": 0,
-        "perustulo": 10
+        "perustulo": 10,
+        "ryhmäpelit": 0,
+        "ryhmäpelivoitot":0,
+        "ryhmäpelivoitotsumma":0,
+        "ryhmäpelihäviötsumma":0
       };
     }
 
@@ -788,7 +838,11 @@ const commands = {
         "kaikkitaieimitäänvoitetutpelit": 0,
         "kaikkitaieimitäänvoitot": 0,
         "kaikkitaieimitäänhäviöt": 0,
-        "perustulo": 10
+        "perustulo": 10,
+        "ryhmäpelit": 0,
+        "ryhmäpelivoitot":0,
+        "ryhmäpelivoitotsumma":0,
+        "ryhmäpelihäviötsumma":0
       };
     }
 
@@ -1440,7 +1494,11 @@ setInterval(function() {
               "kaikkitaieimitäänvoitetutpelit": 0,
               "kaikkitaieimitäänvoitot": 0,
               "kaikkitaieimitäänhäviöt": 0,
-              "perustulo": 10
+              "perustulo": 10,
+              "ryhmäpelit": 0,
+              "ryhmäpelivoitot":0,
+              "ryhmäpelivoitotsumma":0,
+              "ryhmäpelihäviötsumma":0
             };
           }
 
