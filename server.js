@@ -270,7 +270,7 @@ const commands = {
       if (data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] == undefined) {
         data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] = 0;
       }
-      data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] += potti;
+      data[voittaja]["pelit"]["ryhmäpelivoitotsumma"] += (potti - panos);
       data[voittaja]["pelit"]["ryhmäpelivoitot"] += 1;
       data[voittaja]["rahat"] += potti;
 
