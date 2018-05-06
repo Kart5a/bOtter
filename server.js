@@ -5,6 +5,7 @@ const {
 const Discord = require('discord.js');
 const yt = require('ytdl-core');
 const tokens = require('./tokens.json');
+const fireb = require('./config.json');
 const firebase = require('firebase');
 const client = new Client();
 
@@ -31,15 +32,7 @@ var kys;
 // FIREBASEN SETUP
 var data;
 
-var config = {
-  apiKey: "AIzaSyCRlwc_0YwgbeY12i9Bhe3oIcCHwyJbcm8",
-  authDomain: "botter-bot.firebaseapp.com",
-  databaseURL: "https://botter-bot.firebaseio.com",
-  projectId: "botter-bot",
-  storageBucket: "botter-bot.appspot.com",
-  messagingSenderId: "963103793875"
-};
-firebase.initializeApp(config);
+firebase.initializeApp(fireb);
 var database = firebase.database();
 var ref = database.ref('profiles');
 
