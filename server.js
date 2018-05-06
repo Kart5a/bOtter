@@ -2,6 +2,7 @@
 const {
   Client
 } = require('discord.js');
+const Discord = require('discord.js');
 const yt = require('ytdl-core');
 const tokens = require('./tokens.json');
 const firebase = require('firebase');
@@ -155,11 +156,108 @@ function reagoi(sanalist, emojilist, msg) {
 
 // KAIKKI KOMENNOT
 const commands = {
+  'ryhmäpeli': (msg) => {
+    var viesti;
+
+    let panos = msg.content.split(' ')[1];
+    if ((panos == '' || panos === undefined)) {
+      panos = 100;
+    }
+    if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla luku");
+    if (panos < 100) return msg.channel.sendMessage(`Ryhmäpelin panos pitää olla vähintään 100 ` + coins);
+
+    panos = Math.floor(panos);
+
+    msg.channel.send("***" + data[msg.author.id]["nimi"] + "*** loi ryhmäpelin panoksella " + panos + ". Liity mukaan painamalla ✅")
+      .then(function(msg) {
+        viesti = msg;
+        msg.react("✅");
+      }).catch(function() {
+        //Something
+      });
+
+    let co = msg.channel.createCollector(m => m);
+    co.on('message', m => {
+      if (m.content.startsWith(tokens.prefix + 'aloita') && msg.author.id == m.author.id) {
+        rollaa(viesti);
+      } else if (m.content.startsWith(tokens.prefix + 'keskeytä')) {
+        msg.channel.sendMessage('Keskeytetään ryhmäpeli.').then(() => {
+          co.stop();
+          viesti = null;
+        });
+      }
+    });
+
+
+    function rollaa(_viesti) {
+      var pelaajat = [];
+      msgreact = _viesti.reactions.array();
+      var osallistujat = msgreact[0].users.keyArray();
+
+      var epäonnistujat = [];
+      var rahattomat = [];
+      var onnistujat = [];
+
+      for (var i = 0; i < osallistujat.length; i++) {
+        if (osallistujat[i] == "430827809418772481") {
+
+        } else if (data[osallistujat[i]] == undefined) {
+          epäonnistujat.push(osallistujat[i]);
+        } else if (data[osallistujat[i]]["rahat"] < panos) {
+          rahattomat.push(osallistujat[i]);
+        } else {
+          onnistujat.push(osallistujat[i]);
+        }
+      }
+
+      console.log(onnistujat, rahattomat, epäonnistujat);
+
+      var onnistui = "";
+      for (var i of onnistujat) {
+        onnistui += "<@" + i + ">\n";
+      }
+
+      var epäonnistui = "";
+      for (var i of epäonnistujat) {
+
+        epäonnistui += "<@" + i + ">\n";
+      }
+
+      var rahattomia = "";
+      for (var i of rahattomat) {
+
+        rahattomia += "<@" + i + ">\n";
+      }
+
+      co.stop();
+      var ep = "";
+      var ra = "";
+      if (onnistujat.length < 2) return msg.channel.send("Ei ole tarpeeksi kelvollisia osallistuja!");
+      if (epäonnistujat.length > 0) {
+        ep = "\nError 404:\n" + epäonnistui;
+      }
+      if (rahattomat.length > 0) {
+        ra = "\nLiian köyhät:\n" + rahattomia;
+      }
+      var potti = panos * onnistujat.length;
+      var rnd = Math.floor(Math.random() * Math.floor(onnistujat.length));
+      var voittaja = onnistujat[rnd];
+
+      for (var o of onnistujat) {
+        data[o]["rahat"] -= panos;
+      }
+      data[voittaja]["rahat"] += potti;
+
+      msg.channel.send("Ryhmäpelin potti: " + potti + coins + "\nVoittaja on: <@" + voittaja + ">\n\nOsallistuneet pelajat:\n" + onnistui + "\n" + ra + ep);
+
+    }
+
+  },
 
   'kauppa': (msg) => {
 
     var käyttäjä = msg.author.id;
-      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     if (data[käyttäjä]["pelit"] == undefined || data[käyttäjä]["pelit"] == null) {
       data[käyttäjä]["pelit"] = {
@@ -211,7 +309,7 @@ const commands = {
     let ostos = msg.content.split(' ')[1];
     var ostaja = msg.author.id;
 
-      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     if ((ostos == '' || ostos === undefined)) return msg.channel.sendMessage(`Kirjoita !osta ja tuotteen nimi`);
     var rahat = data[ostaja]["rahat"];
@@ -274,7 +372,7 @@ const commands = {
     var target_id = name;
 
     if (target_id == items[0]["id"]) {
-      massikeisari = "MASSIKEISARI (RIKKAIN JA PARAS)";
+      massikeisari = " MASSIKEISARI";
     } else {
       massikeisari = "";
     }
@@ -445,7 +543,7 @@ const commands = {
     ref.on('value', gotData, errData);
     var sender_id = msg.author.id;
 
-      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
 
     if (data[sender_id]["rahat"] == null || data[sender_id]["rahat"] == undefined) {
       data[sender_id]["rahat"] = 100;
@@ -669,7 +767,7 @@ const commands = {
 
   'kaikkitaieimitään': (msg) => {
 
-      if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
+    if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
     var pelaaja = msg.author.id;
 
     if (data[msg.author.id]["pelit"] == undefined || data[msg.author.id]["pelit"] == null) {
@@ -842,7 +940,7 @@ const commands = {
 
     if ((category == '' || category === undefined)) {
 
-    printProfile(target_id, msg);
+      printProfile(target_id, msg);
 
     } else {
 
@@ -1179,6 +1277,10 @@ const commands = {
             value: "Uhkapelaa rahaasi"
           },
           {
+            name: tokens.prefix + "ryhmäpeli + panos",
+            value: "Ryhmäuhkapeli ;)"
+          },
+          {
             name: tokens.prefix + "kaikkitaieimitäänvoitot",
             value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
@@ -1252,7 +1354,7 @@ client.on('ready', () => {
 
   karvis = client.emojis.find("name", "karvis");
   sasu = client.emojis.find("name", "sasu");
-  protect = "\:watermelon:"//client.emojis.find("name", "protect");
+  protect = "\:watermelon:" //client.emojis.find("name", "protect");
   //poggers =  "<a:popoggers:442267614979293202>";
   poggers = client.emojis.find("name", "poggers");
   kys = client.emojis.find("name", "alfa");
@@ -1299,7 +1401,7 @@ setInterval(function() {
   for (var i of keyarr) {
     var kan = client.channels.get(i);
 
-    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "404378873380470786" && kan.id != "422007359507005440")  {
+    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "404378873380470786" && kan.id != "422007359507005440") {
       var membrs = kan.members.keyArray();
       for (var m of membrs) {
         var usr = kan.members.get(m);
