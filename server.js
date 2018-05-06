@@ -1281,7 +1281,7 @@ const commands = {
             value: "Ryhmäuhkapeli ;)"
           },
           {
-            name: tokens.prefix + "kaikkitaieimitäänvoitot",
+            name: tokens.prefix + "kaikkitaieimitään",
             value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
           {
