@@ -867,7 +867,7 @@ const commands = {
         "embed": {
           "color": 15466496,
           "fields": [{
-            "name": "***VOITIT: " + data[pelaaja]["rahat"]/2 + coin + "***",
+            "name": "***VOITIT: " + data[pelaaja]["rahat"]/2 + coins + "***",
             "value": "Rollasit: " + rnd + ". (1-51 Häviö, 52-100 Voitto)"
           }]
         }
@@ -885,7 +885,7 @@ const commands = {
             "url": "https://static.naamapalmu.com/files/pp/big/v7vkeefs.jpg"
           },
           "fields": [{
-            "name": "***HÄVISIT: " + data[pelaaja]["rahat"] + coin + "***",
+            "name": "***HÄVISIT: " + data[pelaaja]["rahat"] + coins + "***",
             "value": "Rollasit: " + rnd +". (1-51 Häviö, 52-100 Voitto)"
           }]
         }
