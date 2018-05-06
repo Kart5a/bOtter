@@ -926,7 +926,7 @@ const commands = {
 
     lista = "";
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 10; i++) {
       lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + "\n";
     }
 
