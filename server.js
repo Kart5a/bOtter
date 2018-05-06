@@ -863,14 +863,33 @@ const commands = {
 
     if (rnd > 51) {
       data[pelaaja]["rahat"] *= 2;
-      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"] / 2 + coins + ". Nyt onnisti! Sulla on " + data[pelaaja]["rahat"] + coins + ". Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
+      msg.channel.send({
+        "embed": {
+          "color": 15466496,
+          "fields": [{
+            "name": "***VOITIT: " + data[target_id]["rahat"]/2 + coin + "***",
+            "value": "Rollasit: " + rnd + ". (1-51 Häviö, 52-100 Voitto)"
+          }]
+        }
+      });
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] += 1;
       data[pelaaja]["pelit"]["kaikkitaieimitäänvoitot"] += data[pelaaja]["rahat"] / 2;
     } else {
 
       data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] += data[pelaaja]["rahat"];
-      msg.channel.send("Pelasit: " + data[pelaaja]["rahat"] + coins + ". Päin vittua... Onnea kannulla hillumiseen. Rollasit: " + rnd + ". (1 - 51 Häviö, 52 - 100 Voitto)");
+      msg.channel.send({
+        "embed": {
+          "color": 15466496,
+          "image": {
+            "url": "https://static.naamapalmu.com/files/pp/big/v7vkeefs.jpg"
+          },
+          "fields": [{
+            "name": "***HÄVISIT: " + data[target_id]["rahat"] + coin + "***",
+            "value": "Rollasit: " + rnd +". (1-51 Häviö, 52-100 Voitto)"
+          }]
+        }
+      });
       data[pelaaja]["rahat"] = 0;
     }
 
