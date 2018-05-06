@@ -845,7 +845,7 @@ const commands = {
 
     if (data[pelaaja]["rahat"] < 500) return msg.channel.send("Tarvitset vähintään 500" + coins + " pelataksesi kaikki tai ei mitään.");
 
-    var rnd = Math.floor(Math.random() * Math.floor(100 + 1)); // Luku 1 - 100 väliltä
+    var rnd = Math.floor(Math.random() * Math.floor(100) + 1); // Luku 1 - 100 väliltä
 
     if (data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitot"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
       data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] = 0;
