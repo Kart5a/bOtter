@@ -155,7 +155,7 @@ function luoTiedot(_id) {
   var name;
   try {
     name = usr.get(_id).username;
-  } catch(err) {
+  } catch (err) {
     name = "<@" + _id + ">";
   }
 
@@ -670,92 +670,99 @@ const commands = {
     panos = Math.floor(panos);
 
     ref.on('value', gotData, errData);
-    luoTiedot(msg.author.id);
 
-    if (data[msg.author.id]["rahat"] < panos) return msg.channel.sendMessage(`Sulla ei oo varaa uhkapelata.`);
-    data[msg.author.id]["rahat"] -= panos;
+    try {
 
-    const tpog = 10;
-    const tsasu = 35;
-    const tkarvis = 25;
-    const tkys = 17.5;
-    const tprotect = 12.6;
+      if (data[msg.author.id]["rahat"] < panos) return msg.channel.sendMessage(`Sulla ei oo varaa uhkapelata.`);
+      data[msg.author.id]["rahat"] -= panos;
 
-    const pog1_v = 2;
-    const pog2_v = 25;
-    const pog3_v = 100;
-    const sasu_v = 8;
-    const karvis_v = 10;
-    const kys_v = 12;
-    const protect_v = 40;
+      const tpog = 10;
+      const tsasu = 35;
+      const tkarvis = 25;
+      const tkys = 17.5;
+      const tprotect = 12.6;
 
-    var rulla = [];
-    for (var i = 0; i < 3; i++) {
-      var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-      if (rnd <= tkarvis) {
-        rulla.push(karvis);
-      } else if (rnd <= tsasu + tkarvis) {
-        rulla.push(sasu);
-      } else if (rnd <= tsasu + tkarvis + tkys) {
-        rulla.push(kys);
-      } else if (rnd <= tsasu + tkarvis + tprotect + tkys) {
-        rulla.push(protect);
+      const pog1_v = 2;
+      const pog2_v = 25;
+      const pog3_v = 100;
+      const sasu_v = 8;
+      const karvis_v = 10;
+      const kys_v = 12;
+      const protect_v = 40;
+
+      var rulla = [];
+      for (var i = 0; i < 3; i++) {
+        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+        if (rnd <= tkarvis) {
+          rulla.push(karvis);
+        } else if (rnd <= tsasu + tkarvis) {
+          rulla.push(sasu);
+        } else if (rnd <= tsasu + tkarvis + tkys) {
+          rulla.push(kys);
+        } else if (rnd <= tsasu + tkarvis + tprotect + tkys) {
+          rulla.push(protect);
+        } else {
+          rulla.push(poggers);
+        }
+      }
+
+      var voitto;
+      if (rulla[0] == poggers && rulla[1] == poggers && rulla[2] == poggers) {
+        voitto = pog3_v * panos;
+        data[msg.author.id]["rahat"] += voitto;
+        data[msg.author.id]["pelit"]["poggers3"] += 1;
+      } else if (rulla[0] == poggers && rulla[1] == poggers) {
+        voitto = pog2_v * panos;
+        data[msg.author.id]["rahat"] += voitto;
+        data[msg.author.id]["pelit"]["poggers2"] += 1;
+        // poggers x 2
+      } else if (rulla[0] == poggers) {
+        voitto = pog1_v * panos;
+        data[msg.author.id]["rahat"] += voitto;
+        data[msg.author.id]["pelit"]["poggers1"] += 1;
+        // poggers x 1
+      } else if (rulla[0] == rulla[1] && rulla[0] == rulla[2] && rulla[1] == rulla[2]) {
+
+        if (rulla[0] == kys) {
+          voitto = kys_v * panos;
+          data[msg.author.id]["pelit"]["kys"] += 1;
+          data[msg.author.id]["rahat"] += voitto;
+
+        } else if (rulla[0] == karvis) {
+          voitto = karvis_v * panos;
+          data[msg.author.id]["pelit"]["karvis"] += 1;
+          data[msg.author.id]["rahat"] += voitto;
+
+        } else if (rulla[0] == sasu) {
+          voitto = sasu_v * panos;
+          data[msg.author.id]["pelit"]["sasu"] += 1;
+          data[msg.author.id]["rahat"] += voitto;
+
+        } else if (rulla[0] == protect) {
+          voitto = protect_v * panos;
+          data[msg.author.id]["pelit"]["protect"] += 1;
+          data[msg.author.id]["rahat"] += voitto;
+        }
       } else {
-        rulla.push(poggers);
+        voitto = 0;
       }
-    }
 
-    var voitto;
-    if (rulla[0] == poggers && rulla[1] == poggers && rulla[2] == poggers) {
-      voitto = pog3_v * panos;
-      data[msg.author.id]["rahat"] += voitto;
-      data[msg.author.id]["pelit"]["poggers3"] += 1;
-    } else if (rulla[0] == poggers && rulla[1] == poggers) {
-      voitto = pog2_v * panos;
-      data[msg.author.id]["rahat"] += voitto;
-      data[msg.author.id]["pelit"]["poggers2"] += 1;
-      // poggers x 2
-    } else if (rulla[0] == poggers) {
-      voitto = pog1_v * panos;
-      data[msg.author.id]["rahat"] += voitto;
-      data[msg.author.id]["pelit"]["poggers1"] += 1;
-      // poggers x 1
-    } else if (rulla[0] == rulla[1] && rulla[0] == rulla[2] && rulla[1] == rulla[2]) {
-
-      if (rulla[0] == kys) {
-        voitto = kys_v * panos;
-        data[msg.author.id]["pelit"]["kys"] += 1;
-        data[msg.author.id]["rahat"] += voitto;
-
-      } else if (rulla[0] == karvis) {
-        voitto = karvis_v * panos;
-        data[msg.author.id]["pelit"]["karvis"] += 1;
-        data[msg.author.id]["rahat"] += voitto;
-
-      } else if (rulla[0] == sasu) {
-        voitto = sasu_v * panos;
-        data[msg.author.id]["pelit"]["sasu"] += 1;
-        data[msg.author.id]["rahat"] += voitto;
-
-      } else if (rulla[0] == protect) {
-        voitto = protect_v * panos;
-        data[msg.author.id]["pelit"]["protect"] += 1;
-        data[msg.author.id]["rahat"] += voitto;
+      if (voitto > 0) {
+        data[msg.author.id]["pelit"]["slotvoittosumma"] += voitto;
+        data[msg.author.id]["pelit"]["slotvoitot"] += 1;
+        data[msg.author.id]["pelit"]["slotpelit"] += 1;
+      } else {
+        data[msg.author.id]["pelit"]["slotpelit"] += 1;
       }
-    } else {
-      voitto = 0;
-    }
-
-    if (voitto > 0) {
-      data[msg.author.id]["pelit"]["slotvoittosumma"] += voitto;
-      data[msg.author.id]["pelit"]["slotvoitot"] += 1;
-      data[msg.author.id]["pelit"]["slotpelit"] += 1;
-    } else {
-      data[msg.author.id]["pelit"]["slotpelit"] += 1;
+    } catch (err) {
+      luoTiedot(msg.author.id);
+      msg.channel.sendMessage(`Tapahtui virhe datan kanssa. Korjattu! Kokeile uudelleen.`);
     }
 
     firebase.database().ref('profiles').set(data);
+
     printSlot(rulla[0], rulla[1], rulla[2], voitto, msg.author.id, msg, panos);
+    msg.delete();
 
 
   },
