@@ -278,6 +278,7 @@ function luoTiedot(_id) {
 const commands = {
 
   'ryhmäpeli': (msg) => {
+    if (msg.channel.id != "280272696560975872") return msg.delete();
     var viesti;
     ref.on('value', gotData, errData);
 
@@ -657,6 +658,8 @@ const commands = {
 
     let panos = msg.content.split(' ')[1];
 
+    if (msg.channel.id != "280272696560975872") return msg.delete();
+
 
     if ((panos == '' || panos === undefined)) {
       panos = 10;
@@ -759,6 +762,7 @@ const commands = {
 
   'kaikkitaieimitään': (msg) => {
 
+    if (msg.channel.id != "280272696560975872") return msg.delete();
     if (data[msg.author.id] == undefined) return msg.channel.send("Luo ensin profiili !profiili <username> luo!");
     var pelaaja = msg.author.id;
 
@@ -795,7 +799,7 @@ const commands = {
     if (data[pelaaja]["rahat"] < 500) return msg.channel.send("Tarvitset vähintään 500" + coins + " pelataksesi kaikki tai ei mitään.");
 
     var rnd = Math.floor(Math.random() * Math.floor(100) + 1); // Luku 1 - 100 väliltä
-    
+
     if (data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitot"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] == undefined || data[pelaaja]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
       data[pelaaja]["pelit"]["kaikkitaieimitäänpelit"] = 0;
       data[pelaaja]["pelit"]["kaikkitaieimitäänvoitetutpelit"] = 0;
