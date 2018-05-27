@@ -263,7 +263,7 @@ const commands = {
 
       luoTiedot(msg.author.id);
 
-      if (data[msg.author.id]["pelit"]["es"] < 0) return msg.channel.send("Sulla ei oo juotavaa... ostas ES");
+      if (data[msg.author.id]["pelit"]["es"] <= 0) return msg.channel.send("Sulla ei oo juotavaa... ostas ES");
 
       data[msg.author.id]["pelit"]["es"] -= 1;
       data[msg.author.id]["pelit"]["tyhjätes"] += 1;
