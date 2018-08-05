@@ -170,89 +170,121 @@ function luoTiedot(_id) {
     name = "<@" + _id + ">";
   }
 
-  if (data[_id]["nimi"] == undefined) {
-    data[_id]["nimi"] = name;
-  }
-  if (data[_id]["motto"] == undefined) {
-    data[_id]["motto"] = "-";
-  }
-  if (data[_id]["kuvaus"] == undefined) {
-    data[_id]["kuvaus"] = "-";
-  }
-  if (data[_id]["rahat"] == undefined) {
-    data[_id]["rahat"] = 300;
-  }
-  if (data[_id]["aikakannuilla"] == undefined) {
-    data[_id]["aikakannuilla"] = 0;
-  }
-  if (data[_id]["pelit"]["slotpelit"] == undefined) {
-    data[_id]["pelit"]["slotpelit"] = 0;
-  }
-  if (data[_id]["pelit"]["slotvoitot"] == undefined) {
-    data[_id]["pelit"]["slotvoitot"] = 0;
-  }
-  if (data[_id]["pelit"]["slotvoittosumma"] == undefined) {
-    data[_id]["pelit"]["slotvoittosumma"] = 0;
-  }
-  if (data[_id]["pelit"]["sasu"] == undefined) {
-    data[_id]["pelit"]["sasu"] = 0;
-  }
-  if (data[_id]["pelit"]["karvis"] == undefined) {
-    data[_id]["pelit"]["karvis"] = 0;
-  }
-  if (data[_id]["pelit"]["kys"] == undefined) {
-    data[_id]["pelit"]["kys"] = 0;
-  }
-  if (data[_id]["pelit"]["protect"] == undefined) {
-    data[_id]["pelit"]["protect"] = 0;
-  }
-  if (data[_id]["pelit"]["poggers1"] == undefined) {
-    data[_id]["pelit"]["poggers1"] = 0;
-  }
-  if (data[_id]["pelit"]["poggers2"] == undefined) {
-    data[_id]["pelit"]["poggers2"] = 0;
-  }
-  if (data[_id]["pelit"]["poggers3"] == undefined) {
-    data[_id]["pelit"]["poggers3"] = 0;
-  }
-  if (data[_id]["pelit"]["annetut"] == undefined) {
-    data[_id]["pelit"]["annetut"] = 0;
-  }
-  if (data[_id]["pelit"]["vastaanotetut"] == undefined) {
-    data[_id]["pelit"]["vastaanotetut"] = 0;
-  }
-  if (data[_id]["pelit"]["kaikkitaieimitäänpelit"] == undefined) {
-    data[_id]["pelit"]["kaikkitaieimitäänpelit"] = 0;
-  }
-  if (data[_id]["pelit"]["kaikkitaieimitäänvoitot"] == undefined) {
-    data[_id]["pelit"]["kaikkitaieimitäänvoitot"] = 0;
-  }
-  if (data[_id]["pelit"]["perustulo"] == undefined) {
-    data[_id]["pelit"]["perustulo"] = 10;
-  }
-  if (data[_id]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
-    data[_id]["pelit"]["kaikkitaieimitäänhäviöt"] = 0;
-  }
-  if (data[_id]["pelit"]["ryhmäpelit"] == undefined) {
-    data[_id]["pelit"]["ryhmäpelit"] = 0;
-  }
-  if (data[_id]["pelit"]["ryhmäpelivoitot"] == undefined) {
-    data[_id]["pelit"]["ryhmäpelivoitot"] = 0;
-  }
-  if (data[_id]["pelit"]["ryhmäpelivoitotsumma"] == undefined) {
-    data[_id]["pelit"]["ryhmäpelivoitotsumma"] = 0;
-  }
-  if (data[_id]["pelit"]["ryhmäpelihäviötsumma"] == undefined) {
-    data[_id]["pelit"]["ryhmäpelihäviötsumma"] = 0;
-  }
-  if (data[_id]["pelit"]["es"] == undefined) {
-    data[_id]["pelit"]["es"] = 0;
-  }
-  if (data[_id]["pelit"]["tyhjätes"] == undefined) {
-    data[_id]["pelit"]["tyhjätes"] = 0;
-  }
-  if (data[_id]["pelit"]["maxrahat"] == undefined) {
-    data[_id]["pelit"]["maxrahat"] = 300;
+  try {
+    if (data[_id]["nimi"] == undefined) {
+      data[_id]["nimi"] = name;
+    }
+    if (data[_id]["motto"] == undefined) {
+      data[_id]["motto"] = "-";
+    }
+    if (data[_id]["kuvaus"] == undefined) {
+      data[_id]["kuvaus"] = "-";
+    }
+    if (data[_id]["rahat"] == undefined) {
+      data[_id]["rahat"] = 300;
+    }
+    if (data[_id]["aikakannuilla"] == undefined) {
+      data[_id]["aikakannuilla"] = 0;
+    }
+    if (data[_id]["pelit"]["slotpelit"] == undefined) {
+      data[_id]["pelit"]["slotpelit"] = 0;
+    }
+    if (data[_id]["pelit"]["slotvoitot"] == undefined) {
+      data[_id]["pelit"]["slotvoitot"] = 0;
+    }
+    if (data[_id]["pelit"]["slotvoittosumma"] == undefined) {
+      data[_id]["pelit"]["slotvoittosumma"] = 0;
+    }
+    if (data[_id]["pelit"]["sasu"] == undefined) {
+      data[_id]["pelit"]["sasu"] = 0;
+    }
+    if (data[_id]["pelit"]["karvis"] == undefined) {
+      data[_id]["pelit"]["karvis"] = 0;
+    }
+    if (data[_id]["pelit"]["kys"] == undefined) {
+      data[_id]["pelit"]["kys"] = 0;
+    }
+    if (data[_id]["pelit"]["protect"] == undefined) {
+      data[_id]["pelit"]["protect"] = 0;
+    }
+    if (data[_id]["pelit"]["poggers1"] == undefined) {
+      data[_id]["pelit"]["poggers1"] = 0;
+    }
+    if (data[_id]["pelit"]["poggers2"] == undefined) {
+      data[_id]["pelit"]["poggers2"] = 0;
+    }
+    if (data[_id]["pelit"]["poggers3"] == undefined) {
+      data[_id]["pelit"]["poggers3"] = 0;
+    }
+    if (data[_id]["pelit"]["annetut"] == undefined) {
+      data[_id]["pelit"]["annetut"] = 0;
+    }
+    if (data[_id]["pelit"]["vastaanotetut"] == undefined) {
+      data[_id]["pelit"]["vastaanotetut"] = 0;
+    }
+    if (data[_id]["pelit"]["kaikkitaieimitäänpelit"] == undefined) {
+      data[_id]["pelit"]["kaikkitaieimitäänpelit"] = 0;
+    }
+    if (data[_id]["pelit"]["kaikkitaieimitäänvoitot"] == undefined) {
+      data[_id]["pelit"]["kaikkitaieimitäänvoitot"] = 0;
+    }
+    if (data[_id]["pelit"]["perustulo"] == undefined) {
+      data[_id]["pelit"]["perustulo"] = 10;
+    }
+    if (data[_id]["pelit"]["kaikkitaieimitäänhäviöt"] == undefined) {
+      data[_id]["pelit"]["kaikkitaieimitäänhäviöt"] = 0;
+    }
+    if (data[_id]["pelit"]["ryhmäpelit"] == undefined) {
+      data[_id]["pelit"]["ryhmäpelit"] = 0;
+    }
+    if (data[_id]["pelit"]["ryhmäpelivoitot"] == undefined) {
+      data[_id]["pelit"]["ryhmäpelivoitot"] = 0;
+    }
+    if (data[_id]["pelit"]["ryhmäpelivoitotsumma"] == undefined) {
+      data[_id]["pelit"]["ryhmäpelivoitotsumma"] = 0;
+    }
+    if (data[_id]["pelit"]["ryhmäpelihäviötsumma"] == undefined) {
+      data[_id]["pelit"]["ryhmäpelihäviötsumma"] = 0;
+    }
+    if (data[_id]["pelit"]["es"] == undefined) {
+      data[_id]["pelit"]["es"] = 0;
+    }
+    if (data[_id]["pelit"]["tyhjätes"] == undefined) {
+      data[_id]["pelit"]["tyhjätes"] = 0;
+    }
+    if (data[_id]["pelit"]["maxrahat"] == undefined) {
+      data[_id]["pelit"]["maxrahat"] = 300;
+    }
+  } catch (err) {
+    if (!data.contains(_id)) {
+      data[_id] = {};
+      data[_id]["nimi"] = name;
+      data[_id]["motto"] = "-";
+      data[_id]["kuvaus"] = "-";
+      data[_id]["rahat"] = 300;
+      data[_id]["aikakannuilla"] = 0;
+      data[_id]["pelit"] = {};
+      data[_id]["pelit"]["slotpelit"] = 0;
+      data[_id]["pelit"]["slotvoitot"] = 0;
+      data[_id]["pelit"]["slotvoittosumma"] = 0;
+      data[_id]["pelit"]["sasu"] = 0;
+      data[_id]["pelit"]["karvis"] = 0;
+      data[_id]["pelit"]["kys"] = 0;
+      data[_id]["pelit"]["protect"] = 0;
+      data[_id]["pelit"]["poggers1"] = 0;
+      data[_id]["pelit"]["poggers2"] = 0;
+      data[_id]["pelit"]["poggers3"] = 0;
+      data[_id]["pelit"]["annetut"] = 0;
+      data[_id]["pelit"]["vastaanotetut"] = 0;
+      data[_id]["pelit"]["kaikkitaieimitäänpelit"] = 0;
+      data[_id]["pelit"]["ryhmäpelit"] = 0;
+      data[_id]["pelit"]["ryhmäpelivoitot"] = 0;
+      data[_id]["pelit"]["ryhmäpelivoitotsumma"] = 0;
+      data[_id]["pelit"]["ryhmäpelihäviötsumma"] = 0;
+      data[_id]["pelit"]["es"] = 0;
+      data[_id]["pelit"]["tyhjätes"] = 0;
+      data[_id]["pelit"]["maxrahat"] = 300;
+    }
   }
 }
 
