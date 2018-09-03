@@ -21,7 +21,7 @@ const streamOptions = {
 
 // SERVERIN VARIABLEJA
 var pääpäivä = false;
-const SLOTRATE = 25;
+const SLOTRATE = 30;
 
 // emojies
 var coins;
@@ -947,12 +947,12 @@ const commands = {
       const tmeloni = 12;
 
       const pog1_v = 2;
-      const pog2_v = 25;
+      const pog2_v = 35;
       const pog3_v = 400;
       const sasu_v = 4;
       const karvis_v = 8;
       const alfa_v = 30;
-      const meloni_v = 80;
+      const meloni_v = 85;
 
       var rulla = [];
       for (var i = 0; i < 3; i++) {
@@ -1187,7 +1187,7 @@ const commands = {
     lista = "";
 
     for (var i = 0; i < items.length; i++) {
-      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins;
+      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + "\n";
     }
 
     msg.channel.send({
