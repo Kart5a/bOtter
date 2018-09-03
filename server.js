@@ -1187,7 +1187,7 @@ const commands = {
     lista = "";
 
     for (var i = 0; i < items.length; i++) {
-      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + "\n";
+      lista += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + '\n';
     }
 
     msg.channel.send({
