@@ -926,7 +926,7 @@ const commands = {
 
     if (panos == 0) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
     if ((panos == '' || panos === undefined)) {
-      panos = 10;
+      panos = min_panos;
     }
     if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla positiivinen luku");
     if (panos < min_panos) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
