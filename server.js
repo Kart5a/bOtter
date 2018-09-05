@@ -843,7 +843,7 @@ const commands = {
       "Mukavan hapokasta.",
       "Humala on lähellä...",
       "Hyvää, maistakaa muutkin!",
-      "Sait purkin ES, kyrpäsi värähti.",
+      "Joit purkin ES, kyrpäsi värähti.",
       "Panttia 15 euroo...",
       "Kolmoissalama",
       "Tunsit sateenkaaren värit kielelläsi",
@@ -1003,7 +1003,7 @@ const commands = {
         },
         {
          "name": "***___" + harpoon_e + "Kultainen harppuuna:___***",
-         "value": "___Hinta:___ 250000" + coins +". Triplaa Harpoon -pelissä liikkuvat massit!"
+         "value": "___Hinta:___ 150000" + coins +". Triplaa Harpoon -pelissä liikkuvat massit!"
        }]
       }
     });
@@ -1051,11 +1051,11 @@ const commands = {
     } else if (ostos.toLowerCase() == "harpuuna") {
 
       if (data[ostaja]["omistus"]["kultainen_harppuuna"] == true) return msg.channel.sendMessage("Älä osta toista harpuunaa, menee hukkaan!");
-      if (rahat < 250000) return msg.channel.sendMessage("Lol, köyhä " + jaa);
+      if (rahat < 150000) return msg.channel.sendMessage("Lol, köyhä " + jaa);
 
 
       data[ostaja]["omistus"]["kultainen_harppuuna"] = true;
-      data[ostaja]["omistus"]["rahat"] -= 250000;
+      data[ostaja]["omistus"]["rahat"] -= 150000;
 
       msg.channel.sendMessage("Onnittelut! Sulla on nyt kultainen harppuuna!");
 
