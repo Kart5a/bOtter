@@ -35,6 +35,8 @@ var es;
 
 // FIREBASEN SETUP
 var data;
+const BOTIT = ["232916519594491906","155149108183695360","430827809418772481"];
+
 
 firebase.initializeApp(fireb);
 var database = firebase.database();
@@ -60,7 +62,7 @@ function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
   var rahat = "" + data[target_id]["omistus"]["rahat"];
   var väli1 = " ".repeat(8 - rahat.length);
-  min_panos = Math.floor(rahat / (SLOTRATE*10)) * 10
+  min_panos = Math.floor(rahat / (SLOTRATE * 10)) * 10
   if (min_panos < 5) {
     min_panos = 5;
   }
@@ -165,7 +167,7 @@ function reagoi(sanalist, emojilist, msg) {
 }
 
 function ValidURL(str) {
-  if (str.includes("http")){
+  if (str.includes("http")) {
     return true;
 
   } else {
@@ -184,6 +186,11 @@ function luoTiedot(_id) {
     name = usr.get(_id).username;
   } catch (err) {
     name = "<@" + _id + ">"
+  }
+
+  if (BOTIT.includes(_id)) {
+    delete data[_id];
+    return;
   }
 
   if (!(_id in data)) {
@@ -750,6 +757,7 @@ const commands = {
 
     luoTiedot(msg.author.id);
 
+
     if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !anna ja summa`);
     if (isNaN(amount)) return msg.channel.sendMessage(amount + ` ei voida antaa :D`);
     if (amount == undefined || amount == "") return msg.channel.sendMessage(`Laita summa!!!`);
@@ -780,6 +788,11 @@ const commands = {
 
     luoTiedot(sender_id)
     luoTiedot(target_id)
+
+    if (BOTIT.includes(target_id)) {
+      delete data[target_id];
+      return msg.channel.send("Botille ei voi antaa :/");
+    }
 
     if (target_id == sender_id) return msg.channel.sendMessage(`Turhaa siirrät ittelles mitää...`);
 
@@ -861,7 +874,7 @@ const commands = {
           },
           {
             "name": (protect + " ").repeat(3) + ":",
-            "value": "75 x panos\n"
+            "value": "85 x panos\n"
           },
           {
             "name": poggers + tyhjä + tyhjä + ":",
@@ -869,7 +882,7 @@ const commands = {
           },
           {
             "name": poggers + " " + poggers + tyhjä + ":",
-            "value": "25 x panos\n"
+            "value": "35 x panos\n"
           },
           {
             "name": (poggers + " ").repeat(3) + ":",
@@ -877,7 +890,7 @@ const commands = {
           },
           {
             "name": "Palautusprosentti:",
-            "value": "104.16%"
+            "value": "109.59%"
           }
         ]
       }
@@ -909,7 +922,7 @@ const commands = {
       }
     }
 
-    let min_panos = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (SLOTRATE*10)) * 10
+    let min_panos = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (SLOTRATE * 10)) * 10
     if (min_panos < 5) {
       min_panos = 5
     }
@@ -1954,6 +1967,10 @@ setInterval(function() {
           }
           data[m]["aika_kannuilla"] += 1;
 
+        }
+        if (BOTIT.includes(usr.id)) {
+          delete data[usr.id];
+          return;
         }
       }
     }
