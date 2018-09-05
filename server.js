@@ -32,10 +32,13 @@ var poggers;
 var kys;
 var tyhjä;
 var es;
+var harpoon_e;
+var jaa;
 
 // FIREBASEN SETUP
 var data;
 const BOTIT = ["232916519594491906","155149108183695360","430827809418772481"];
+let harpoons = {};
 
 
 firebase.initializeApp(fireb);
@@ -108,6 +111,12 @@ function printProfile(target_id, msg) {
     laheta(avatar);
   });
 
+  if (data[target_id]["omistus"]["kultainen_harppuuna"]) {
+    harp = "\nLöytyy: " + harpoon_e;
+  } else {
+    harp = "";
+  }
+
   function laheta(avatar) {
     msg.channel.send({
       "embed": {
@@ -136,8 +145,8 @@ function printProfile(target_id, msg) {
             "value": rahat + coins + " (Perustulo: " + perustulo + ")"
           },
           {
-            "name": "***___ES:___***",
-            "value": es_määrä + es + " (Juodut: " + es_tyhjät + ")"
+            "name": "***___Muut romut:___***",
+            "value": es_määrä + es + " (Juodut: " + es_tyhjät + ")" + harp
           },
           {
             "name": "***___Aika kannulla:___***",
@@ -209,7 +218,8 @@ function luoTiedot(_id) {
         "saadut_rahat": 0,
         "perustulo": 10,
         "ES": 0,
-        "ES_tyhjät": 0
+        "ES_tyhjät": 0,
+        "kultainen_harppuuna": false
       },
       "pelit": {
         "slot_pelit": 0,
@@ -231,7 +241,16 @@ function luoTiedot(_id) {
         "ryhmäpelit": 0,
         "ryhmäpelivoitot": 0,
         "ryhmäpelivoitot_yht": 0,
-        "ryhmäpelihäviöt_yht": 0
+        "ryhmäpelihäviöt_yht": 0,
+        "harpoon_pelit": 0,
+        "harpoon_voitetut": 0,
+        "harpoon_hävityt": 0,
+        "harpoon_osumat": 0,
+        "harpoon_yksittäiset": {
+          "harpoon_hai": 0,
+          "harpoon_pallo": 0,
+          "harpoon_valas": 0
+        }
       }
     };
 
@@ -262,11 +281,15 @@ function luoTiedot(_id) {
         "saadut_rahat": 0,
         "perustulo": 10,
         "ES": 0,
-        "ES_tyhjät": 0
+        "ES_tyhjät": 0,
+        "kultainen_harppuuna": false
       };
     }
     if (!("rahat" in data[_id]["omistus"])) {
       data[_id]["omistus"]["rahat"] = 500;
+    }
+    if (!("kultainen_harppuuna" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["kultainen_harppuuna"] = false;
     }
     if (!("maxrahat" in data[_id]["omistus"])) {
       data[_id]["omistus"]["maxrahat"] = 500;
@@ -380,6 +403,35 @@ function luoTiedot(_id) {
       data[_id]["kuva"] = " ";
     }
 
+    if (!("harpoon_yksittäiset" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["harpoon_yksittäiset"] = {
+        "harpoon_hai": 0,
+        "harpoon_pallo": 0,
+        "harpoon_valas": 0
+      };
+    }
+    if (!("harpoon_hai" in data[_id]["pelit"]["harpoon_yksittäiset"])) {
+      data[_id]["harpoon_hai"] = 0;
+    }
+    if (!("harpoon_pallo" in data[_id]["pelit"]["harpoon_yksittäiset"])) {
+      data[_id]["harpoon_pallo"] = 0;
+    }
+    if (!("harpoon_valas" in data[_id]["pelit"]["harpoon_yksittäiset"])) {
+      data[_id]["harpoon_valas"] = 0;
+    }
+    if (!("harpoon_pelit" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["harpoon_pelit"] = 0;
+    }
+    if (!("harpoon_voitetut" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["harpoon_voitetut"] = 0;
+    }
+    if (!("harpoon_hävityt" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["harpoon_hävityt"] = 0;
+    }
+    if (!("harpoon_osumat" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["harpoon_osumat"] = 0;
+    }
+
   }
   firebase.database().ref('profiles').set(data);
 }
@@ -387,6 +439,382 @@ function luoTiedot(_id) {
 
 // KAIKKI KOMENNOT
 const commands = {
+
+  'harpoon': (msg) => {
+
+    ref.on('value', gotData, errData);
+    msg.delete();
+    luoTiedot(msg.author.id);
+
+    if (data[msg.author.id]["omistus"]["rahat"] < 50) {
+      return msg.channel.sendMessage("Tarvitset vähintään 50" + coins + "!");
+    }
+
+    let multi = 1;
+    if (data[msg.author.id]["omistus"]["kultainen_harppuuna"]) {
+      multi = 3;
+    } else {
+      multi = 1;
+    }
+
+    data[msg.author.id]["omistus"]["rahat"] -= 50 * multi;
+    data[msg.author.id]["pelit"]["harpoon_pelit"] += 1;
+
+    firebase.database().ref('profiles').set(data);
+
+    if (msg.author.id in harpoons) {
+      harpoons[msg.author.id].stop();
+      delete harpoons[msg.author.if];
+    }
+    // Tehdään kenttä
+    const W = 18;
+    const H = 10;
+
+    var field_matrix = [];
+    for (var i = 0; i < H; i++) {
+      field_matrix[i] = [];
+      for (var j = 0; j < W; j++) {
+        if (i == H - 1) {
+          field_matrix[i][j] = 8;
+        } else {
+          field_matrix[i][j] = 0;
+        }
+
+      }
+    }
+
+    // Tehdään tarketit
+    field_matrix[H - 1][0] = 9;
+
+    // Kala
+    var kala_r = Math.floor(Math.random() * Math.floor(5 + 1));
+
+
+    if (kala_r < 2) {
+
+      var ilmapallo_x = Math.floor(Math.random() * Math.floor(W - 4 + 1)) + 3;
+      var ilmapallo_y = Math.floor(Math.random() * Math.floor(H - 3));
+      field_matrix[ilmapallo_y][ilmapallo_x] = 2;
+
+    } else {
+
+      var ilmapallo = Math.floor(Math.random() * Math.floor(2 + 1));
+
+      var ilmapallo_x = Math.floor(Math.random() * Math.floor(W - 4 + 1)) + 3;
+      var ilmapallo_y = Math.floor(Math.random() * Math.floor(H - 3));
+      var kala = Math.floor(Math.random() * Math.floor(W - 2));
+
+      if (ilmapallo == 1) {
+        field_matrix[ilmapallo_y][ilmapallo_x] = 2;
+      }
+      field_matrix[H - 1][kala + 2] = 1;
+    }
+
+    // EpicKala
+    var rnd = Math.floor(Math.random() * Math.floor(15 + 1));
+
+    if (rnd == 1) {
+      while (true) {
+        var epic = Math.floor(Math.random() * Math.floor(W - 2));
+        if (field_matrix[H - 1][epic + 3] != 1) {
+          field_matrix[H - 1][epic + 3] = 3;
+          break;
+        } else {
+          continue;
+        }
+      }
+    }
+
+
+    // Printataan
+    field = "";
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (field_matrix[y][x] == 0) {
+          field += "⬛️";
+        } else if (field_matrix[y][x] == 8) {
+          field += "🌊";
+        } else if (field_matrix[y][x] == 1) {
+          field += "🦈";
+        } else if (field_matrix[y][x] == 2) {
+          field += "🎈";
+        } else if (field_matrix[y][x] == 3) {
+          field += "🐳";
+        } else if (field_matrix[y][x] == 9) {
+          field += "🚢";
+        }
+      }
+
+      field += "\n";
+    }
+
+    let tuuli = Math.floor(Math.random() * Math.floor(10 + 1)) - 5;
+    tuuli_str = "";
+
+    if (tuuli < 0) {
+
+      for (let i = 0; i < Math.abs(tuuli); i++) {
+        tuuli_str += "⬅️";
+      }
+
+    } else if (tuuli == 0) {
+      tuuli_str = "0️⃣";
+
+    } else {
+
+      for (let i = 0; i < Math.abs(tuuli); i++) {
+        tuuli_str += "➡️";
+      }
+
+    }
+
+
+    if (multi == 3) {
+      color = 0xfffa17;
+      icon = harpoon_e;
+    } else {
+      color = 1006999;
+      icon = "";
+    }
+
+    msg.channel.send({
+      "embed": {
+        "color": color,
+        "author": {
+          "name": "HARPOON: " + msg.author.username,
+          "icon_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
+        },
+        "fields": [{
+            "name": icon + " Tuuli: " + tuuli_str,
+            "value": field
+          }
+
+        ]
+      }
+    });
+
+    harpoons[msg.author.id] = msg.channel.createCollector(m => m);
+    harpoons[msg.author.id].on('message', m => {
+      if (m.content.startsWith(tokens.prefix + 'ammu') && msg.author.id == m.author.id) {
+        ref.on('value', gotData, errData);
+
+        m.delete();
+
+        let deg = m.content.split(' ')[1];
+        let force = m.content.split(' ')[2];
+
+        if (isNaN(deg) || isNaN(force)) return msg.channel.sendMessage("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
+        if (deg < 1 || deg > 90) return msg.channel.sendMessage("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
+
+        ammu(deg, force, tuuli, field_matrix);
+
+      } else if (m.content.startsWith(tokens.prefix + 'lopeta')) {
+        msg.channel.sendMessage('Lopetetaan harppuuna.').then(() => {
+          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50;
+          harpoons[msg.author.id].stop();
+        });
+      }
+    });
+
+    function ammu(_deg, _force, _tuuli, _field_matrix) {
+      harpoons[msg.author.id].stop();
+      let multi = 1;
+      if (data[msg.author.id]["omistus"]["kultainen_harppuuna"] == true) {
+        multi = 3;
+      } else {
+        multi = 1;
+      }
+
+      let field_matrix = _field_matrix;
+
+      let c_w = W * 10;
+      let c_h = H * 10;
+
+      let _x = 0;
+      let _y = c_w - c_h/H * (H-1) ;
+
+      let g = -0.2;
+
+      let f_x = Math.cos(_deg / 180 * Math.PI) * _force;
+      let f_y = Math.sin(_deg / 180 * Math.PI) * _force;
+
+      let i = 0;
+      let flag = true;
+      while (flag) {
+
+        i++;
+
+        _x = _x + _tuuli/5*i/2000 + f_x / 100;
+        _y = _y - (g * i / 100 + f_y / 100);
+
+        if (_x <= 0 || _x > c_w) {
+          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50 * multi;
+          break;
+        }
+        if (_y >= c_h) {
+          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50 * multi;
+          break;
+        }
+
+        _xtile = Math.floor(_x / c_w * W);
+        _ytile = Math.floor(_y / c_h * H);
+
+        if (_xtile == 0 && _ytile == H - 1) {
+          continue;
+        }
+
+
+        try {
+        // OSUMAT
+        voitto = "Ammuit ohi... -" + 50 * multi + coins;
+
+        if (field_matrix[_ytile][_xtile] == 1) {
+          voitto = "Osuit haihin! Voitit: " + 150*multi + coins;
+
+          data[msg.author.id]["pelit"]["harpoon_osumat"] += 1;
+          data[msg.author.id]["pelit"]["harpoon_yksittäiset"]["harpoon_hai"] += 1;
+          data[msg.author.id]["pelit"]["harpoon_voitetut"] += 150 * multi;
+          data[msg.author.id]["omistus"]["rahat"] += 150* multi;
+
+          field_matrix[_ytile][_xtile] = 7;
+          flag = false;
+          break;
+
+        }
+        if (field_matrix[_ytile][_xtile] == 2) {
+          voitto = "Osuit palloon! Voitit: " +  250*multi + coins;
+
+          data[msg.author.id]["pelit"]["harpoon_osumat"] += 1;
+          data[msg.author.id]["pelit"]["harpoon_yksittäiset"]["harpoon_pallo"] += 1;
+          data[msg.author.id]["pelit"]["harpoon_voitetut"] += 250* multi;
+          data[msg.author.id]["omistus"]["rahat"] += 250* multi;
+
+          field_matrix[_ytile][_xtile] = 7;
+          flag = false;
+          break;
+
+        }
+        if (field_matrix[_ytile][_xtile] == 3) {
+          voitto = "Osuit valaaseen! Voitit " + 1000*multi + coins;
+
+          data[msg.author.id]["pelit"]["harpoon_osumat"] += 1;
+          data[msg.author.id]["pelit"]["harpoon_yksittäiset"]["harpoon_valas"] += 1;
+          data[msg.author.id]["pelit"]["harpoon_voitetut"] += 1000 * multi;
+          data[msg.author.id]["omistus"]["rahat"] += 1000 * multi;
+
+          field_matrix[_ytile][_xtile] = 7;
+          flag = false;
+          break;
+
+        }
+
+        if (_ytile ==  H - 1) {
+          field_matrix[_ytile][_xtile] = 4;
+          flag = false;
+          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50 * multi;
+          break;
+        }
+
+          field_matrix[_ytile][_xtile] = 6;
+        } catch (err) {
+          continue;
+        }
+
+      }
+
+      let trail = "";
+      if (multi == 3) {
+        trail = "🔸";
+      } else {
+        trail = "▫️"
+      }
+
+
+      new_field = "";
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (field_matrix[y][x] == 0) {
+            new_field += "⬛️";
+          } else if (field_matrix[y][x] == 8) {
+            new_field += "🌊";
+          } else if (field_matrix[y][x] == 1) {
+            new_field += "🦈";
+          } else if (field_matrix[y][x] == 2) {
+            new_field += "🎈";
+          } else if (field_matrix[y][x] == 3) {
+            new_field += "🐳";
+          } else if (field_matrix[y][x] == 9) {
+            new_field += "🚢";
+          } else if (field_matrix[y][x] == 6) {
+            new_field += trail;
+          } else if (field_matrix[y][x] == 7) {
+            new_field += "💥";
+          } else if (field_matrix[y][x] == 4) {
+            new_field += "💦";
+          }
+        }
+
+        new_field += "\n";
+      }
+
+      tuuli_str = "";
+
+      if (tuuli < 0) {
+
+        for (let i = 0; i < Math.abs(tuuli); i++) {
+          tuuli_str += "⬅️";
+        }
+
+      } else if (tuuli == 0) {
+        tuuli_str = "0";
+
+      } else {
+
+        for (let i = 0; i < Math.abs(tuuli); i++) {
+          tuuli_str += "➡️";
+        }
+
+      }
+
+      if (multi == 3) {
+        color = 0xfffa17;
+        icon = harpoon_e;
+      } else {
+        color = 1006999;
+        icon = "";
+      }
+
+      msg.channel.send({
+        "embed": {
+          "color": color,
+          "author": {
+            "name": "HARPOON: " + msg.author.username,
+            "icon_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
+          },
+          "fields": [
+            {
+              "name": icon + " Ammuit:",
+              "value": "Kulma: " + _deg + "°, Voima: " + _force + "."
+            },
+            {
+              "name": "Tuuli: " + tuuli_str,
+              "value": new_field
+            },
+            {
+              "name": "Tulos:",
+              "value": voitto
+            }
+
+          ]
+        }
+      });
+
+      firebase.database().ref('profiles').set(data);
+
+
+    }
+
+  },
 
   'juo': (msg) => {
 
@@ -572,7 +1000,11 @@ const commands = {
         }, {
           "name": "***___" + es + "ES:___***",
           "value": "___Hinta:___ 1" + coins
-        }]
+        },
+        {
+         "name": "***___" + harpoon_e + "Kultainen harppuuna:___***",
+         "value": "___Hinta:___ 250000" + coins +". Triplaa Harpoon -pelissä liikkuvat massit!"
+       }]
       }
     });
   },
@@ -609,12 +1041,23 @@ const commands = {
 
     } else if (ostos.toLowerCase() == "es") {
 
-      if (rahat < määrä) return msg.channel.sendMessage("Lol, köyhä <:jaa:443469541083840512>");
+      if (rahat < määrä) return msg.channel.sendMessage("Lol, köyhä " + jaa);
 
       data[ostaja]["omistus"]["ES"] += määrä;
       data[ostaja]["omistus"]["rahat"] -= määrä;
 
       msg.channel.sendMessage("Ostit " + määrä + es);
+
+    } else if (ostos.toLowerCase() == "harpuuna") {
+
+      if (data[ostaja]["omistus"]["kultainen_harppuuna"] == true) return msg.channel.sendMessage("Älä osta toista harpuunaa, menee hukkaan!");
+      if (rahat < 250000) return msg.channel.sendMessage("Lol, köyhä " + jaa);
+
+
+      data[ostaja]["omistus"]["kultainen_harppuuna"] = true;
+      data[ostaja]["omistus"]["rahat"] -= 250000;
+
+      msg.channel.sendMessage("Onnittelut! Sulla on nyt kultainen harppuuna!");
 
     } else {
       msg.channel.sendMessage("Et voi ostaa mitään ihme " + ostos + " -juttua...");
@@ -698,6 +1141,7 @@ const commands = {
     var ryhmäpelihäviösumma = data[target_id]["pelit"]["ryhmäpelihäviöt_yht"];
     var maxrahat = data[target_id]["omistus"]["maxrahat"];
 
+
     msg.channel.send({
       "embed": {
         "title": "***PELIDATA: " + data[target_id]["nimi"] + "***",
@@ -726,6 +1170,14 @@ const commands = {
           {
             "name": "***___Ryhmäpelit:___***",
             "value": "Pelit: " + ryhmäpelit + "\nVoitot: " + ryhmäpelivoitot + "\nVoitetut rahat: " + ryhmäpelivoittosumma + coins + "\nHävityt rahat: " + ryhmäpelihäviösumma + coins
+          },
+          {
+            "name": "***___Harpoon:___***",
+            "value": "Pelit: " + data[target_id]["pelit"]["harpoon_pelit"] + "\nOsumat: " + data[target_id]["pelit"]["harpoon_osumat"] + "\nVoitetut rahat: " + data[target_id]["pelit"]["harpoon_voitetut"] + coins
+            + "\nHävityt rahat: " + data[target_id]["pelit"]["harpoon_hävityt"] + coins + "\nAccuracy: "
+            + (parseInt(data[target_id]["pelit"]["harpoon_osumat"])/parseInt(data[target_id]["pelit"]["harpoon_pelit"])*100).toFixed(2) + "% \n🦈: "
+            + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_hai"] + "\n🎈: " + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_pallo"]
+            + "\n🐳: " + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_valas"]
           },
           {
             "name": "***___Siirrot:___***",
@@ -1814,6 +2266,14 @@ const commands = {
             value: "Ryhmäuhkapeli ;)"
           },
           {
+            name: tokens.prefix + "harpoon",
+            value: "Aloittaa harppuuna-pelin (maksaa 50 coins)"
+          },
+          {
+            name: tokens.prefix + "ammu [asteet 1-90] [voima 1-100]",
+            value: "ampuu harppuunan"
+          },
+          {
             name: tokens.prefix + "kaikkitaieimitään",
             value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
@@ -1907,6 +2367,8 @@ client.on('ready', () => {
   kys = client.emojis.find("name", "alfa");
   tyhjä = "\:x:";
   es = client.emojis.find("name", "ES");
+  harpoon_e = client.emojis.find("name", "harpuuna");
+  jaa = client.emojis.find("name", "jaa");
 
 });
 
