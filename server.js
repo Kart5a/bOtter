@@ -452,7 +452,7 @@ const commands = {
 
     let multi = 1;
     if (data[msg.author.id]["omistus"]["kultainen_harppuuna"]) {
-      multi = 3;
+      multi = 5;
     } else {
       multi = 1;
     }
@@ -569,7 +569,7 @@ const commands = {
     }
 
 
-    if (multi == 3) {
+    if (multi == 5) {
       color = 0xfffa17;
       icon = harpoon_e;
     } else {
@@ -620,7 +620,7 @@ const commands = {
       harpoons[msg.author.id].stop();
       let multi = 1;
       if (data[msg.author.id]["omistus"]["kultainen_harppuuna"] == true) {
-        multi = 3;
+        multi = 5;
       } else {
         multi = 1;
       }
@@ -723,7 +723,7 @@ const commands = {
       }
 
       let trail = "";
-      if (multi == 3) {
+      if (multi == 5) {
         trail = "🔸";
       } else {
         trail = "▫️"
@@ -776,7 +776,7 @@ const commands = {
 
       }
 
-      if (multi == 3) {
+      if (multi == 5) {
         color = 0xfffa17;
         icon = harpoon_e;
       } else {
@@ -1003,7 +1003,7 @@ const commands = {
         },
         {
          "name": "***___" + harpoon_e + "Kultainen harppuuna:___***",
-         "value": "___Hinta:___ 150000" + coins +". Triplaa Harpoon -pelissä liikkuvat massit!"
+         "value": "___Hinta:___ 150000" + coins +". Viisinkertaistaa Harpoon -pelissä liikkuvat massit!"
        }]
       }
     });
