@@ -531,17 +531,17 @@ const commands = {
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         if (field_matrix[y][x] == 0) {
-          field += "⬛️";
+          field += "░░ ";
         } else if (field_matrix[y][x] == 8) {
-          field += "🌊";
+          field += "▒▒ ";
         } else if (field_matrix[y][x] == 1) {
-          field += "🦈";
+          field += "Δ▒ ";
         } else if (field_matrix[y][x] == 2) {
-          field += "🎈";
+          field += "Ω░ ";
         } else if (field_matrix[y][x] == 3) {
-          field += "🐳";
+          field += "▀▀ ";
         } else if (field_matrix[y][x] == 9) {
-          field += "🚢";
+          field += "╚╝ ";
         }
       }
 
@@ -554,16 +554,16 @@ const commands = {
     if (tuuli < 0) {
 
       for (let i = 0; i < Math.abs(tuuli); i++) {
-        tuuli_str += "⬅️";
+        tuuli_str += "<";
       }
 
     } else if (tuuli == 0) {
-      tuuli_str = "0️⃣";
+      tuuli_str = "0";
 
     } else {
 
       for (let i = 0; i < Math.abs(tuuli); i++) {
-        tuuli_str += "➡️";
+        tuuli_str += ">";
       }
 
     }
@@ -724,9 +724,9 @@ const commands = {
 
       let trail = "";
       if (multi == 5) {
-        trail = "🔸";
+        trail = "══ ";
       } else {
-        trail = "▫️"
+        trail = "── "
       }
 
 
@@ -734,35 +734,36 @@ const commands = {
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
           if (field_matrix[y][x] == 0) {
-            new_field += "⬛️";
+            new_field += "░░ ";
           } else if (field_matrix[y][x] == 8) {
-            new_field += "🌊";
+            new_field += "▒▒ ";
           } else if (field_matrix[y][x] == 1) {
-            new_field += "🦈";
+            new_field += "Δ▒ ";
           } else if (field_matrix[y][x] == 2) {
-            new_field += "🎈";
+            new_field += "Ω░ ";
           } else if (field_matrix[y][x] == 3) {
-            new_field += "🐳";
+            new_field += "▀▀ ";
           } else if (field_matrix[y][x] == 9) {
-            new_field += "🚢";
+            new_field += "╚╝ ";
           } else if (field_matrix[y][x] == 6) {
             new_field += trail;
           } else if (field_matrix[y][x] == 7) {
-            new_field += "💥";
+            new_field += "╣╠ ";
           } else if (field_matrix[y][x] == 4) {
-            new_field += "💦";
+            new_field += "╝╚ ";
           }
         }
 
         new_field += "\n";
       }
 
+
       tuuli_str = "";
 
       if (tuuli < 0) {
 
         for (let i = 0; i < Math.abs(tuuli); i++) {
-          tuuli_str += "⬅️";
+          tuuli_str += "<";
         }
 
       } else if (tuuli == 0) {
@@ -771,7 +772,7 @@ const commands = {
       } else {
 
         for (let i = 0; i < Math.abs(tuuli); i++) {
-          tuuli_str += "➡️";
+          tuuli_str += ">";
         }
 
       }
