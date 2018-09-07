@@ -34,10 +34,12 @@ var tyhjä;
 var es;
 var harpoon_e;
 var jaa;
+var empty_e;
 
 // FIREBASEN SETUP
 var data;
 const BOTIT = ["232916519594491906","155149108183695360","430827809418772481"];
+let msg = {};
 let harpoons = {};
 
 
@@ -531,17 +533,17 @@ const commands = {
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         if (field_matrix[y][x] == 0) {
-          field += "░░ ";
+          field += "⬛️";
         } else if (field_matrix[y][x] == 8) {
-          field += "▒▒ ";
+          field += "🌊";
         } else if (field_matrix[y][x] == 1) {
-          field += "Δ▒ ";
+          field += "🦈";
         } else if (field_matrix[y][x] == 2) {
-          field += "Ω░ ";
+          field += "🎈";
         } else if (field_matrix[y][x] == 3) {
-          field += "▀▀ ";
+          field += "🐳";
         } else if (field_matrix[y][x] == 9) {
-          field += "╚╝ ";
+          field += "🚢";
         }
       }
 
@@ -554,7 +556,7 @@ const commands = {
     if (tuuli < 0) {
 
       for (let i = 0; i < Math.abs(tuuli); i++) {
-        tuuli_str += "<";
+        tuuli_str += "⏪";
       }
 
     } else if (tuuli == 0) {
@@ -563,7 +565,7 @@ const commands = {
     } else {
 
       for (let i = 0; i < Math.abs(tuuli); i++) {
-        tuuli_str += ">";
+        tuuli_str += "⏩";
       }
 
     }
@@ -587,10 +589,18 @@ const commands = {
         "fields": [{
             "name": icon + " Tuuli: " + tuuli_str,
             "value": field
-          }
+          },
+          {
+              "name": "Ammu kirjoittamalla: ",
+              "value": "!ammu <asteet> <voima> (1-90°, 1-100)."
+            }
 
         ]
       }
+    }).then(m => {
+
+      msg[msg.author.id] = m;
+
     });
 
     harpoons[msg.author.id] = msg.channel.createCollector(m => m);
@@ -612,6 +622,7 @@ const commands = {
         msg.channel.sendMessage('Lopetetaan harppuuna.').then(() => {
           data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50;
           harpoons[msg.author.id].stop();
+          msg[msg.author.id];
         });
       }
     });
@@ -640,6 +651,7 @@ const commands = {
 
       let i = 0;
       let flag = true;
+
       while (flag) {
 
         i++;
@@ -724,9 +736,9 @@ const commands = {
 
       let trail = "";
       if (multi == 5) {
-        trail = "══ ";
+        trail = "🔸";
       } else {
-        trail = "── "
+        trail = "▫️"
       }
 
 
@@ -734,23 +746,23 @@ const commands = {
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
           if (field_matrix[y][x] == 0) {
-            new_field += "░░ ";
+            new_field += "⬛️";
           } else if (field_matrix[y][x] == 8) {
-            new_field += "▒▒ ";
+            new_field += "🌊";
           } else if (field_matrix[y][x] == 1) {
-            new_field += "Δ▒ ";
+            new_field += "🦈";
           } else if (field_matrix[y][x] == 2) {
-            new_field += "Ω░ ";
+            new_field += "🎈";
           } else if (field_matrix[y][x] == 3) {
-            new_field += "▀▀ ";
+            new_field += "🐳";
           } else if (field_matrix[y][x] == 9) {
-            new_field += "╚╝ ";
+            new_field += "🚢";
           } else if (field_matrix[y][x] == 6) {
             new_field += trail;
           } else if (field_matrix[y][x] == 7) {
-            new_field += "╣╠ ";
+            new_field += "💥";
           } else if (field_matrix[y][x] == 4) {
-            new_field += "╝╚ ";
+            new_field += "💦";
           }
         }
 
@@ -763,7 +775,7 @@ const commands = {
       if (tuuli < 0) {
 
         for (let i = 0; i < Math.abs(tuuli); i++) {
-          tuuli_str += "<";
+          tuuli_str += "⏪";
         }
 
       } else if (tuuli == 0) {
@@ -772,7 +784,7 @@ const commands = {
       } else {
 
         for (let i = 0; i < Math.abs(tuuli); i++) {
-          tuuli_str += ">";
+          tuuli_str += "⏩";
         }
 
       }
@@ -785,7 +797,7 @@ const commands = {
         icon = "";
       }
 
-      msg.channel.send({
+      msg[msg.author.id].edit({
         "embed": {
           "color": color,
           "author": {
@@ -2370,6 +2382,7 @@ client.on('ready', () => {
   es = client.emojis.find("name", "ES");
   harpoon_e = client.emojis.find("name", "harpuuna");
   jaa = client.emojis.find("name", "jaa");
+  empty_e = client.emojis.find("name", "empty");
 
 });
 
