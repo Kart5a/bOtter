@@ -1524,9 +1524,9 @@ const commands = {
 
     if (data[pelaaja]["omistus"]["rahat"] < MIN) return msg.channel.send("Tarvitset vähintään " + MIN + " " + coins + " pelataksesi kaikki tai ei mitään.");
 
-    var rnd = Math.floor(Math.random() * Math.floor(100) + 1); // Luku 1 - 100 väliltä
+    var rnd = Math.floor(Math.random() * Math.floor(1000) + 1);
 
-    if (rnd > 51) {
+    if (rnd % 2 == 0) {
       data[pelaaja]["omistus"]["rahat"] *= 2;
       msg.channel.send({
         "embed": {
@@ -1536,7 +1536,7 @@ const commands = {
           },
           "fields": [{
             "name": "***VOITIT: " + data[pelaaja]["omistus"]["rahat"] / 2 + coins + "***",
-            "value": "Rollasit: " + rnd + ". (1-51 Häviö, 52-100 Voitto)"
+            "value": "Rollasit: " + rnd + ". (Parillinen = Voitto, Pariton = Häviö)"
           }, {
             "name": "Rahat nyt:",
             "value": "" + data[pelaaja]["omistus"]["rahat"] + coins
@@ -1558,7 +1558,7 @@ const commands = {
           },
           "fields": [{
               "name": "***HÄVISIT: " + data[pelaaja]["omistus"]["rahat"] + coins + "***",
-              "value": "Rollasit: " + rnd + ". (1-51 Häviö, 52-100 Voitto)"
+              "value": "Rollasit: " + rnd + ". (Parillinen = Voitto, Pariton = Häviö)"
             },
             {
               "name": "Rahat nyt:",
