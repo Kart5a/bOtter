@@ -1266,6 +1266,8 @@ const commands = {
       if (data[sender_id]["omistus"]["rahat"] < parseInt(amount)) return msg.channel.sendMessage(`Sulla ei oo tarpeeks rahea...`);
       data[target_id]["omistus"]["rahat"] += parseInt(amount);
       data[sender_id]["omistus"]["rahat"] -= parseInt(amount);
+      data[target_id]["omistus"]["saadut_rahat"] += parseInt(amount);
+      data[sender_id]["omistus"]["annetut_rahat"] -= parseInt(amount);
 
       if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["max_rahat"]) {
         data[target_id]["omistus"]["max_rahat"] = data[target_id]["omistus"]["rahat"]
