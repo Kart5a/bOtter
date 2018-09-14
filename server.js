@@ -3135,6 +3135,10 @@ client.on('messageReactionAdd', (reaction, user) => {
   }
 });
 
+client.on("error", e => {
+  console.log(e);
+});
+
 // INTERVALLIFUNKTIO MINUUTIN VÄLEIN
 setInterval(function() {
   //if (client.guild.id != "180699479379410944") return;
