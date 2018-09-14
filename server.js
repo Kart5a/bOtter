@@ -50,6 +50,7 @@ let deck = [];
 const BOTIT = ["232916519594491906","155149108183695360","430827809418772481"];
 let msg = {};
 let bj = {};
+let double_reaction = {};
 let harpoons = {};
 
 
@@ -742,6 +743,16 @@ function hit(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
   firebase.database().ref('profiles').set(data);
   ref.on('value', gotData, errData);
 
+  try {
+    console.log("Ylhäällä:");
+    console.log(double_reaction[pelaaja]);
+    double_reaction[pelaaja].remove(double_reaction[pelaaja].author);
+    delete double_reaction[pelaaja];
+  } catch(err) {
+
+  }
+
+
   // Tutkii pelaajan summan
   let pelaaja_sum = tutkiSumma(pelaajan_käsi, false, false, 21);
 
@@ -749,29 +760,29 @@ function hit(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
   if (pelaaja_sum == 21 && pelaajan_käsi.length == 2) {
     data[pelaaja]["pelit"]["BJ_21"] += 1;
     data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
-    data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos*1.5;
-    data[pelaaja]["omistus"]["rahat"] += panos*2.5;
+    data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += Math.floor(panos*1.5);
+    data[pelaaja]["omistus"]["rahat"] += Math.floor(panos*2.5);
     firebase.database().ref('profiles').set(data);
     bj_message.clearReactions();
-    bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Blackjack! Voitit " + panos*1.5 + coins, pelaaja, 5348864, _log));
+    bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, true, "Blackjack! Voitit " + Math.floor(panos*1.5) + coins, pelaaja, 5348864, _log));
     delete bj[pelaaja];
 
   } else if (pelaaja_sum == 21) {
-    bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, panos, pelaaja, _log, bj_message];
+    bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, Math.floor(panos), pelaaja, _log, bj_message];
     return stand(bj[pelaaja][0], bj[pelaaja][1], bj[pelaaja][2],bj[pelaaja][3],bj[pelaaja][4],bj[pelaaja][5]);
 
   } else if (pelaaja_sum > 21) {
     data[pelaaja]["pelit"]["BJ_yli"] += 1;
     data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
-    data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos;
+    data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos);
     firebase.database().ref('profiles').set(data);
     bj_message.clearReactions();
-    bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + panos + coins, pelaaja, 9381414, _log));
+    bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + Math.floor(panos) + coins, pelaaja, 9381414, _log));
     delete bj[pelaaja];
 
   } else {
-    bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, " ", pelaaja ,6842472, _log));
-    bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, panos, pelaaja, _log, bj_message];
+    bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, true, " ", pelaaja ,6842472, _log));
+    bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, Math.floor(panos), pelaaja, _log, bj_message];
   }
 }
 
@@ -809,19 +820,19 @@ function stand(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) 
     if (jakaja_sum == 21 && jakajan_käsi.length == 2) {
 
       data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
-      data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos;
+      data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos);
       firebase.database().ref('profiles').set(data);
-      bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Jakajan Blackjack! Hävisit " + panos + coins, pelaaja, 9381414, _log));
+      bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, false, "Jakajan Blackjack! Hävisit " + Math.floor(panos) + coins, pelaaja, 9381414, _log));
       delete bj[pelaaja];
       break;
 
     } else if (jakaja_sum > 21) {
 
       data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
-      data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos;
-      data[pelaaja]["omistus"]["rahat"] += panos*2;
+      data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += Math.floor(panos);
+      data[pelaaja]["omistus"]["rahat"] += Math.floor(panos*2);
       firebase.database().ref('profiles').set(data);
-      bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Jakaja meni yli! Voitit " + panos + coins, pelaaja, 5348864, _log));
+      bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, false, "Jakaja meni yli! Voitit " + Math.floor(panos) + coins, pelaaja, 5348864, _log));
       delete bj[pelaaja];
 
       break;
@@ -830,20 +841,20 @@ function stand(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) 
 
       if (jakaja_sum >= pelaaja_sum) {
         data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
-        data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos;
+        data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos);
         data[pelaaja]["pelit"]["BJ_vähemmän"] += 1;
         firebase.database().ref('profiles').set(data);
-        bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Jakaja voitti! Hävisit " + panos + coins, pelaaja, 9381414, _log));
+        bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, false, "Jakaja voitti! Hävisit " + Math.floor(panos) + coins, pelaaja, 9381414, _log));
         delete bj[pelaaja];
 
         break;
 
       } else {
         data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
-        data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos;
-        data[pelaaja]["omistus"]["rahat"] += panos*2;
+        data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += Math.floor(panos);
+        data[pelaaja]["omistus"]["rahat"] += Math.floor(panos*2);
         firebase.database().ref('profiles').set(data);
-        bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Voitit: " + panos + coins, pelaaja, 5348864, _log));
+        bj_message.edit(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, false, "Voitit: " + Math.floor(panos) + coins, pelaaja, 5348864, _log));
         delete bj[pelaaja];
 
         break;
@@ -857,7 +868,6 @@ function stand(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) 
     }
 
   }
-
 }
 
 function double(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
@@ -877,9 +887,9 @@ function double(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message)
   if (pelaaja_sum > 21) {
     data[pelaaja]["pelit"]["BJ_yli"] += 1;
     data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
-    data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos*2;
+    data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos*2);
     firebase.database().ref('profiles').set(data);
-    msg.channel.send(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + panos*2 + coins, pelaaja, 9381414, _log));
+    msg.channel.send(printBJ(msg.channel, Math.floor(panos*2), jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + Math.floor(panos*2) + coins, pelaaja, 9381414, _log));
     return;
   }
 
@@ -905,19 +915,19 @@ function double(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message)
     if (jakaja_sum == 21 && jakajan_käsi.length == 2) {
 
       data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
-      data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos*2;
+      data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos*2);
       firebase.database().ref('profiles').set(data);
-      bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Jakajan Blackjack! Hävisit " + panos*2 + coins, pelaaja, 9381414, _log));
+      bj_message.edit(printBJ(msg.channel, Math.floor(panos*2), jakajan_käsi, pelaajan_käsi, false, "Jakajan Blackjack! Hävisit " + Math.floor(panos*2) + coins, pelaaja, 9381414, _log));
       delete bj[pelaaja];
       break;
 
     } else if (jakaja_sum > 21) {
 
       data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
-      data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos*2;
-      data[pelaaja]["omistus"]["rahat"] += panos*2*2;
+      data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += Math.floor(panos*2);
+      data[pelaaja]["omistus"]["rahat"] += Math.floor(panos*2*2);
       firebase.database().ref('profiles').set(data);
-      bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Jakaja meni yli! Voitit " + panos*2 + coins, pelaaja, 5348864, _log));
+      bj_message.edit(printBJ(msg.channel, Math.floor(panos*2), jakajan_käsi, pelaajan_käsi, false, "Jakaja meni yli! Voitit " + Math.floor(panos*2) + coins, pelaaja, 5348864, _log));
       delete bj[pelaaja];
 
       break;
@@ -926,20 +936,20 @@ function double(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message)
 
       if (jakaja_sum >= pelaaja_sum) {
         data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
-        data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos*2;
+        data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos*2);
         data[pelaaja]["pelit"]["BJ_vähemmän"] += 1;
         firebase.database().ref('profiles').set(data);
-        bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Jakaja voitti! Hävisit " + panos*2 + coins, pelaaja, 9381414, _log));
+        bj_message.edit(printBJ(msg.channel, Math.floor(panos*2), jakajan_käsi, pelaajan_käsi, false, "Jakaja voitti! Hävisit " + Math.floor(panos*2) + coins, pelaaja, 9381414, _log));
         delete bj[pelaaja];
 
         break;
 
       } else {
         data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
-        data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos*2;
-        data[pelaaja]["omistus"]["rahat"] += panos*2*2;
+        data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += Math.floor(panos*2);
+        data[pelaaja]["omistus"]["rahat"] += Math.floor(panos*2*2);
         firebase.database().ref('profiles').set(data);
-        bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Voitit: " + panos*2 + coins, pelaaja, 5348864, _log));
+        bj_message.edit(printBJ(msg.channel, Math.floor(panos*2), jakajan_käsi, pelaajan_käsi, false, "Voitit: " + Math.floor(panos*2) + coins, pelaaja, 5348864, _log));
         delete bj[pelaaja];
 
         break;
@@ -967,7 +977,7 @@ const commands = {
     msg.delete();
     luoTiedot(msg.author.id);
 
-    const BJRATE = 15;
+    const BJRATE = 20;
 
     let panos = msg.content.split(' ')[1];
 
@@ -1051,25 +1061,25 @@ const commands = {
     if (pelaaja_sum == 21) {
       data[msg.author.id]["pelit"]["BJ_21"] += 1;
       data[msg.author.id]["pelit"]["BJ_voitetut_pelit"] += 1;
-      data[msg.author.id]["pelit"]["BJ_voitetut_rahat"] += panos*1.5;
-      data[msg.author.id]["omistus"]["rahat"] += panos*2,5;
+      data[msg.author.id]["pelit"]["BJ_voitetut_rahat"] += Math.floor(panos*1.5);
+      data[msg.author.id]["omistus"]["rahat"] += Math.floor(panos*2.5);
       firebase.database().ref('profiles').set(data);
-      msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Blackjack! Voitit " + panos*1.5 + coins, msg.author.id, 5348864, logi));
+      msg.channel.send(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, true, "Blackjack! Voitit " + Math.floor(panos*1.5) + coins, msg.author.id, 5348864, logi));
       return;
     } else if (pelaaja_sum > 21) {
       data[msg.author.id]["pelit"]["BJ_yli"] += 1;
       data[msg.author.id]["pelit"]["BJ_hävityt_pelit"] += 1;
-      data[msg.author.id]["pelit"]["BJ_hävityt_rahat"] += panos;
+      data[msg.author.id]["pelit"]["BJ_hävityt_rahat"] += Math.floor(panos);
       firebase.database().ref('profiles').set(data);
-      msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + panos + coins, msg.author.id, 9381414, logi));
+      msg.channel.send(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + Math.floor(panos) + coins, msg.author.id, 9381414, logi));
       return;
     }
 
     firebase.database().ref('profiles').set(data);
 
-    msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, " ", msg.author.id, 6842472, logi)).then(m => {
+    msg.channel.send(printBJ(msg.channel, Math.floor(panos), jakajan_käsi, pelaajan_käsi, true, " ", msg.author.id, 6842472, logi)).then(m => {
       bj_message = m;
-      bj[msg.author.id] = [jakajan_käsi, pelaajan_käsi, panos, msg.author.id, logi, m];
+      bj[msg.author.id] = [jakajan_käsi, pelaajan_käsi, Math.floor(panos), msg.author.id, logi, m];
       return bj_message;
     }).then(async m => {
       await m.react(_h_e);
@@ -1091,7 +1101,11 @@ const commands = {
       }
 
       if (data[msg.author.id]["omistus"]["rahat"] > bj[msg.author.id][2] && ((sum_u >= 9 && sum_u <= 11) || ((sum >= 9 && sum <= 11))) && bj[msg.author.id][1].length == 2 && sum_u < 21) {
-        await m.react(_d_e);
+        await m.react(_d_e).then( r => {
+          double_reaction[msg.author.id] = r;
+          console.log("luonti: ");
+          console.log(r);
+        });
       }
     }).catch(err => {
       console.log(err);
@@ -3111,8 +3125,6 @@ client.on('ready', () => {
   _s_e = client.emojis.find("name", "S_");
   _j_e = client.emojis.find("name", "J_");
 
-
-
 });
 
 // CLIENTIN VASTAANOTTESSA VIESTIN
@@ -3165,6 +3177,7 @@ client.on('messageReactionAdd', (reaction, user) => {
 
       }
     }
+
   } catch(err) {
     console.log(err);
   }
