@@ -22,6 +22,7 @@ const streamOptions = {
 // SERVERIN VARIABLEJA
 var pääpäivä = false;
 const SLOTRATE = 30;
+var kortit;
 
 // emojies
 var coins;
@@ -35,12 +36,22 @@ var es;
 var harpoon_e;
 var jaa;
 var empty_e;
+var kortit;
+var card_back;
+var giphy;
+var _h_e;
+var _d_e;
+var _s_e;
+var _j_e;
 
 // FIREBASEN SETUP
 var data;
+let deck = [];
 const BOTIT = ["232916519594491906","155149108183695360","430827809418772481"];
 let msg = {};
+let bj = {};
 let harpoons = {};
+
 
 
 firebase.initializeApp(fireb);
@@ -59,6 +70,177 @@ function changeTitle(text) {
   });
 }
 
+function tarkastaPakka() {
+
+  if (!("deck" in data)) {
+    data["deck"] = deck;
+  }
+  deck = data["deck"];
+
+  if (deck.length < 25) {
+    deck = [];
+    for (let m = 0; m < 6; m++) {
+      for (let p = 1; p < 14; p++) {
+        deck.push(p+"S");
+      }
+      for (let h = 1; h < 14; h++) {
+        deck.push(h+"H");
+      }
+      for (let r = 1; r < 14; r++) {
+        deck.push(r+"C");
+      }
+      for (let ru = 1; ru < 14; ru++) {
+        deck.push(ru+"D");
+      }
+    }
+  }
+
+  data["deck"] = deck;
+}
+
+function jaaKortti(pelaaja, _käsi) {
+  ref.on('value', gotData, errData);
+  deck = data["deck"];
+  let kasi = _käsi;
+  var rnd_c = Math.floor(Math.random() * Math.floor(deck.length));
+  kasi.push(deck[rnd_c]);
+  deck.splice(rnd_c, 1);
+  data[pelaaja]["pelit"]["kortteja_pelannut"] += 1;
+  data["deck"] = deck;
+  firebase.database().ref('profiles').set(data);
+  return kasi;
+}
+
+function tutkiSumma(_käsi, jakaja, eka, _threshold) {
+  let kasi = _käsi;
+  let sum = 0;
+  let threshold = _threshold;
+  let len;
+
+  if (eka == true) {
+    len = kasi.length - 1;
+  } else {
+    len = kasi.length ;
+  }
+
+  for (let k = 0; k < len; k++) {
+
+    if (parseInt(kasi[k].replace(/\D/g,'')) == 1) {
+      sum += 11;
+    }
+    else if (parseInt(kasi[k].replace(/\D/g,'')) > 10) {
+      sum += 10;
+    } else {
+      sum += parseInt(kasi[k].replace(/\D/g,''));
+    }
+  }
+
+  for (let x = 0; x < kasi.length; x++) {
+    if (sum > threshold) {
+      if (parseInt(kasi[x].replace(/\D/g,'')) == 1) {
+        sum -= 10;
+      }
+    }
+  }
+  return sum;
+}
+
+function printBJ(_msg, _panos, _jakajan_käsi, _pelaajan_käsi, _first, voitto="<stand> <hit> <double (9-11)>", _user, _color, _log) {
+  try {
+  ref.on('value', gotData, errData);
+
+  var jakaja_k = "";
+  var jakaja_sum = 0;
+  var pelaaja_k = "";
+  var pelaaja_sum = 0;
+  var avatar = " ";
+  var username = " ";
+  var user = _user;
+
+  var color = _color;
+  var ohjeet = "Testiohjeet";
+  var history = "";
+  var tuplata = "";
+
+  jakaja_sum = tutkiSumma(_jakajan_käsi, false, _first, 21);
+  pelaaja_sum = tutkiSumma(_pelaajan_käsi, false, false, 21);
+
+  let count = 0;
+  for (let kortti of _jakajan_käsi) {
+    if (count == 1 && _first) {
+      jakaja_k += card_back;
+    } else {
+      jakaja_k += "" + kortit[kortti];
+    }
+    count++;
+  }
+
+  for (let kortti of _pelaajan_käsi) {
+    pelaaja_k += "" + kortit[kortti];
+  }
+
+  let sum = 0;
+  for (let k = 0; k < _pelaajan_käsi.length; k++) {
+
+    if (parseInt(_pelaajan_käsi[k].replace(/\D/g,'')) == 1) {
+      sum += 1;
+    }
+    else if (parseInt(_pelaajan_käsi[k].replace(/\D/g,'')) > 10) {
+      sum += 10;
+    } else {
+      sum += parseInt(_pelaajan_käsi[k].replace(/\D/g,''));
+    }
+  }
+
+  if (data[_user]["omistus"]["rahat"] > _panos && ((pelaaja_sum >= 9 && pelaaja_sum <= 11) || ((sum >= 9 && sum <= 11))) && _pelaajan_käsi.length == 2 && pelaaja_sum < 21) {
+    tuplata = " (Voit Doublee!)"
+  }
+
+  jakaja_k += "\nYht: " + jakaja_sum ;
+  pelaaja_k += "\nYht: " + pelaaja_sum + tuplata;
+
+  avatar = client.users.get(user).avatarURL;
+  username = client.users.get(user).username;
+
+  for (var i of _log) {
+    history += i;
+  }
+  return {
+      "embed": {
+        "color": color,
+        "author": {
+          "name": "BLACKJACK",
+          "icon_url": avatar
+        },
+        "description" : "Rahat: " + data[user]["omistus"]["rahat"] + coins + ", Panos: " + _panos + coins,
+        "fields": [
+            {
+            "name": "***Jakaja:***",
+            "value": jakaja_k,
+            "inline" : false
+          },
+          {
+            "name": "***" + username + ":***",
+            "value": pelaaja_k + "\n"  + voitto,
+            "inline": true
+          },
+
+          {
+            "name": "***Historia:***",
+            "value": history,
+            "inline": true
+          }
+        ],
+        footer: {
+          text: "Kortteja jäljellä: " + deck.length
+        }
+      }
+    };
+  } catch(err) {
+    console.log(err);
+  }
+}
+
 // LÄHETTÄÄ PELIAUTOMAATTITIEDOT
 function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
 
@@ -71,13 +253,42 @@ function printSlot(_eka, _toka, _kolmas, _voitto, target_id, msg, _panos) {
   if (min_panos < 5) {
     min_panos = 5;
   }
+
+  const tpog = 7;
+  const tsasu = 35;
+  const tkarvis = 28;
+  const talfa = 18;
+  const tmeloni = 12;
+
+  var rnd = [];
+  for (var i = 0; i < 6; i++) {
+    var rnda = Math.floor(Math.random() * Math.floor(100 + 1));
+    if (rnda <= tkarvis) {
+      rnd.push(karvis);
+    } else if (rnda <= tsasu + tkarvis) {
+      rnd.push(sasu);
+    } else if (rnda <= tsasu + tkarvis + talfa) {
+      rnd.push(kys);
+    } else if (rnda <= tsasu + tkarvis + tmeloni + talfa) {
+      rnd.push(protect);
+    } else {
+      rnd.push(poggers);
+    }
+  }
+  let color = 9381414;
+  if (_voitto > 0) {
+    color = 5348864;
+  }
+
   var str = "Rahat: " + rahat + coins + ", Panos: " + _panos + coins + "\n\n" +
-    "|    -    " + _eka + "    -    " + _toka + "    -    " + _kolmas +
-    "    -    |" + "\n\nVoitit: " + _voitto + coins + ", Min panos: " + min_panos + coins;
+  "⬛️|        " + rnd[0] + "    |    " + rnd[1] + "    |    " + rnd[2] +"        |⬛️\n" +
+  "▶️|        " + _eka + "    |    " + _toka + "    |    " + _kolmas + "        |◀️\n" +
+  "⬛️|        " + rnd[3] + "    |    " + rnd[4] + "    |    " + rnd[5] +"        |⬛️\n" +
+  "\nVoitit: " + _voitto + coins + ", Min panos: " + min_panos + coins;
 
   msg.channel.send({
     "embed": {
-      "color": 15466496,
+      "color": color,
       "author": {
         "name": "SLOTTIPOTTI",
         "icon_url": "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
@@ -114,9 +325,15 @@ function printProfile(target_id, msg) {
   });
 
   if (data[target_id]["omistus"]["kultainen_harppuuna"]) {
-    harp = "\nLöytyy: " + harpoon_e;
+    harp = "\nLöytyy: " + harpoon_e ;
   } else {
     harp = "";
+  }
+
+  if (data[target_id]["omistus"]["valaankasvatusohjelma"]) {
+    val1 = "\nKasvatan valaita 🐳";
+  } else {
+    val1 = "";
   }
 
   function laheta(avatar) {
@@ -148,7 +365,7 @@ function printProfile(target_id, msg) {
           },
           {
             "name": "***___Muut romut:___***",
-            "value": es_määrä + es + " (Juodut: " + es_tyhjät + ")" + harp
+            "value": es_määrä + es + " (Juodut: " + es_tyhjät + ")" + harp + val1
           },
           {
             "name": "***___Aika kannulla:___***",
@@ -189,7 +406,7 @@ function ValidURL(str) {
 // Luo/Korjaa profiilin tietoja.
 function luoTiedot(_id) {
 
-  if (_id == "date" || _id == undefined) return;
+  if (_id == "date" || _id == undefined || _id == "dj" || _id == "deck") return;
   var usr = client.users;
 
   var name;
@@ -252,7 +469,21 @@ function luoTiedot(_id) {
           "harpoon_hai": 0,
           "harpoon_pallo": 0,
           "harpoon_valas": 0
-        }
+        },
+        "BJ_pelit": 0,
+        "BJ_voitetut_pelit": 0,
+        "BJ_hävityt_pelit": 0,
+        "BJ_voitetut_rahat": 0,
+        "BJ_hävityt_rahat" : 0,
+        "BJ_panokset" : 0,
+        "BJ_yli": 0,
+        "BJ_21" : 0,
+        "BJ_vähemmän": 0,
+        "BJ_hit" : 0,
+        "BJ_stand" : 0,
+        "BJ_double" : 0,
+        "BJ_split" : 0,
+        "kortteja_pelannut" : 0
       }
     };
 
@@ -284,7 +515,8 @@ function luoTiedot(_id) {
         "perustulo": 10,
         "ES": 0,
         "ES_tyhjät": 0,
-        "kultainen_harppuuna": false
+        "kultainen_harppuuna": false,
+        "valaankasvatusohjelma": false
       };
     }
     if (!("rahat" in data[_id]["omistus"])) {
@@ -292,6 +524,9 @@ function luoTiedot(_id) {
     }
     if (!("kultainen_harppuuna" in data[_id]["omistus"])) {
       data[_id]["omistus"]["kultainen_harppuuna"] = false;
+    }
+    if (!("valaankasvatusohjelma" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["valaankasvatusohjelma"] = false;
     }
     if (!("maxrahat" in data[_id]["omistus"])) {
       data[_id]["omistus"]["maxrahat"] = 500;
@@ -316,6 +551,7 @@ function luoTiedot(_id) {
         "slot_pelit": 0,
         "slot_voitot": 0,
         "slot_voitot_yhteensä": 0,
+        "slot_häviöt_yhteensä": 0,
         "slot_yksittäisvoitot": {
           "sasu": 0,
           "karvis": 0,
@@ -332,17 +568,74 @@ function luoTiedot(_id) {
         "ryhmäpelit": 0,
         "ryhmäpelivoitot": 0,
         "ryhmäpelivoitot_yht": 0,
-        "ryhmäpelihäviöt_yht": 0
+        "ryhmäpelihäviöt_yht": 0,
+        "harpoon_pelit": 0,
+        "harpoon_voitetut": 0,
+        "harpoon_hävityt": 0,
+        "harpoon_osumat": 0,
+        "BJ_pelit": 0,
+        "BJ_voitetut_pelit": 0,
+        "BJ_hävityt_pelit": 0,
+        "BJ_voitetut_rahat": 0,
+        "BJ_hävityt_rahat" : 0,
+        "BJ_panokset" : 0,
+        "BJ_yli": 0,
+        "BJ_21" : 0,
+        "BJ_vähemmän": 0,
+        "BJ_hit" : 0,
+        "BJ_stand" : 0,
+        "BJ_double" : 0,
+        "BJ_split" : 0,
+        "kortteja_pelannut" : 0
       };
     }
-    if (!("slot_pelit" in data[_id]["pelit"])) {
-      data[_id]["slot_pelit"] = 0;
+    if (!("BJ_pelit" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_pelit"] = 0;
     }
-    if (!("slot_voitot" in data[_id]["pelit"])) {
-      data[_id]["slot_voitot"] = 0;
+    if (!("BJ_voitetut_pelit" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_voitetut_pelit"] = 0;
+    }
+    if (!("BJ_hävityt_pelit" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_hävityt_pelit"] = 0;
+    }
+    if (!("BJ_voitetut_rahat" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_voitetut_rahat"] = 0;
+    }
+    if (!("BJ_hävityt_rahat" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_hävityt_rahat"] = 0;
+    }
+    if (!("BJ_panokset" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_panokset"] = 0;
+    }
+    if (!("BJ_yli" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_yli"] = 0;
+    }
+    if (!("BJ_21" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_21"] = 0;
+    }
+    if (!("BJ_vähemmän" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_vähemmän"] = 0;
+    }
+    if (!("BJ_hit" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_hit"] = 0;
+    }
+    if (!("BJ_stand" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_stand"] = 0;
+    }
+    if (!("BJ_double" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_double"] = 0;
+    }
+    if (!("BJ_split" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["BJ_split"] = 0;
+    }
+    if (!("kortteja_pelannut" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["kortteja_pelannut"] = 0;
     }
     if (!("slot_voitot_yhteensä" in data[_id]["pelit"])) {
-      data[_id]["slot_voitot_yhteensä"] = 0;
+      data[_id]["pelit"]["slot_voitot_yhteensä"] = 0;
+    }
+    if (!("slot_häviöt_yhteensä" in data[_id]["pelit"])) {
+      data[_id]["pelit"]["slot_häviöt_yhteensä"] = 0;
     }
     if (!("KTEM_pelit" in data[_id]["pelit"])) {
       data[_id]["KTEM_pelit"] = 0;
@@ -438,9 +731,361 @@ function luoTiedot(_id) {
   firebase.database().ref('profiles').set(data);
 }
 
+// BJ
+function hit(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
+
+  ref.on('value', gotData, errData);
+  var _log = logi;
+  _log.push("" + _h_e);
+
+  // Aloittaa pelin jakamalla pelaajalle
+  pelaajan_käsi = jaaKortti(pelaaja, pelaajan_käsi);
+  data[pelaaja]["pelit"]["BJ_hit"] += 1;
+  firebase.database().ref('profiles').set(data);
+  ref.on('value', gotData, errData);
+
+  // Tutkii pelaajan summan
+  let pelaaja_sum = tutkiSumma(pelaajan_käsi, false, false, 21);
+
+  // Katsoo jos pelaaja voitti tai hävisi suoraan
+  if (pelaaja_sum == 21 && pelaajan_käsi.length == 2) {
+    data[pelaaja]["pelit"]["BJ_21"] += 1;
+    data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
+    data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos*1.5;
+    data[pelaaja]["omistus"]["rahat"] += panos*2.5;
+    firebase.database().ref('profiles').set(data);
+    bj_message.clearReactions();
+    bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Blackjack! Voitit " + panos*1.5 + coins, pelaaja, 5348864, _log));
+    delete bj[pelaaja];
+
+  } else if (pelaaja_sum == 21) {
+    delete bj[pelaaja];
+    bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, panos, pelaaja, _log, bj_message];
+    return stand(bj[pelaaja][0], bj[pelaaja][1], bj[pelaaja][2],bj[pelaaja][3],bj[pelaaja][4],bj[pelaaja][5]);
+
+  } else if (pelaaja_sum > 21) {
+    data[pelaaja]["pelit"]["BJ_yli"] += 1;
+    data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
+    data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos;
+    firebase.database().ref('profiles').set(data);
+    bj_message.clearReactions();
+    bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + panos + coins, pelaaja, 9381414, _log));
+    delete bj[pelaaja];
+
+  } else {
+    bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, " ", pelaaja ,6842472, _log));
+    delete bj[pelaaja];
+    bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, panos, pelaaja, _log, bj_message];
+  }
+  firebase.database().ref('profiles').set(data);
+}
+
+function stand(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
+  ref.on('value', gotData, errData);
+  var _log = logi;
+  _log.push("" + _s_e);
+
+  bj_message.clearReactions();
+  // katsoo summan -> jakaa ->
+  data[pelaaja]["pelit"]["BJ_stand"] += 1;
+  firebase.database().ref('profiles').set(data);
+
+  let pelaaja_sum = tutkiSumma(pelaajan_käsi, false, false, 21);
+
+  while (true) {
+    ref.on('value', gotData, errData);
+
+    jakaja_sum = tutkiSumma(jakajan_käsi, true, false, 17);
+
+    let sum_2 = 0;
+    for (let k = 0; k < jakajan_käsi.length; k++) {
+
+      if (parseInt(jakajan_käsi[k].replace(/\D/g,'')) == 1) {
+        sum_2 += 1;
+      }
+      else if (parseInt(jakajan_käsi[k].replace(/\D/g,'')) > 10) {
+        sum_2 += 10;
+      } else {
+        sum_2 += parseInt(jakajan_käsi[k].replace(/\D/g,''));
+      }
+    }
+
+    // Katsoo jos pelaaja voitti tai hävisi suoraan
+    if (jakaja_sum == 21 && jakajan_käsi.length == 2) {
+
+      data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
+      data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos;
+      firebase.database().ref('profiles').set(data);
+      bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Jakajan Blackjack! Hävisit " + panos + coins, pelaaja, 9381414, _log));
+      delete bj[pelaaja];
+      break;
+
+    } else if (jakaja_sum > 21) {
+
+      data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
+      data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos;
+      data[pelaaja]["omistus"]["rahat"] += panos*2;
+      firebase.database().ref('profiles').set(data);
+      bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Jakaja meni yli! Voitit " + panos + coins, pelaaja, 5348864, _log));
+      delete bj[pelaaja];
+
+      break;
+
+    } else if (jakaja_sum >= 17) {
+
+      if (jakaja_sum >= pelaaja_sum) {
+        data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
+        data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos;
+        data[pelaaja]["pelit"]["BJ_vähemmän"] += 1;
+        firebase.database().ref('profiles').set(data);
+        bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Jakaja voitti! Hävisit " + panos + coins, pelaaja, 9381414, _log));
+        delete bj[pelaaja];
+
+        break;
+
+      } else {
+        data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
+        data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos;
+        data[pelaaja]["omistus"]["rahat"] += panos*2;
+        firebase.database().ref('profiles').set(data);
+        bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, false, "Voitit: " + panos + coins, pelaaja, 5348864, _log));
+        delete bj[pelaaja];
+
+        break;
+      }
+
+    } else {
+
+      // Jaa uusi kortti
+      jakajan_käsi = jaaKortti(pelaaja, jakajan_käsi);
+
+    }
+
+  }
+
+}
+
+function double(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
+  ref.on('value', gotData, errData);
+  var _log = logi;
+  _log.push("" + _d_e);
+  bj_message.clearReactions();
+  // katsoo summan -> jakaa ->
+
+  data[pelaaja]["pelit"]["BJ_double"] += 1;
+  data[pelaaja]["omistus"]["rahat"] -= panos;
+  firebase.database().ref('profiles').set(data);
+
+  pelaajan_käsi = jaaKortti(pelaaja, pelaajan_käsi);
+  let pelaaja_sum = tutkiSumma(pelaajan_käsi, false, false, 21);
+
+  if (pelaaja_sum > 21) {
+    data[pelaaja]["pelit"]["BJ_yli"] += 1;
+    data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
+    data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos*2;
+    firebase.database().ref('profiles').set(data);
+    msg.channel.send(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + panos*2 + coins, pelaaja, 9381414, _log));
+    return;
+  }
+
+  while (true) {
+    ref.on('value', gotData, errData);
+
+    jakaja_sum = tutkiSumma(jakajan_käsi, true, false, 21);
+
+    let sum_2 = 0;
+    for (let k = 0; k < jakajan_käsi.length; k++) {
+
+      if (parseInt(jakajan_käsi[k].replace(/\D/g,'')) == 1) {
+        sum_2 += 1;
+      }
+      else if (parseInt(jakajan_käsi[k].replace(/\D/g,'')) > 10) {
+        sum_2 += 10;
+      } else {
+        sum_2 += parseInt(jakajan_käsi[k].replace(/\D/g,''));
+      }
+    }
+
+    // Katsoo jos pelaaja voitti tai hävisi suoraan
+    if (jakaja_sum == 21 && jakajan_käsi.length == 2) {
+
+      data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
+      data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos*2;
+      firebase.database().ref('profiles').set(data);
+      bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Jakajan Blackjack! Hävisit " + panos*2 + coins, pelaaja, 9381414, _log));
+      delete bj[pelaaja];
+      break;
+
+    } else if (jakaja_sum > 21) {
+
+      data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
+      data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos*2;
+      data[pelaaja]["omistus"]["rahat"] += panos*2*2;
+      firebase.database().ref('profiles').set(data);
+      bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Jakaja meni yli! Voitit " + panos*2 + coins, pelaaja, 5348864, _log));
+      delete bj[pelaaja];
+
+      break;
+
+    } else if (jakaja_sum >= 17) {
+
+      if (jakaja_sum >= pelaaja_sum) {
+        data[pelaaja]["pelit"]["BJ_hävityt_pelit"] += 1;
+        data[pelaaja]["pelit"]["BJ_hävityt_rahat"] += panos*2;
+        data[pelaaja]["pelit"]["BJ_vähemmän"] += 1;
+        firebase.database().ref('profiles').set(data);
+        bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Jakaja voitti! Hävisit " + panos*2 + coins, pelaaja, 9381414, _log));
+        delete bj[pelaaja];
+
+        break;
+
+      } else {
+        data[pelaaja]["pelit"]["BJ_voitetut_pelit"] += 1;
+        data[pelaaja]["pelit"]["BJ_voitetut_rahat"] += panos*2;
+        data[pelaaja]["omistus"]["rahat"] += panos*2*2;
+        firebase.database().ref('profiles').set(data);
+        bj_message.edit(printBJ(msg.channel, panos*2, jakajan_käsi, pelaajan_käsi, false, "Voitit: " + panos*2 + coins, pelaaja, 5348864, _log));
+        delete bj[pelaaja];
+
+        break;
+      }
+
+    } else {
+
+      // Jaa uusi kortti
+      jakajan_käsi = jaaKortti(pelaaja, jakajan_käsi);
+
+    }
+
+  }
+
+}
+
 
 // KAIKKI KOMENNOT
 const commands = {
+
+  'bj': (msg) => {
+    ref.on('value', gotData, errData);
+
+    tarkastaPakka();
+    msg.delete();
+    luoTiedot(msg.author.id);
+
+    const BJRATE = 15;
+
+    let panos = msg.content.split(' ')[1];
+
+    try {
+      panos = eval(panos);
+    } catch (err) {
+      panos = panos;
+    }
+    if (panos == "e") {
+      panos = 272;
+    } else if (panos == "pi") {
+      panos = 314;
+    } else if ((panos + "").startsWith("log(")) {
+      try {
+        panos = Math.log(panos.replace(/\D/g, '')) * 100;
+      } catch (err) {
+        return msg.channel.sendMessage("Virhe logaritmissä!");
+      }
+    }
+
+    let min_panos = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (BJRATE * 10)) * 10;
+    if (min_panos < 5) {
+      min_panos = 5
+    }
+
+    if (panos == "min") {
+      panos = min_panos;
+    }
+    if (panos == "max") {
+      panos = data[msg.author.id]["omistus"]["rahat"];
+    }
+    if (panos == "puolet") {
+      panos = data[msg.author.id]["omistus"]["rahat"] / 2;
+    }
+
+    if (panos == 0) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
+    if ((panos == '' || panos === undefined)) {
+      panos = min_panos;
+    }
+    if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla positiivinen luku");
+    if (panos < min_panos) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
+
+    panos = Math.floor(panos);
+
+    if (data[msg.author.id]["omistus"]["rahat"] < panos) {
+      return msg.channel.sendMessage("Liian iso panos!");
+    }
+
+    data[msg.author.id]["omistus"]["rahat"] -= panos;
+    data[msg.author.id]["pelit"]["BJ_panokset"] += panos;
+    data[msg.author.id]["pelit"]["BJ_pelit"] += 1;
+    firebase.database().ref('profiles').set(data);
+
+    if (bj[msg.author.id] != undefined) {
+      data[msg.author.id]["pelit"]["BJ_hävityt_pelit"] += 1;
+      firebase.database().ref('profiles').set(data);
+      delete bj[msg.author.id];
+    }
+
+    // PELI //
+    let jakajan_käsi = [];
+    let pelaajan_käsi = [];
+
+    let pelaaja_sum = 0;
+    let jakaja_sum = 0;
+
+    for (let i = 0; i < 2; i++) {
+      jakajan_käsi = jaaKortti(msg.author.id, jakajan_käsi);
+    }
+
+    for (let u = 0; u < 2; u++) {
+      pelaajan_käsi = jaaKortti(msg.author.id, pelaajan_käsi);
+    }
+
+    jakaja_sum = tutkiSumma(jakajan_käsi, true, true, 21);
+    pelaaja_sum = tutkiSumma(pelaajan_käsi, false, false, 21);
+
+    if (pelaaja_sum == 21) {
+      data[msg.author.id]["pelit"]["BJ_21"] += 1;
+      data[msg.author.id]["pelit"]["BJ_voitetut_pelit"] += 1;
+      data[msg.author.id]["pelit"]["BJ_voitetut_rahat"] += panos*1.5;
+      data[msg.author.id]["omistus"]["rahat"] += panos*2,5;
+      firebase.database().ref('profiles').set(data);
+      msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Blackjack! Voitit " + panos*1.5 + coins, msg.author.id, 5348864, logi));
+      return;
+    } else if (pelaaja_sum > 21) {
+      data[msg.author.id]["pelit"]["BJ_yli"] += 1;
+      data[msg.author.id]["pelit"]["BJ_hävityt_pelit"] += 1;
+      data[msg.author.id]["pelit"]["BJ_hävityt_rahat"] += panos;
+      firebase.database().ref('profiles').set(data);
+      msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, "Jakaja voitti! Hävisit " + panos + coins, msg.author.id, 9381414, logi));
+      return;
+    }
+
+    firebase.database().ref('profiles').set(data);
+    var logi = [];
+    logi.push("" + _j_e);
+
+    msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, " ", msg.author.id, 6842472, logi)).then(m => {
+      bj_message = m;
+      bj[msg.author.id] = [jakajan_käsi, pelaajan_käsi, panos, msg.author.id, logi, m];
+      return bj_message;
+    }).then(m => {
+      m.react(_h_e);
+      return m;
+    }).then(m => {
+      m.react(_s_e);
+      return m;
+    }).then(m => {
+      m.react(_d_e);
+    });
+
+  },
 
   'harpoon': (msg) => {
 
@@ -448,16 +1093,17 @@ const commands = {
     msg.delete();
     luoTiedot(msg.author.id);
 
-    if (data[msg.author.id]["omistus"]["rahat"] < 50) {
-      return msg.channel.sendMessage("Tarvitset vähintään 50" + coins + "!");
-    }
-
     let multi = 1;
     if (data[msg.author.id]["omistus"]["kultainen_harppuuna"]) {
       multi = 5;
     } else {
       multi = 1;
     }
+
+    if (data[msg.author.id]["omistus"]["rahat"] < 50 * multi) {
+      return msg.channel.sendMessage("Tarvitset vähintään " + 50 * multi + coins + "!");
+    }
+
 
     data[msg.author.id]["omistus"]["rahat"] -= 50 * multi;
     data[msg.author.id]["pelit"]["harpoon_pelit"] += 1;
@@ -513,7 +1159,11 @@ const commands = {
     }
 
     // EpicKala
-    var rnd = Math.floor(Math.random() * Math.floor(15 + 1));
+    let valasrate = 15;
+    if (data[msg.author.id]["omistus"]["valaankasvatusohjelma"]) {
+      valasrate = 10;
+    }
+    var rnd = Math.floor(Math.random() * Math.floor(valasrate + 1));
 
     if (rnd == 1) {
       while (true) {
@@ -572,7 +1222,7 @@ const commands = {
 
 
     if (multi == 5) {
-      color = 0xfffa17;
+      color = 16093987;
       icon = harpoon_e;
     } else {
       color = 1006999;
@@ -790,7 +1440,7 @@ const commands = {
       }
 
       if (multi == 5) {
-        color = 0xfffa17;
+        color = 16093987;
         icon = harpoon_e;
       } else {
         color = 1006999;
@@ -950,7 +1600,7 @@ const commands = {
       co.stop();
       var ep = "";
       var ra = "";
-      if (onnistujat.length <= 2) return msg.channel.send("Ei ole tarpeeksi kelvollisia osallistuja!");
+      if (onnistujat.length < 2) return msg.channel.send("Ei ole tarpeeksi kelvollisia osallistuja!");
       if (epäonnistujat.length > 0) {
         ep = "\nError 404:\n" + epäonnistui;
       }
@@ -1017,7 +1667,11 @@ const commands = {
         {
          "name": "***___" + harpoon_e + "Kultainen harppuuna:___***",
          "value": "___Hinta:___ 150000" + coins +". Viisinkertaistaa Harpoon -pelissä liikkuvat massit!"
-       }]
+       },
+       {
+        "name": "***___" + "🐳 Valaankasvatusohjelma:___***",
+        "value": "___Hinta:___ 240000" + coins +". Nostaa valaiden määrää 50%!"
+      }]
       }
     });
   },
@@ -1069,6 +1723,17 @@ const commands = {
 
       data[ostaja]["omistus"]["kultainen_harppuuna"] = true;
       data[ostaja]["omistus"]["rahat"] -= 150000;
+
+      msg.channel.sendMessage("Onnittelut! Sulla on nyt kultainen harppuuna!");
+
+    } else if (ostos.toLowerCase() == "valaankasvatusohjelma") {
+
+      if (data[ostaja]["omistus"]["valaankasvatusohjelma"] == true) return msg.channel.sendMessage("Älä osta toista harpuunaa, menee hukkaan!");
+      if (rahat < 240000) return msg.channel.sendMessage("Lol, köyhä " + jaa);
+
+
+      data[ostaja]["omistus"]["kultainen_harppuuna"] = true;
+      data[ostaja]["omistus"]["rahat"] -= 240000;
 
       msg.channel.sendMessage("Onnittelut! Sulla on nyt kultainen harppuuna!");
 
@@ -1154,6 +1819,14 @@ const commands = {
     var ryhmäpelihäviösumma = data[target_id]["pelit"]["ryhmäpelihäviöt_yht"];
     var maxrahat = data[target_id]["omistus"]["maxrahat"];
 
+    var bjpelit = data[target_id]["pelit"]["BJ_pelit"];
+    var bjvoitot = data[target_id]["pelit"]["BJ_voitetut_pelit"];
+    var bjhäviöt = data[target_id]["pelit"]["BJ_hävityt_pelit"];
+    var bjw = (parseInt(bjvoitot)*100/parseInt(bjpelit)).toFixed(2);
+    var bjvr = data[target_id]["pelit"]["BJ_voitetut_rahat"];
+    var vjhr = data[target_id]["pelit"]["BJ_hävityt_rahat"];
+    var bjnetto = (parseInt(bjvr) - parseInt(vjhr));
+
 
     msg.channel.send({
       "embed": {
@@ -1191,6 +1864,17 @@ const commands = {
             + (parseInt(data[target_id]["pelit"]["harpoon_osumat"])/parseInt(data[target_id]["pelit"]["harpoon_pelit"])*100).toFixed(2) + "% \n🦈: "
             + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_hai"] + "\n🎈: " + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_pallo"]
             + "\n🐳: " + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_valas"]
+          },
+          {
+            "name": "***___BJ:___***",
+            "value":
+            "Pelit: " + bjpelit +
+            "\nVoitot: " + bjvoitot +
+            "\nHäviöt: " + bjhäviöt +
+            "\nW%: " + bjw + "%" +
+            "\nVoitetut rahat: " + bjvr + coins +
+            "\nHävityt rahat: " + vjhr + coins +
+            "\nNetto: " + bjnetto + coins
           },
           {
             "name": "***___Siirrot:___***",
@@ -1269,8 +1953,8 @@ const commands = {
       data[target_id]["omistus"]["saadut_rahat"] += parseInt(amount);
       data[sender_id]["omistus"]["annetut_rahat"] += parseInt(amount);
 
-      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["max_rahat"]) {
-        data[target_id]["omistus"]["max_rahat"] = data[target_id]["omistus"]["rahat"]
+      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
+        data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
       }
 
     } else {
@@ -1337,7 +2021,7 @@ const commands = {
           },
           {
             "name": (kys + " ").repeat(3) + ":",
-            "value": "30 x panos\n"
+            "value": "32 x panos\n"
           },
           {
             "name": (protect + " ").repeat(3) + ":",
@@ -1357,7 +2041,7 @@ const commands = {
           },
           {
             "name": "Palautusprosentti:",
-            "value": "109.59%"
+            "value": "110,75%"
           }
         ]
       }
@@ -1419,6 +2103,7 @@ const commands = {
 
       if (data[msg.author.id]["omistus"]["rahat"] < panos) return msg.channel.sendMessage(`Sulla ei oo varaa uhkapelata.`);
       data[msg.author.id]["omistus"]["rahat"] -= panos;
+      data[msg.author.id]["pelit"]["slot_häviöt_yhteensä"] += panos;
 
       const tpog = 7;
       const tsasu = 35;
@@ -1431,7 +2116,7 @@ const commands = {
       const pog3_v = 400;
       const sasu_v = 4;
       const karvis_v = 8;
-      const alfa_v = 30;
+      const alfa_v = 32;
       const meloni_v = 85;
 
       var rulla = [];
@@ -1449,6 +2134,7 @@ const commands = {
           rulla.push(poggers);
         }
       }
+
 
       var voitto;
       if (rulla[0] == poggers && rulla[1] == poggers && rulla[2] == poggers) {
@@ -1503,8 +2189,8 @@ const commands = {
       msg.channel.sendMessage(`Tapahtui virhe datan kanssa. Korjattu! Kokeile uudelleen.`);
     }
 
-    if (data[msg.author.id]["omistus"]["rahat"] > data[msg.author.id]["omistus"]["max_rahat"]) {
-      data[msg.author.id]["omistus"]["max_rahat"] = data[msg.author.id]["omistus"]["rahat"]
+    if (data[msg.author.id]["omistus"]["rahat"] > data[msg.author.id]["omistus"]["maxrahat"]) {
+      data[msg.author.id]["omistus"]["maxrahat"] = data[msg.author.id]["omistus"]["rahat"]
     }
 
 
@@ -1530,7 +2216,7 @@ const commands = {
       data[pelaaja]["omistus"]["rahat"] *= 2;
       msg.channel.send({
         "embed": {
-          "color": 15466496,
+          "color": 5348864,
           "image": {
             "url": "https://i.ytimg.com/vi/F39Y67DzHTM/hqdefault.jpg"
           },
@@ -1552,7 +2238,7 @@ const commands = {
       data[pelaaja]["pelit"]["KTEM_häviöt"] += data[pelaaja]["omistus"]["rahat"];
       msg.channel.send({
         "embed": {
-          "color": 15466496,
+          "color": 9381414,
           "image": {
             "url": "https://static.naamapalmu.com/files/pp/big/v7vkeefs.jpg"
           },
@@ -1570,10 +2256,9 @@ const commands = {
       data[pelaaja]["omistus"]["rahat"] = 0;
     }
 
-    if (data[pelaaja]["omistus"]["rahat"] > data[pelaaja]["omistus"]["max_rahat"]) {
-      data[pelaaja]["omistus"]["max_rahat"] = data[pelaaja]["omistus"]["rahat"]
+    if (data[pelaaja]["omistus"]["rahat"] > data[pelaaja]["omistus"]["maxrahat"]) {
+      data[pelaaja]["omistus"]["maxrahat"] = data[pelaaja]["omistus"]["rahat"]
     }
-
     data[pelaaja]["pelit"]["KTEM_pelit"] += 1;
 
     firebase.database().ref('profiles').set(data);
@@ -2005,6 +2690,8 @@ const commands = {
     } else {
       msg.channel.send("Kkruuna, " + "voitit " + msg.author.username);
     }
+
+    msg.channel.send("Custom: " + mmx);
   },
 
   'klaava': (msg) => {
@@ -2097,8 +2784,8 @@ const commands = {
     if (tuote == "rahat") {
       data[target_id]["omistus"]["rahat"] += parseInt(amount);
 
-      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["max_rahat"]) {
-        data[target_id]["omistus"]["max_rahat"] = data[target_id]["omistus"]["rahat"]
+      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
+        data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
       }
 
     } else {
@@ -2159,8 +2846,8 @@ const commands = {
     if (tuote == "rahat") {
       data[target_id]["omistus"]["rahat"] = parseInt(amount);
 
-      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["max_rahat"]) {
-        data[target_id]["omistus"]["max_rahat"] = data[target_id]["omistus"]["rahat"]
+      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
+        data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
       }
 
     } else {
@@ -2289,6 +2976,10 @@ const commands = {
             value: "ampuu harppuunan"
           },
           {
+            name: tokens.prefix + "bj + (panos)",
+            value: "Pelaa Blackjackiä. !hit, !stand, !double"
+          },
+          {
             name: tokens.prefix + "kaikkitaieimitään",
             value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
@@ -2385,6 +3076,30 @@ client.on('ready', () => {
   harpoon_e = client.emojis.find("name", "harpuuna");
   jaa = client.emojis.find("name", "jaa");
   empty_e = client.emojis.find("name", "empty");
+  kortit = {};
+  for (let m = 0; m < 5; m++) {
+    let maa;
+    if (m == 0) {
+      maa = "S";
+    } else if (m == 1){
+      maa = "H";
+    } else if (m == 2) {
+      maa = "D";
+    } else if (m == 3) {
+      maa = "C";
+    }
+    for (let k = 1; k < 15; k++) {
+      kortit[k + maa + ""] = client.emojis.find("name", "" + k + maa);
+    }
+  }
+  card_back = client.emojis.find("name", "back");
+  giphy = client.emojis.find("name", "giphy");
+  _h_e = client.emojis.find("name", "H_");
+  _d_e = client.emojis.find("name", "D_");
+  _s_e = client.emojis.find("name", "S_");
+  _j_e = client.emojis.find("name", "J_");
+
+
 
 });
 
@@ -2399,6 +3114,25 @@ client.on('message', async msg => {
 
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
+});
+
+client.on('messageReactionAdd', (reaction, user) => {
+
+  if (user.bot == true) return;
+  //reaction.remove(user);
+
+  if (user.id in bj) {
+    if (reaction.emoji == _s_e) {
+      stand(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+    }
+    if (reaction.emoji == _h_e) {
+      hit(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+    }
+    if (reaction.emoji == _d_e) {
+      double(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+
+    }
+  }
 });
 
 // INTERVALLIFUNKTIO MINUUTIN VÄLEIN
@@ -2418,6 +3152,15 @@ setInterval(function() {
     data["date"] = [0, 0, 0];
   }
 
+  try {
+    deck = data["deck"];
+  } catch(err) {
+    console.log("err");
+    tarkastaPakka();
+    deck = data["deck"];
+    firebase.database().ref('profiles').set(data);
+  }
+
   if (pääpäivä == true) {
     changeTitle("PÄÄPÄIVÄ");
   } else if (day === 3) {
@@ -2425,6 +3168,11 @@ setInterval(function() {
   } else {
     changeTitle("ttunes");
   }
+  if (data["deck"] == undefined) {
+    tarkastaPakka();
+    data["deck"] = deck;
+  }
+
 
   var keyarr = client.channels.keyArray();
 
