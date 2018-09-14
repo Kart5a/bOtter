@@ -799,7 +799,7 @@ function stand(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) 
   while (true) {
     ref.on('value', gotData, errData);
 
-    jakaja_sum = tutkiSumma(jakajan_käsi, true, false, 17);
+    jakaja_sum = tutkiSumma(jakajan_käsi, true, false, 21);
 
     let sum_2 = 0;
     for (let k = 0; k < jakajan_käsi.length; k++) {
