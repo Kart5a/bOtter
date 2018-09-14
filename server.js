@@ -192,12 +192,9 @@ function printBJ(_msg, _panos, _jakajan_käsi, _pelaajan_käsi, _first, voitto="
     }
   }
 
-  if (data[_user]["omistus"]["rahat"] > _panos && ((pelaaja_sum >= 9 && pelaaja_sum <= 11) || ((sum >= 9 && sum <= 11))) && _pelaajan_käsi.length == 2 && pelaaja_sum < 21) {
-    tuplata = " (Voit Doublee!)"
-  }
 
   jakaja_k += "\nYht: " + jakaja_sum ;
-  pelaaja_k += "\nYht: " + pelaaja_sum + tuplata;
+  pelaaja_k += "\nYht: " + pelaaja_sum;
 
   avatar = client.users.get(user).avatarURL;
   username = client.users.get(user).username;
@@ -443,6 +440,7 @@ function luoTiedot(_id) {
       "pelit": {
         "slot_pelit": 0,
         "slot_voitot": 0,
+        "slot_häviöt_yhteensä": 0,
         "slot_voitot_yhteensä": 0,
         "slot_yksittäisvoitot": {
           "sasu": 0,
@@ -759,7 +757,6 @@ function hit(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
     delete bj[pelaaja];
 
   } else if (pelaaja_sum == 21) {
-    delete bj[pelaaja];
     bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, panos, pelaaja, _log, bj_message];
     return stand(bj[pelaaja][0], bj[pelaaja][1], bj[pelaaja][2],bj[pelaaja][3],bj[pelaaja][4],bj[pelaaja][5]);
 
@@ -774,10 +771,8 @@ function hit(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
 
   } else {
     bj_message.edit(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, " ", pelaaja ,6842472, _log));
-    delete bj[pelaaja];
     bj[pelaaja] = [jakajan_käsi, pelaajan_käsi, panos, pelaaja, _log, bj_message];
   }
-  firebase.database().ref('profiles').set(data);
 }
 
 function stand(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
@@ -1050,6 +1045,9 @@ const commands = {
     jakaja_sum = tutkiSumma(jakajan_käsi, true, true, 21);
     pelaaja_sum = tutkiSumma(pelaajan_käsi, false, false, 21);
 
+    var logi = [];
+    logi.push("" + _j_e);
+
     if (pelaaja_sum == 21) {
       data[msg.author.id]["pelit"]["BJ_21"] += 1;
       data[msg.author.id]["pelit"]["BJ_voitetut_pelit"] += 1;
@@ -1068,21 +1066,35 @@ const commands = {
     }
 
     firebase.database().ref('profiles').set(data);
-    var logi = [];
-    logi.push("" + _j_e);
 
     msg.channel.send(printBJ(msg.channel, panos, jakajan_käsi, pelaajan_käsi, true, " ", msg.author.id, 6842472, logi)).then(m => {
       bj_message = m;
       bj[msg.author.id] = [jakajan_käsi, pelaajan_käsi, panos, msg.author.id, logi, m];
       return bj_message;
-    }).then(m => {
-      m.react(_h_e);
-      return m;
-    }).then(m => {
-      m.react(_s_e);
-      return m;
-    }).then(m => {
-      m.react(_d_e);
+    }).then(async m => {
+      await m.react(_h_e);
+      await m.react(_s_e);
+
+      let sum_u = tutkiSumma(bj[msg.author.id][1]);
+
+      let sum = 0;
+      for (let k = 0; k < bj[msg.author.id][1].length; k++) {
+
+        if (parseInt(bj[msg.author.id][1][k].replace(/\D/g,'')) == 1) {
+          sum += 1;
+        }
+        else if (parseInt(bj[msg.author.id][1][k].replace(/\D/g,'')) > 10) {
+          sum += 10;
+        } else {
+          sum += parseInt(bj[msg.author.id][1][k].replace(/\D/g,''));
+        }
+      }
+
+      if (data[msg.author.id]["omistus"]["rahat"] > bj[msg.author.id][2] && ((sum_u >= 9 && sum_u <= 11) || ((sum >= 9 && sum <= 11))) && bj[msg.author.id][1].length == 2 && sum_u < 21) {
+        await m.react(_d_e);
+      }
+    }).catch(err => {
+      console.log(err);
     });
 
   },
@@ -3120,18 +3132,41 @@ client.on('messageReactionAdd', (reaction, user) => {
 
   if (user.bot == true) return;
   //reaction.remove(user);
+  try {
+    if (user.id in bj) {
+      if (reaction.emoji == _s_e) {
+        stand(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+      }
+      if (reaction.emoji == _h_e) {
+        reaction.remove(user).then(reaction => {
+      		console.log('Removed a reaction.');
+      	});
+        hit(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+      }
+      if (reaction.emoji == _d_e) {
+        let sum_u = tutkiSumma(bj[user.id][1]);
 
-  if (user.id in bj) {
-    if (reaction.emoji == _s_e) {
-      stand(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
-    }
-    if (reaction.emoji == _h_e) {
-      hit(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
-    }
-    if (reaction.emoji == _d_e) {
-      double(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+        let sum = 0;
+        for (let k = 0; k < bj[user.id][1].length; k++) {
 
+          if (parseInt(bj[user.id][1][k].replace(/\D/g,'')) == 1) {
+            sum += 1;
+          }
+          else if (parseInt(bj[user.id][1][k].replace(/\D/g,'')) > 10) {
+            sum += 10;
+          } else {
+            sum += parseInt(bj[user.id][1][k].replace(/\D/g,''));
+          }
+        }
+
+        if (data[user.id]["omistus"]["rahat"] > bj[user.id][2] && ((sum_u >= 9 && sum_u <= 11) || ((sum >= 9 && sum <= 11))) && bj[user.id][1].length == 2 && sum_u < 21) {
+          double(bj[user.id][0], bj[user.id][1], bj[user.id][2], bj[user.id][3], bj[user.id][4], bj[user.id][5]);
+        }
+
+      }
     }
+  } catch(err) {
+    console.log(err);
   }
 });
 
