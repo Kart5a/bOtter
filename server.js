@@ -744,8 +744,6 @@ function hit(jakajan_käsi, pelaajan_käsi, panos, pelaaja, logi, bj_message) {
   ref.on('value', gotData, errData);
 
   try {
-    console.log("Ylhäällä:");
-    console.log(double_reaction[pelaaja]);
     double_reaction[pelaaja].remove(double_reaction[pelaaja].author);
     delete double_reaction[pelaaja];
   } catch(err) {
@@ -1103,8 +1101,6 @@ const commands = {
       if (data[msg.author.id]["omistus"]["rahat"] > bj[msg.author.id][2] && ((sum_u >= 9 && sum_u <= 11) || ((sum >= 9 && sum <= 11))) && bj[msg.author.id][1].length == 2 && sum_u < 21) {
         await m.react(_d_e).then( r => {
           double_reaction[msg.author.id] = r;
-          console.log("luonti: ");
-          console.log(r);
         });
       }
     }).catch(err => {
