@@ -992,7 +992,7 @@ const commands = {
       try {
         panos = Math.log(panos.replace(/\D/g, '')) * 100;
       } catch (err) {
-        return msg.channel.sendMessage("Virhe logaritmissä!");
+        return msg.channel.send("Virhe logaritmissä!");
       }
     }
 
@@ -1011,17 +1011,17 @@ const commands = {
       panos = data[msg.author.id]["omistus"]["rahat"] / 2;
     }
 
-    if (panos == 0) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
+    if (panos == 0) return msg.channel.send(`Panos pitää olla vähintään ` + min_panos + ' coins');
     if ((panos == '' || panos === undefined)) {
       panos = min_panos;
     }
-    if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla positiivinen luku");
-    if (panos < min_panos) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
+    if (isNaN(panos)) return msg.channel.send("Panos tarvitsee olla positiivinen luku");
+    if (panos < min_panos) return msg.channel.send(`Panos pitää olla vähintään ` + min_panos + ' coins');
 
     panos = Math.floor(panos);
 
     if (data[msg.author.id]["omistus"]["rahat"] < panos) {
-      return msg.channel.sendMessage("Liian iso panos!");
+      return msg.channel.send("Liian iso panos!");
     }
 
     data[msg.author.id]["omistus"]["rahat"] -= panos;
@@ -1123,7 +1123,7 @@ const commands = {
     }
 
     if (data[msg.author.id]["omistus"]["rahat"] < 50 * multi) {
-      return msg.channel.sendMessage("Tarvitset vähintään " + 50 * multi + coins + "!");
+      return msg.channel.send("Tarvitset vähintään " + 50 * multi + coins + "!");
     }
 
 
@@ -1285,13 +1285,13 @@ const commands = {
         let deg = m.content.split(' ')[1];
         let force = m.content.split(' ')[2];
 
-        if (isNaN(deg) || isNaN(force)) return msg.channel.sendMessage("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
-        if (deg < 1 || deg > 90) return msg.channel.sendMessage("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
+        if (isNaN(deg) || isNaN(force)) return msg.channel.send("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
+        if (deg < 1 || deg > 90) return msg.channel.send("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
 
         ammu(deg, force, tuuli, field_matrix);
 
       } else if (m.content.startsWith(tokens.prefix + 'lopeta')) {
-        msg.channel.sendMessage('Lopetetaan harppuuna.').then(() => {
+        msg.channel.send('Lopetetaan harppuuna.').then(() => {
           data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50;
           harpoons[msg.author.id].stop();
           msg[msg.author.id];
@@ -1553,8 +1553,8 @@ const commands = {
     if ((panos == '' || panos === undefined)) {
       panos = 100;
     }
-    if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla luku");
-    if (panos < 100) return msg.channel.sendMessage(`Ryhmäpelin panos pitää olla vähintään 100 ` + coins);
+    if (isNaN(panos)) return msg.channel.send("Panos tarvitsee olla luku");
+    if (panos < 100) return msg.channel.send(`Ryhmäpelin panos pitää olla vähintään 100 ` + coins);
 
     panos = Math.floor(panos);
 
@@ -1571,7 +1571,7 @@ const commands = {
       if (m.content.startsWith(tokens.prefix + 'aloita') && msg.author.id == m.author.id) {
         rollaa(viesti);
       } else if (m.content.startsWith(tokens.prefix + 'keskeytä')) {
-        msg.channel.sendMessage('Keskeytetään ryhmäpeli.').then(() => {
+        msg.channel.send('Keskeytetään ryhmäpeli.').then(() => {
           co.stop();
           viesti = null;
         });
@@ -1707,13 +1707,13 @@ const commands = {
       määrä = 1;
     }
 
-    if (isNaN(määrä)) return msg.channel.sendMessage(määrä + ` määrää ei voida ostaa :D`);
+    if (isNaN(määrä)) return msg.channel.send(määrä + ` määrää ei voida ostaa :D`);
     määrä = Math.floor(parseInt(määrä));
-    if (määrä < 1) return msg.channel.sendMessage("Et voi antaa tuotetta pois :(");
+    if (määrä < 1) return msg.channel.send("Et voi antaa tuotetta pois :(");
 
     luoTiedot(ostaja);
 
-    if ((ostos == '' || ostos === undefined)) return msg.channel.sendMessage(`Kirjoita !osta ja tuotteen nimi`);
+    if ((ostos == '' || ostos === undefined)) return msg.channel.send(`Kirjoita !osta ja tuotteen nimi`);
 
     var rahat = data[ostaja]["omistus"]["rahat"];
 
@@ -1721,46 +1721,46 @@ const commands = {
     if (ostos == "perustulo") {
       var perustulonyt = data[ostaja]["omistus"]["perustulo"];
       var perustulohinta = 100 * Math.pow(perustulonyt, 2);
-      if (rahat < perustulohinta) return msg.channel.sendMessage("Ei ole varaa ostaa... nyt keräämään, tarvitset: " + perustulohinta + coins + ".");
+      if (rahat < perustulohinta) return msg.channel.send("Ei ole varaa ostaa... nyt keräämään, tarvitset: " + perustulohinta + coins + ".");
 
       data[ostaja]["omistus"]["perustulo"] += 5;
       data[ostaja]["omistus"]["rahat"] -= perustulohinta;
 
-      msg.channel.sendMessage("Onnittelut, perustuloa ostettu! Maksoi: " + perustulohinta + coins + ". Seuraava perustulon korotus maksaa: " + 100 * Math.pow(perustulonyt + 5, 2) + coins + ".");
+      msg.channel.send("Onnittelut, perustuloa ostettu! Maksoi: " + perustulohinta + coins + ". Seuraava perustulon korotus maksaa: " + 100 * Math.pow(perustulonyt + 5, 2) + coins + ".");
 
     } else if (ostos.toLowerCase() == "es") {
 
-      if (rahat < määrä) return msg.channel.sendMessage("Lol, köyhä " + jaa);
+      if (rahat < määrä) return msg.channel.send("Lol, köyhä " + jaa);
 
       data[ostaja]["omistus"]["ES"] += määrä;
       data[ostaja]["omistus"]["rahat"] -= määrä;
 
-      msg.channel.sendMessage("Ostit " + määrä + es);
+      msg.channel.send("Ostit " + määrä + es);
 
     } else if (ostos.toLowerCase() == "harpuuna") {
 
-      if (data[ostaja]["omistus"]["kultainen_harppuuna"] == true) return msg.channel.sendMessage("Älä osta toista harpuunaa, menee hukkaan!");
-      if (rahat < 150000) return msg.channel.sendMessage("Lol, köyhä " + jaa);
+      if (data[ostaja]["omistus"]["kultainen_harppuuna"] == true) return msg.channel.send("Älä osta toista harpuunaa, menee hukkaan!");
+      if (rahat < 150000) return msg.channel.send("Lol, köyhä " + jaa);
 
 
       data[ostaja]["omistus"]["kultainen_harppuuna"] = true;
       data[ostaja]["omistus"]["rahat"] -= 150000;
 
-      msg.channel.sendMessage("Onnittelut! Sulla on nyt kultainen harppuuna!");
+      msg.channel.send("Onnittelut! Sulla on nyt kultainen harppuuna!");
 
     } else if (ostos.toLowerCase() == "valaankasvatusohjelma") {
 
-      if (data[ostaja]["omistus"]["valaankasvatusohjelma"] == true) return msg.channel.sendMessage("Älä osta toista harpuunaa, menee hukkaan!");
-      if (rahat < 240000) return msg.channel.sendMessage("Lol, köyhä " + jaa);
+      if (data[ostaja]["omistus"]["valaankasvatusohjelma"] == true) return msg.channel.send("Älä osta toista harpuunaa, menee hukkaan!");
+      if (rahat < 240000) return msg.channel.send("Lol, köyhä " + jaa);
 
 
       data[ostaja]["omistus"]["kultainen_harppuuna"] = true;
       data[ostaja]["omistus"]["rahat"] -= 240000;
 
-      msg.channel.sendMessage("Onnittelut! Sulla on nyt kultainen harppuuna!");
+      msg.channel.send("Onnittelut! Sulla on nyt kultainen harppuuna!");
 
     } else {
-      msg.channel.sendMessage("Et voi ostaa mitään ihme " + ostos + " -juttua...");
+      msg.channel.send("Et voi ostaa mitään ihme " + ostos + " -juttua...");
     }
     firebase.database().ref('profiles').set(data);
 
@@ -1815,7 +1815,7 @@ const commands = {
         flag = true;
       }
     }
-    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     var money = data[target_id]["omistus"]["rahat"];
     var pelit = data[target_id]["pelit"]["slot_pelit"];
@@ -1929,14 +1929,14 @@ const commands = {
     luoTiedot(msg.author.id);
 
 
-    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Kirjoita !anna ja summa`);
-    if (isNaN(amount)) return msg.channel.sendMessage(amount + ` ei voida antaa :D`);
-    if (amount == undefined || amount == "") return msg.channel.sendMessage(`Laita summa!!!`);
+    if ((name == '' || name === undefined)) return msg.channel.send(`Kirjoita !anna ja summa`);
+    if (isNaN(amount)) return msg.channel.send(amount + ` ei voida antaa :D`);
+    if (amount == undefined || amount == "") return msg.channel.send(`Laita summa!!!`);
 
     if (parseInt(amount) < 0) {
-      return msg.channel.sendMessage("Älä saatana yritä viedä toisilta kädestä");
+      return msg.channel.send("Älä saatana yritä viedä toisilta kädestä");
     } else if (parseInt(amount) == 0) {
-      return msg.channel.sendMessage("Et voi siirtää et mitään...");
+      return msg.channel.send("Et voi siirtää et mitään...");
     }
 
     name = name.replace(/\D/g, '');
@@ -1950,7 +1950,7 @@ const commands = {
       }
     }
 
-    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     ref.on('value', gotData, errData);
 
@@ -1965,11 +1965,11 @@ const commands = {
       return msg.channel.send("Botille ei voi antaa :/");
     }
 
-    if (target_id == sender_id) return msg.channel.sendMessage(`Turhaa siirrät ittelles mitää...`);
+    if (target_id == sender_id) return msg.channel.send(`Turhaa siirrät ittelles mitää...`);
 
 
     if (tuote == "rahat") {
-      if (data[sender_id]["omistus"]["rahat"] < parseInt(amount)) return msg.channel.sendMessage(`Sulla ei oo tarpeeks rahea...`);
+      if (data[sender_id]["omistus"]["rahat"] < parseInt(amount)) return msg.channel.send(`Sulla ei oo tarpeeks rahea...`);
       data[target_id]["omistus"]["rahat"] += parseInt(amount);
       data[sender_id]["omistus"]["rahat"] -= parseInt(amount);
       data[target_id]["omistus"]["saadut_rahat"] += parseInt(amount);
@@ -1980,7 +1980,7 @@ const commands = {
       }
 
     } else {
-      if (data[sender_id][tuote] < parseInt(amount)) return msg.channel.sendMessage(`Sulla ei oo tarpeeks ` + tuote);
+      if (data[sender_id][tuote] < parseInt(amount)) return msg.channel.send(`Sulla ei oo tarpeeks ` + tuote);
       data[target_id]["pelit"][tuote] += parseInt(amount);
       data[sender_id]["pelit"][tuote] -= parseInt(amount);
     }
@@ -2003,7 +2003,7 @@ const commands = {
     firebase.database().ref('profiles').set(data);
 
 
-    if ((name == '' || name === undefined)) return msg.channel.sendMessage(`Sulla on ` + data[sender_id]["omistus"]["rahat"] + coins);
+    if ((name == '' || name === undefined)) return msg.channel.send(`Sulla on ` + data[sender_id]["omistus"]["rahat"] + coins);
 
     name = name.replace(/\D/g, '');
 
@@ -2018,7 +2018,7 @@ const commands = {
       }
     }
 
-    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     luoTiedot(target_id);
 
@@ -2091,7 +2091,7 @@ const commands = {
       try {
         panos = Math.log(panos.replace(/\D/g, '')) * 100;
       } catch (err) {
-        return msg.channel.sendMessage("Virhe logaritmissä!");
+        return msg.channel.send("Virhe logaritmissä!");
       }
     }
 
@@ -2110,12 +2110,12 @@ const commands = {
       panos = data[msg.author.id]["omistus"]["rahat"] / 2;
     }
 
-    if (panos == 0) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
+    if (panos == 0) return msg.channel.send(`Panos pitää olla vähintään ` + min_panos + ' coins');
     if ((panos == '' || panos === undefined)) {
       panos = min_panos;
     }
-    if (isNaN(panos)) return msg.channel.sendMessage("Panos tarvitsee olla positiivinen luku");
-    if (panos < min_panos) return msg.channel.sendMessage(`Panos pitää olla vähintään ` + min_panos + ' coins');
+    if (isNaN(panos)) return msg.channel.send("Panos tarvitsee olla positiivinen luku");
+    if (panos < min_panos) return msg.channel.send(`Panos pitää olla vähintään ` + min_panos + ' coins');
 
     panos = Math.floor(panos);
 
@@ -2123,7 +2123,7 @@ const commands = {
 
     try {
 
-      if (data[msg.author.id]["omistus"]["rahat"] < panos) return msg.channel.sendMessage(`Sulla ei oo varaa uhkapelata.`);
+      if (data[msg.author.id]["omistus"]["rahat"] < panos) return msg.channel.send(`Sulla ei oo varaa uhkapelata.`);
       data[msg.author.id]["omistus"]["rahat"] -= panos;
       data[msg.author.id]["pelit"]["slot_häviöt_yhteensä"] += panos;
 
@@ -2208,7 +2208,7 @@ const commands = {
       }
     } catch (err) {
       luoTiedot(msg.author.id);
-      msg.channel.sendMessage(`Tapahtui virhe datan kanssa. Korjattu! Kokeile uudelleen.`);
+      msg.channel.send(`Tapahtui virhe datan kanssa. Korjattu! Kokeile uudelleen.`);
     }
 
     if (data[msg.author.id]["omistus"]["rahat"] > data[msg.author.id]["omistus"]["maxrahat"]) {
@@ -2474,7 +2474,7 @@ const commands = {
       }
     }
 
-    if (!flag) return msg.channel.sendMessage(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
     ref.on('value', gotData, errData);
 
 
@@ -2489,7 +2489,7 @@ const commands = {
 
     } else {
 
-      if (target_id === sender_id) return msg.channel.sendMessage("Et voi muokata omaa profiiliasi...");
+      if (target_id === sender_id) return msg.channel.send("Et voi muokata omaa profiiliasi...");
 
       if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
 
@@ -2515,14 +2515,14 @@ const commands = {
           msg.channel.send("Kuva vaihdettu!");
 
         } else {
-          msg.channel.sendMessage("Vialliset komennot...");
+          msg.channel.send("Vialliset komennot...");
           return;
         }
 
         firebase.database().ref('profiles').set(data);
 
       } else {
-        msg.channel.sendMessage("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
+        msg.channel.send("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
       }
     }
   },
@@ -2549,18 +2549,18 @@ const commands = {
         url = manual;
       } else {
         url = msg.content.split(' ')[1];
-        if (url == '' || url === undefined) return msg.channel.sendMessage(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
+        if (url == '' || url === undefined) return msg.channel.send(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
       }
       console.log("aloitetaan lataus");
       yt.getInfo(url, (err, info) => {
-        if (err) return msg.channel.sendMessage('Kelvotonta linkkiä: ' + err);
+        if (err) return msg.channel.send('Kelvotonta linkkiä: ' + err);
         if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
         queue[msg.guild.id].songs.push({
           url: url,
           title: info.title,
           requester: msg.author.username
         });
-        msg.channel.sendMessage(`**${info.title}** jonossa!`);
+        msg.channel.send(`**${info.title}** jonossa!`);
         console.log("biisi ladannut" + queue[msg.guild.id].songs);
         startPlay(msg);
       });
@@ -2581,25 +2581,25 @@ const commands = {
           queue[msg.guild.id].playing = false;
           voiceChannel.leave();
         };
-        msg.channel.sendMessage(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
+        msg.channel.send(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
         dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
         console.log("Ruvettiin soittamaan");
         let collector = msg.channel.createCollector(m => m);
         collector.on('message', m => {
           if (m.content.startsWith(tokens.prefix + 'pause')) {
-            msg.channel.sendMessage('Pauseettu').then(() => {
+            msg.channel.send('Pauseettu').then(() => {
               dispatcher.pause();
             });
           } else if (m.content.startsWith(tokens.prefix + 'resume')) {
-            msg.channel.sendMessage('Jatketaan').then(() => {
+            msg.channel.send('Jatketaan').then(() => {
               dispatcher.resume();
             });
           } else if (m.content.startsWith(tokens.prefix + 'skip')) {
-            msg.channel.sendMessage('Skipattu').then(() => {
+            msg.channel.send('Skipattu').then(() => {
               dispatcher.end();
             });
           } else if (m.content.startsWith(tokens.prefix + 'time')) {
-            msg.channel.sendMessage(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
+            msg.channel.send(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
           }
         });
         dispatcher.on('end', () => {
@@ -2607,7 +2607,7 @@ const commands = {
           play(queue[msg.guild.id].songs.shift());
         });
         dispatcher.on('error', (err) => {
-          return msg.channel.sendMessage('error: ' + err).then(() => {
+          return msg.channel.send('error: ' + err).then(() => {
             collector.stop();
             play(queue[msg.guild.id].songs.shift());
           });
@@ -2617,12 +2617,12 @@ const commands = {
   },
 
   'queue': (msg) => {
-    if (queue[msg.guild.id] === undefined) return msg.channel.sendMessage(`Laita ttuneja jonoon: ${tokens.prefix}add`);
+    if (queue[msg.guild.id] === undefined) return msg.channel.send(`Laita ttuneja jonoon: ${tokens.prefix}add`);
     let tosend = [];
     queue[msg.guild.id].songs.forEach((song, i) => {
       tosend.push(`${i+1}. ${song.title} - Tilaaja: ${song.requester}`);
     });
-    msg.channel.sendMessage(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
+    msg.channel.send(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
   },
 
   'pääpäivä': (msg) => {
@@ -2733,7 +2733,7 @@ const commands = {
 
   'onkovammanen': (msg) => {
     let jaba = msg.content.split(' ')[1];
-    if ((jaba == '' || jaba === undefined)) return msg.channel.sendMessage(`Ketä tarkoitat?`);
+    if ((jaba == '' || jaba === undefined)) return msg.channel.send(`Ketä tarkoitat?`);
 
     tulos = Math.floor(Math.random() * Math.floor(2));
 
@@ -2893,12 +2893,12 @@ const commands = {
     let määrä = msg.content.split(' ')[1];
     // get the delete count, as an actual number.
     if ((määrä == '' || määrä === undefined)) {
-      msg.channel.sendMessage("Kirjoita !purge ja määrä");
+      msg.channel.send("Kirjoita !purge ja määrä");
       return;
     }
 
-    if (isNaN(määrä)) return msg.channel.sendMessage("Purge tarvitsee olla positiivinen luku");
-    if (määrä < 2) return msg.channel.sendMessage(`Purge pitää olla vähintään 2 `);
+    if (isNaN(määrä)) return msg.channel.send("Purge tarvitsee olla positiivinen luku");
+    if (määrä < 2) return msg.channel.send(`Purge pitää olla vähintään 2 `);
 
     määrä = Math.floor(määrä);
 
@@ -3085,19 +3085,18 @@ client.on('ready', () => {
 
   ref.on('value', gotData, errData);
 
-  coins = client.emojis.find(x => x.name == "coin");
+  coins = client.emojis.find(x => x.name === "coin");
 
-  karvis = client.emojis.find(x => x.name == "karvis");
-  sasu = client.emojis.find(x => x.name == "sasu");
-  protect = "\:watermelon:" //client.emojis.find("name", "meloni");
-  //poggers =  "<a:popoggers:442267614979293202>";
-  poggers = client.emojis.find(x => x.name == "poggers");
-  kys = client.emojis.find(x => x.name == "alfa");
+  karvis = client.emojis.find(x => x.name === "karvis");
+  sasu = client.emojis.find(x => x.name === "sasu");
+  protect = "\:watermelon:";
+  poggers = client.emojis.find(x => x.name === "poggers");
+  kys = client.emojis.find(x => x.name === "alfa");
   tyhjä = "\:x:";
-  es = client.emojis.find(x => x.name == "ES");
-  harpoon_e = client.emojis.find(x => x.name == "harpuuna");
-  jaa = client.emojis.find(x => x.name == "jaa");
-  empty_e = client.emojis.find(x => x.name == "empty");
+  es = client.emojis.find(x => x.name === "ES");
+  harpoon_e = client.emojis.find(x => x.name === "harpuuna");
+  jaa = client.emojis.find(x => x.name === "jaa");
+  empty_e = client.emojis.find(x => x.name === "empty");
   kortit = {};
   for (let m = 0; m < 5; m++) {
     let maa;
@@ -3111,15 +3110,15 @@ client.on('ready', () => {
       maa = "C";
     }
     for (let k = 1; k < 15; k++) {
-      kortit[k + maa + ""] = client.emojis.find(x => x.name == "" + k + maa);
+      kortit[k + maa + ""] = client.emojis.find(x => x.name === "" + k + maa);
     }
   }
-  card_back = client.emojis.find(x => x.name == "back");
-  giphy = client.emojis.find(x => x.name == "giphy");
-  _h_e = client.emojis.find(x => x.name == "H_");
-  _d_e = client.emojis.find(x => x.name == "D_");
-  _s_e = client.emojis.find(x => x.name == "S_");
-  _j_e = client.emojis.find(x => x.name == "J_");
+  card_back = client.emojis.find(x => x.name === "back");
+  giphy = client.emojis.find(x => x.name === "giphy");
+  _h_e = client.emojis.find(x => x.name === "H_");
+  _d_e = client.emojis.find(x => x.name === "D_");
+  _s_e = client.emojis.find(x => x.name === "S_");
+  _j_e = client.emojis.find(x => x.name === "J_");
 
 });
 
