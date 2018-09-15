@@ -387,7 +387,7 @@ function reagoi(sanalist, emojilist, msg) {
   }
   if (!f) return;
   for (var emo of emojilist) {
-    var emoji = msg.guild.emojis.find('name', emo);
+    var emoji = msg.guild.emojis.find(x => x.name === emo);
     msg.react(emoji);
   }
 }
@@ -3085,19 +3085,19 @@ client.on('ready', () => {
 
   ref.on('value', gotData, errData);
 
-  coins = client.emojis.find("name", "coin");
+  coins = client.emojis.find(x => x.name == "coin");
 
-  karvis = client.emojis.find("name", "karvis");
-  sasu = client.emojis.find("name", "sasu");
+  karvis = client.emojis.find(x => x.name == "karvis");
+  sasu = client.emojis.find(x => x.name == "sasu");
   protect = "\:watermelon:" //client.emojis.find("name", "meloni");
   //poggers =  "<a:popoggers:442267614979293202>";
-  poggers = client.emojis.find("name", "poggers");
-  kys = client.emojis.find("name", "alfa");
+  poggers = client.emojis.find(x => x.name == "poggers");
+  kys = client.emojis.find(x => x.name == "alfa");
   tyhjä = "\:x:";
-  es = client.emojis.find("name", "ES");
-  harpoon_e = client.emojis.find("name", "harpuuna");
-  jaa = client.emojis.find("name", "jaa");
-  empty_e = client.emojis.find("name", "empty");
+  es = client.emojis.find(x => x.name == "ES");
+  harpoon_e = client.emojis.find(x => x.name == "harpuuna");
+  jaa = client.emojis.find(x => x.name == "jaa");
+  empty_e = client.emojis.find(x => x.name == "empty");
   kortit = {};
   for (let m = 0; m < 5; m++) {
     let maa;
@@ -3111,15 +3111,15 @@ client.on('ready', () => {
       maa = "C";
     }
     for (let k = 1; k < 15; k++) {
-      kortit[k + maa + ""] = client.emojis.find("name", "" + k + maa);
+      kortit[k + maa + ""] = client.emojis.find(x => x.name == "" + k + maa);
     }
   }
-  card_back = client.emojis.find("name", "back");
-  giphy = client.emojis.find("name", "giphy");
-  _h_e = client.emojis.find("name", "H_");
-  _d_e = client.emojis.find("name", "D_");
-  _s_e = client.emojis.find("name", "S_");
-  _j_e = client.emojis.find("name", "J_");
+  card_back = client.emojis.find(x => x.name == "back");
+  giphy = client.emojis.find(x => x.name == "giphy");
+  _h_e = client.emojis.find(x => x.name == "H_");
+  _d_e = client.emojis.find(x => x.name == "D_");
+  _s_e = client.emojis.find(x => x.name == "S_");
+  _j_e = client.emojis.find(x => x.name == "J_");
 
 });
 
