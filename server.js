@@ -1239,7 +1239,7 @@ const commands = {
           "icon_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
         },
         "fields": [{
-            "name": icon + " wind: " + wind_str,
+            "name": icon + " Tuuli: " + wind_str,
             "value": field
           },
           {
@@ -1330,7 +1330,7 @@ const commands = {
 
         try {
         // OSUMAT
-        win_text = "shoot_harpoonit ohi... -" + 50 * multi + coins;
+        win_text = "Ammuit ohi... -" + 50 * multi + coins;
 
         if (field_matrix[_ytile][_xtile] == 1) {
           win_text = "Osuit haihin! Voitit: " + 150*multi + coins;
@@ -1462,11 +1462,11 @@ const commands = {
               "value": "Kulma: " + _deg + "°, Voima: " + _force + "."
             },
             {
-              "name": "wind: " + wind_str,
+              "name": "Tuuli: " + wind_str,
               "value": new_field
             },
             {
-              "name": "result:",
+              "name": "Tulos:",
               "value": win_text
             }
 
