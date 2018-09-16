@@ -717,7 +717,7 @@ const commands = {
 
           firebase.database().ref('profiles').set(data);
           bot_message.clearReactions();
-          bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), true, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
+          bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
           bj[player].stop();
           delete bj[player];
 
@@ -838,7 +838,7 @@ const commands = {
 
         while (true) {
 
-          jakaja_sum = calculate_sum(dealer_hand, true, false, 21);
+          jakaja_sum = calculate_sum(dealer_hand, false, 21);
 
           let sum_2 = 0;
           for (let k = 0; k < dealer_hand.length; k++) {
