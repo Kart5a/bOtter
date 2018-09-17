@@ -22,6 +22,7 @@ const client = new Client();
 let voiceChannel;
 let dispatcher;
 let queue = {};
+
 const streamOptions = {
   seek: 0,
   volume: 0.06,
@@ -45,12 +46,9 @@ let deck = []; // Deck of card for BJ
 const BOT_IDs = ["232916519594491906","155149108183695360","430827809418772481"];
 
 let bj = {};
-
 let harpoon_collectors = {};
 
 var pääpäivä = false;
-const SLOTRATE = 30;
-
 
 function change_title(text) {
   // Changes title of bOtter
@@ -127,7 +125,7 @@ function print_profile(target_id, msg) {
             "value": es_amount + es + " (Juodut: " + es_amount_empty + ")" + harp + val1
           },
           {
-            "name": "***___Aika in_channel:___***",
+            "name": "***___Aika kannulla:___***",
             "value": time + " min"
           }
 
@@ -561,6 +559,7 @@ const commands = {
 
     if (bj[msg.author.id] != undefined) {
       data[msg.author.id]["pelit"]["BJ_hävityt_pelit"] += 1;
+      bj[msg.author.id].stop();
       delete bj[msg.author.id];
     }
 
@@ -635,7 +634,7 @@ const commands = {
     }).then(m => {
       bot_message = m;
 
-      bj[msg.author.id] = m.createReactionCollector((reaction, user) => user.id === msg.author.id);
+      bj[msg.author.id] = m.createReactionCollector((reaction, user) => user.id === msg.author.id, { time : 60 * 1000});
       bj[msg.author.id].on('collect', (reaction, user) => {
 
         if (reaction.emoji == stand_emoji) {
@@ -650,7 +649,6 @@ const commands = {
               re.remove(user.id);
             }
           }
-
           hit();
 
         }
@@ -678,6 +676,10 @@ const commands = {
 
       });
 
+      bj[msg.author.id].on('end', () => {
+        delete bj[msg.author.id];
+      });
+
       function hit() {
 
         ref.on('value', gotData, errData);
@@ -697,17 +699,15 @@ const commands = {
           data[player]["pelit"]["BJ_voitetut_pelit"] += 1;
           data[player]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet*1.5);
           data[player]["omistus"]["rahat"] += Math.floor(bet*2.5);
-
           firebase.database().ref('profiles').set(data);
           bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), true, "Blackjack! Voitit " + Math.floor(bet*1.5) + coins, 5348864, history_log));
           bj[player].stop();
-          delete bj[player];
           return;
 
         } else if (player_sum == 21) {
           bj[player].stop();
           stand();
-          delete bj[player];
+
           return;
 
         } else if (player_sum > 21) {
@@ -719,7 +719,6 @@ const commands = {
           bot_message.clearReactions();
           bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
           bj[player].stop();
-          delete bj[player];
 
         } else {
           bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), true, " ", 6842472, history_log));
@@ -763,7 +762,6 @@ const commands = {
             firebase.database().ref('profiles').set(data);
             bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakajan Blackjack! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
             bj[player].stop();
-            delete bj[player];
             return;
 
           } else if (jakaja_sum > 21) {
@@ -775,7 +773,6 @@ const commands = {
             firebase.database().ref('profiles').set(data);
             bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja meni yli! Voitit " + Math.floor(bet) + coins, 5348864, history_log));
             bj[player].stop();
-            delete bj[player];
             return;
 
           } else if (jakaja_sum >= 17) {
@@ -788,7 +785,6 @@ const commands = {
               firebase.database().ref('profiles').set(data);
               bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
               bj[player].stop();
-              delete bj[player];
               return;
 
             } else {
@@ -799,7 +795,6 @@ const commands = {
               firebase.database().ref('profiles').set(data);
               bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Voitit: " + Math.floor(bet) + coins, 5348864, history_log));
               bj[player].stop();
-              delete bj[player];
               return;
             }
 
@@ -832,8 +827,8 @@ const commands = {
           firebase.database().ref('profiles').set(data);
           msg.channel.send(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakaja voitti! Hävisit " + Math.floor(bet*2) + coins, 9381414, history_log));
           bj[player].stop();
-          delete bj[player];
           return;
+
         }
 
         while (true) {
@@ -862,7 +857,6 @@ const commands = {
             firebase.database().ref('profiles').set(data);
             bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakajan Blackjack! Hävisit " + Math.floor(bet*2) + coins, 9381414, history_log));
             bj[player].stop();
-            delete bj[player];
             return;
 
           } else if (jakaja_sum > 21) {
@@ -874,7 +868,6 @@ const commands = {
             firebase.database().ref('profiles').set(data);
             bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakaja meni yli! Voitit " + Math.floor(bet*2) + coins, 5348864, history_log));
             bj[player].stop();
-            delete bj[player];
             return;
 
           } else if (jakaja_sum >= 17) {
@@ -887,7 +880,6 @@ const commands = {
               firebase.database().ref('profiles').set(data);
               bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakaja voitti! Hävisit " + Math.floor(bet*2) + coins, 9381414, history_log));
               bj[player].stop();
-              delete bj[player];
               return;
 
             } else {
@@ -898,7 +890,6 @@ const commands = {
               firebase.database().ref('profiles').set(data);
               bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Voitit: " + Math.floor(bet*2) + coins, 5348864, history_log));
               bj[player].stop();
-              delete bj[player];
               return;
             }
 
@@ -1115,7 +1106,7 @@ const commands = {
 
     if (msg.author.id in harpoon_collectors) {
       harpoon_collectors[msg.author.id].stop();
-      delete harpoon_collectors[msg.author.if];
+      delete harpoon_collectors[msg.author.id];
     }
     // Tehdään kenttä
     const W = 18;
@@ -1600,8 +1591,8 @@ const commands = {
   'slot': (msg) => {
 
     let bet = msg.content.split(' ')[1];
-
     if (msg.channel.id != "280272696560975872") return msg.delete();
+    const SLOTRATE = 30;
 
     try {
       bet = eval(bet);
@@ -2024,7 +2015,7 @@ const commands = {
           },
           {
             "name": "***___Kaikki tai ei mitään:___***",
-            "value": "Pelit: " + kaikkitpelit + "\nwinningsjen määrä: " + kaikkitvoit + "\nVoitetut rahat: " + kaikkit + coins + "\nHävityt rahat: " + kaikkithäv + coins
+            "value": "Pelit: " + kaikkitpelit + "\nVoittojen määrä: " + kaikkitvoit + "\nVoitetut rahat: " + kaikkit + coins + "\nHävityt rahat: " + kaikkithäv + coins
           },
           {
             "name": "***___Ryhmäpelit:___***",
@@ -3176,6 +3167,7 @@ client.on('message', async msg => {
 
   if (!msg.content.startsWith(tokens.prefix)) return;
   if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
+
 });
 
 
@@ -3249,6 +3241,7 @@ setInterval(function() {
     }
   }
   console.log("Intervalli meni!");
+  console.log(bj);
   firebase.database().ref('profiles').set(data);
 
 }, 60000);
