@@ -1256,7 +1256,7 @@ const commands = {
     });
 
     harpoon_collectors[msg.author.id] = msg.channel.createCollector(m => m);
-    harpoon_collectors[msg.author.id].on('message', m => {
+    harpoon_collectors[msg.author.id].on('collect', m => {
       if (m.content.startsWith(tokens.prefix + 'ammu') && msg.author.id == m.author.id) {
         ref.on('value', gotData, errData);
 
@@ -1504,7 +1504,7 @@ const commands = {
       });
 
     let co = msg.channel.createCollector(m => m);
-    co.on('message', m => {
+    co.on('collect', m => {
       if (m.content.startsWith(tokens.prefix + 'aloita') && msg.author.id == m.author.id) {
         draw(message);
       } else if (m.content.startsWith(tokens.prefix + 'keskeytä')) {
@@ -2747,7 +2747,7 @@ const commands = {
         dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
         console.log("Ruvettiin soittasuitn");
         let collector = msg.channel.createCollector(m => m);
-        collector.on('message', m => {
+        collector.on('collect', m => {
           if (m.content.startsWith(tokens.prefix + 'pause')) {
             msg.channel.send('Pauseettu').then(() => {
               dispatcher.pause();
