@@ -194,7 +194,35 @@ function user_check_database(_id) {
         "perustulo": 10,
         "ES": 0,
         "ES_tyhjät": 0,
-        "kultainen_harppuuna": false
+        "kultainen_harppuuna": false,
+        "varastetut": 0,
+        "sulta_varastetut" : 0,
+        "sakot" : 0,
+        "imetyt" : 0,
+        "imetyt_minuutit" : 0,
+        "sulta_imetyt_minuutit" : 0,
+        "sulta_imetyt": 0,
+        "korvaukset": 0,
+        "tulokoneista_saadut_rahat" : 0,
+        "lyöty" : 0,
+        "suo_lyöty" : 0,
+        "kalastetut_kalat" : 0,
+        "painavin_kala" : 0,
+        "kaloista_saadut_rahat" : 0,
+        "lootboxit" : {
+          "common" : 0,
+          "uncommon" : 0,
+          "rare" : 0,
+          "epic" : 0,
+          "legendary" : 0
+        },
+        "avatut_lootboxit" : {
+          "common" : 0,
+          "uncommon" : 0,
+          "rare" : 0,
+          "epic" : 0,
+          "legendary" : 0
+        }
       },
       "pelit": {
         "slot_pelit": 0,
@@ -263,6 +291,49 @@ function user_check_database(_id) {
     if (!("aika_kannuilla" in data[_id])) {
       data[_id]["aika_kannuilla"] = 0;
     }
+    if (!("varastetut" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["varastetut"] = 0;
+    }
+    if (!("sulta_varastetut" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["sulta_varastetut"] = 0;
+    }
+    if (!("lyöty" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["lyöty"] = 0;
+    }
+    if (!("suo_lyöty" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["suo_lyöty"] = 0;
+    }
+    if (!("sakot" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["sakot"] = 0;
+    }
+    if (!("imetyt" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["imetyt"] = 0;
+    }
+    if (!("sulta_imetyt" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["sulta_imetyt"] = 0;
+    }
+    if (!("korvaukset" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["korvaukset"] = 0;
+    }
+    if (!("imetyt_minuutit" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["imetyt_minuutit"] = 0;
+    }
+    if (!("sulta_imetyt_minuutit" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["sulta_imetyt_minuutit"] = 0;
+    }
+    if (!("kalastetut_kalat" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["kalastetut_kalat"] = 0;
+    }
+    if (!("kaloista_saadut_rahat" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["kaloista_saadut_rahat"] = 0;
+    }
+    if (!("painavin_kala" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["painavin_kala"] = 0;
+    }
+    if (!("aika_kannuilla" in data[_id])) {
+      data[_id]["aika_kannuilla"] = 0;
+    }
+
     if (!("omistus" in data[_id])) {
       data[_id]["omistus"] = {
         "rahat": 500,
@@ -273,9 +344,26 @@ function user_check_database(_id) {
         "ES": 0,
         "ES_tyhjät": 0,
         "kultainen_harppuuna": false,
-        "valaankasvatusohjelma": false
+        "valaankasvatusohjelma": false,
+        "onki" : true,
+        "hiilikuituonki" : true,
+        "lootboxit" : {
+          "common" : 0,
+          "uncommon" : 0,
+          "rare" : 0,
+          "epic" : 0,
+          "legendary" : 0
+        },
+        "avatut_lootboxit" : {
+          "common" : 0,
+          "uncommon" : 0,
+          "rare" : 0,
+          "epic" : 0,
+          "legendary" : 0
+        }
       };
     }
+
     if (!("rahat" in data[_id]["omistus"])) {
       data[_id]["omistus"]["rahat"] = 500;
     }
@@ -303,6 +391,64 @@ function user_check_database(_id) {
     if (!("ES_tyhjät" in data[_id]["omistus"])) {
       data[_id]["omistus"]["ES_tyhjät"] = 0;
     }
+    if (!("onki" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["onki"] = false;
+    }
+    if (!("hiilikuituonki" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["hiilikuituonki"] = false;
+    }
+    if (!("lootboxit" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["lootboxit"] = {
+        "common" : 0,
+        "uncommon" : 0,
+        "rare" : 0,
+        "epic" : 0,
+        "legendary" : 0
+      };
+    }
+
+    if (!("common" in data[_id]["omistus"]["lootboxit"])) {
+      data[_id]["omistus"]["lootboxit"]["common"] = 0;
+    }
+    if (!("uncommon" in data[_id]["omistus"]["lootboxit"])) {
+      data[_id]["omistus"]["lootboxit"]["uncommon"] = 0;
+    }
+    if (!("rare" in data[_id]["omistus"]["lootboxit"])) {
+      data[_id]["omistus"]["lootboxit"]["rare"] = 0;
+    }
+    if (!("epic" in data[_id]["omistus"]["lootboxit"])) {
+      data[_id]["omistus"]["lootboxit"]["epic"] = 0;
+    }
+    if (!("legendary" in data[_id]["omistus"]["lootboxit"])) {
+      data[_id]["omistus"]["lootboxit"]["legendary"] = 0;
+    }
+
+    if (!("avatut_lootboxit" in data[_id]["omistus"])) {
+      data[_id]["omistus"]["avatut_lootboxit"] = {
+        "common" : 0,
+        "uncommon" : 0,
+        "rare" : 0,
+        "epic" : 0,
+        "legendary" : 0
+      };
+    }
+
+    if (!("common" in data[_id]["omistus"]["avatut_lootboxit"])) {
+      data[_id]["omistus"]["avatut_lootboxit"]["common"] = 0;
+    }
+    if (!("uncommon" in data[_id]["omistus"]["avatut_lootboxit"])) {
+      data[_id]["omistus"]["avatut_lootboxit"]["uncommon"] = 0;
+    }
+    if (!("rare" in data[_id]["omistus"]["avatut_lootboxit"])) {
+      data[_id]["omistus"]["avatut_lootboxit"]["rare"] = 0;
+    }
+    if (!("epic" in data[_id]["omistus"]["avatut_lootboxit"])) {
+      data[_id]["omistus"]["avatut_lootboxit"]["epic"] = 0;
+    }
+    if (!("legendary" in data[_id]["omistus"]["avatut_lootboxit"])) {
+      data[_id]["omistus"]["avatut_lootboxit"]["legendary"] = 0;
+    }
+
     if (!("pelit" in data[_id])) {
       data[_id]["pelit"] = {
         "slot_pelit": 0,
@@ -488,6 +634,94 @@ function user_check_database(_id) {
   firebase.database().ref('profiles').set(data);
 }
 
+function draw_lootbox(_id, _max_rate) {
+  var msg = "";
+
+  // rates
+  var rate_legendary =_max_rate;
+  var rate_epic = _max_rate * 0.25;
+  var rate_rare = _max_rate * 0.1;
+  var rate_uncommon = _max_rate * 0.016666666667;
+  var rate_common = _max_rate * 0.008333333333;
+
+  var legendary = Math.floor(Math.random() * Math.floor(rate_legendary + 1));
+  var epic = Math.floor(Math.random() * Math.floor(rate_epic + 1));
+  var rare = Math.floor(Math.random() * Math.floor(rate_rare + 1));
+  var uncommon = Math.floor(Math.random() * Math.floor(rate_uncommon + 1));
+  var common = Math.floor(Math.random() * Math.floor(rate_common + 1));
+
+  if (legendary == 0) {
+    data[_id]["omistus"]["lootboxit"]["legendary"] += 1;
+    msg = "OMG <@" + _id + ">: 1 x " + chest_legendary;
+  }
+  else if (epic == 0) {
+    data[_id]["omistus"]["lootboxit"]["epic"] += 1;
+    msg = "Eeppistä <@" + _id + ">: 1 x " + chest_epic;
+  }
+  else if (rare == 0) {
+    data[_id]["omistus"]["lootboxit"]["rare"] += 1;
+    msg = "<@" + _id + ">: 1 x " + chest_rare;
+  }
+  else if (uncommon == 0) {
+    data[_id]["omistus"]["lootboxit"]["uncommon"] += 1;
+    msg = "<@" + _id + ">: 1 x " + chest_uncommon;
+  }
+  else if (common == 0) {
+    data[_id]["omistus"]["lootboxit"]["common"] += 1;
+    msg = "<@" + _id + ">: 1 x " + chest_common;
+  }
+  if (msg != "") {
+    client.channels.get("280272696560975872").send(msg);
+  }
+
+}
+
+function draw_lootbox_weighted(_id, _max_rate, _weight=1, _commonness=100) {
+  var msg = "";
+
+  // rates
+  var rate_legendary =_max_rate * (1/_weight);
+  var rate_epic = _max_rate * 0.25 * (1/_weight);
+  var rate_rare = _max_rate * 0.1 * (1/_weight);
+  var rate_uncommon = _max_rate * 0.016666666667 * (1/_weight);
+  var rate_common = _max_rate * 0.008333333333 * (1/_weight);
+
+  var legendary = Math.floor(Math.random() * Math.floor(rate_legendary*(100/_commonness) + 1));
+  var epic = Math.floor(Math.random() * Math.floor(rate_epic*(100/_commonness) + 1));
+  var rare = Math.floor(Math.random() * Math.floor(rate_rare*(100/_commonness) + 1));
+  var uncommon = Math.floor(Math.random() * Math.floor(rate_uncommon*(100/_commonness) + 1));
+  var common = Math.floor(Math.random() * Math.floor(rate_common*(100/_commonness) + 1));
+
+  if (legendary == 0) {
+    data[_id]["omistus"]["lootboxit"]["legendary"] += 1;
+    msg = "OMG <@" + _id + ">: 1 x " + chest_legendary;
+  }
+  else if (epic == 0) {
+    data[_id]["omistus"]["lootboxit"]["epic"] += 1;
+    msg = "Eeppistä <@" + _id + ">: 1 x " + chest_epic;
+  }
+  else if (rare == 0) {
+    data[_id]["omistus"]["lootboxit"]["rare"] += 1;
+    msg = "Oujee <@" + _id + ">: 1 x " + chest_rare;
+  }
+  else if (uncommon == 0) {
+    data[_id]["omistus"]["lootboxit"]["uncommon"] += 1;
+    msg = "<@" + _id + ">: 1 x " + chest_uncommon;
+  }
+  else if (common == 0) {
+    data[_id]["omistus"]["lootboxit"]["common"] += 1;
+    msg = "<@" + _id + ">: 1 x " + chest_common;
+  }
+  if (msg != "") {
+    client.channels.get("280272696560975872").send(msg);
+  }
+
+}
+
+function map(value, a, b, c, d) {
+    value = (value - a) / (b - a);
+    return c + value * (d - c);
+}
 
 // All commands
 const commands = {
@@ -507,6 +741,9 @@ const commands = {
     const BJRATE = 20;
 
     let bet = msg.content.split(' ')[1];
+    let starting_money = data[msg.author.id]["omistus"]["rahat"];
+    let peak_money = data[msg.author.id]["omistus"]["maxrahat"];
+    let basic_income = data[msg.author.id]["omistus"]["perustulo"];
 
     try {
       bet = eval(bet);
@@ -678,6 +915,9 @@ const commands = {
 
       bj[msg.author.id].on('end', () => {
         delete bj[msg.author.id];
+        var weight = map(bet, min_bet, (basic_income*1000 + starting_money)/2, 1, 3);
+        draw_lootbox_weighted(msg.author.id, 14400, weight, 1350);
+        firebase.database().ref('profiles').set(data);
       });
 
       function hit() {
@@ -705,7 +945,6 @@ const commands = {
           return;
 
         } else if (player_sum == 21) {
-          bj[player].stop();
           stand();
 
           return;
@@ -1449,7 +1688,7 @@ const commands = {
           },
           "fields": [
             {
-              "name": icon + " shoot_harpoonit:",
+              "name": icon + " Ammuit:",
               "value": "Kulma: " + _deg + "°, Voima: " + _force + "."
             },
             {
@@ -1464,6 +1703,8 @@ const commands = {
           ]
         }
       });
+
+      draw_lootbox_weighted(msg.author.id, 14400, 1, 800);
 
       firebase.database().ref('profiles').set(data);
 
@@ -1514,6 +1755,7 @@ const commands = {
       var failures = [];
       var no_enough_money = [];
       var successful_players = [];
+      var ironman_players = [];
 
       for (var i = 0; i < participators.length; i++) {
         if (participators[i] == "430827809418772481") {
@@ -1522,6 +1764,8 @@ const commands = {
           failures.push(participators[i]);
         } else if (data[participators[i]]["omistus"]["rahat"] < bet) {
           no_enough_money.push(participators[i]);
+        } else if ("ironman" in data[participators[i]]) {
+          ironman_players.push(participators[i]);
         } else {
           successful_players.push(participators[i]);
         }
@@ -1546,6 +1790,12 @@ const commands = {
         no_enough_moneys += "<@" + i + ">\n";
       }
 
+      var ironman_players_t = "";
+      for (var i of ironman_players) {
+
+        ironman_players_t += "<@" + i + ">\n";
+      }
+
       co.stop();
       var ep = "";
       var ra = "";
@@ -1555,6 +1805,9 @@ const commands = {
       }
       if (no_enough_money.length > 0) {
         ra = "\nLiian köyhät:\n" + no_enough_moneys;
+      }
+      if (ironman_players.length > 0) {
+        ir = "\nIronmanit:\n" + ironman_players_t;
       }
       var all_money = bet * successful_players.length;
       var rnd = Math.floor(Math.random() * Math.floor(successful_players.length));
@@ -1573,6 +1826,8 @@ const commands = {
           data[part]["pelit"]["ryhmäpelihäviöt_yht"] += bet;
         }
 
+        draw_lootbox_weighted(part, 14400, 1, 1200);
+
       }
 
       data[winner]["pelit"]["ryhmäpelivoitot_yht"] += (all_money - bet);
@@ -1583,7 +1838,7 @@ const commands = {
         data[winner]["omistus"]["maxrahat"] = data[winner]["omistus"]["rahat"]
       }
 
-      msg.channel.send("Ryhmäpelin potti: " + all_money + coins + "\nVoittaja on: <@" + winner + ">\n\nOsallistuneet pelaajat:\n" + successful + "\n" + ra + ep);
+      msg.channel.send("Ryhmäpelin potti: " + all_money + coins + "\nVoittaja on: <@" + winner + ">\n\nOsallistuneet pelaajat:\n" + successful + "\n" + ra + ep + ir);
       firebase.database().ref('profiles').set(data);
     }
   },
@@ -1593,7 +1848,7 @@ const commands = {
     let bet = msg.content.split(' ')[1];
     if (msg.channel.id != "280272696560975872") return msg.delete();
     const SLOTRATE = 30;
-
+    var starting_money = data[msg.author.id]["omistus"]["rahat"];
     try {
       bet = eval(bet);
     } catch (err) {
@@ -1611,7 +1866,8 @@ const commands = {
       }
     }
 
-    let min_bet = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (SLOTRATE * 10)) * 10
+    let min_bet = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (SLOTRATE * 10)) * 10;
+
     if (min_bet < 5) {
       min_bet = 5
     }
@@ -1677,6 +1933,7 @@ const commands = {
       var winnings;
       if (win_line[0] == poggers && win_line[1] == poggers && win_line[2] == poggers) {
         winnings = pog3_v * bet;
+        win_line = [poggersrow, poggersrow,poggersrow]
         data[msg.author.id]["omistus"]["rahat"] += winnings;
         data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["poggers3"] += 1;
       } else if (win_line[0] == poggers && win_line[1] == poggers) {
@@ -1742,8 +1999,8 @@ const commands = {
 
       ref.on('value', gotData, errData);
 
-      var money = data[target_id]["omistus"]["rahat"];
-      min_bet = Math.floor(money / (SLOTRATE * 10)) * 10
+      var starting_money = data[target_id]["omistus"]["rahat"];
+      var min_bet = Math.floor(starting_money / (SLOTRATE * 10)) * 10
       if (min_bet < 5) {
         min_bet = 5;
       }
@@ -1774,7 +2031,7 @@ const commands = {
         color = 5348864;
       }
 
-      var str = "Rahat: " + money + coins + ", Panos: " + _bet + coins + "\n\n" +
+      var str = "Rahat: " + starting_money + coins + ", Panos: " + _bet + coins + "\n\n" +
       "⬛️|        " + rnd[0] + "    |    " + rnd[1] + "    |    " + rnd[2] +"        |⬛️\n" +
       "▶️|        " + _first_roll + "    |    " + _second_roll + "    |    " + _third_roll + "        |◀️\n" +
       "⬛️|        " + rnd[3] + "    |    " + rnd[4] + "    |    " + rnd[5] +"        |⬛️\n" +
@@ -1794,6 +2051,12 @@ const commands = {
         }
       });
 
+      let basic_income = data[msg.author.id]["omistus"]["perustulo"];
+
+      var weight = map(bet, min_bet, (basic_income*1500 + starting_money/2.5)/2, 1, 10);
+      draw_lootbox_weighted(msg.author.id, 14400, weight, 550);
+      firebase.database().ref('profiles').set(data);
+
     }
 
   },
@@ -1804,6 +2067,9 @@ const commands = {
     var player = msg.author.id;
     user_check_database(player);
     const MIN = 500;
+
+    let starting_money = data[player]["omistus"]["rahat"];
+    let peak_money = data[player]["omistus"]["maxrahat"];
 
     if (data[player]["omistus"]["rahat"] < MIN) return msg.channel.send("Tarvitset vähintään " + MIN + " " + coins + " pelataksesi kaikki tai ei mitään.");
 
@@ -1857,6 +2123,11 @@ const commands = {
       data[player]["omistus"]["maxrahat"] = data[player]["omistus"]["rahat"];
     }
     data[player]["pelit"]["KTEM_pelit"] += 1;
+
+    let basic_income = data[msg.author.id]["omistus"]["perustulo"];
+
+    let weight = map(starting_money, 500, basic_income*2000, 1, 10);
+    draw_lootbox_weighted(msg.author.id, 14400, weight, 4800);
 
     firebase.database().ref('profiles').set(data);
   },
@@ -1991,6 +2262,28 @@ const commands = {
     var vjhr = data[target_id]["pelit"]["BJ_hävityt_rahat"];
     var bjnetto = (parseInt(bjvr) - parseInt(vjhr));
 
+    var _tulokone = " ";
+    var _tuloimu = " ";
+    if ("tulokoneajastin" in data[target_id]) {
+
+      if (data[target_id]["tulokoneajastin"]["tulokonetier"] == 1) {
+        var _tulokone_icon = tulokone;
+        var tulokone_name = "Tulokone"
+      }
+      else if (data[target_id]["tulokoneajastin"]["tulokonetier"] == 2) {
+        var _tulokone_icon = tulokone_x;
+        var tulokone_name = "Tulokone-X"
+      }
+      else if (data[target_id]["tulokoneajastin"]["tulokonetier"] == 4) {
+        var _tulokone_icon = tulokiihdytin;
+        var tulokone_name = "Tulokiihdytin"
+      }
+
+      _tulokone = "\n" + _tulokone_icon + " " + tulokone_name + " päällä (" + data[target_id]["tulokoneajastin"]["tulokoneaika"] + "mins jäljellä): " + data[target_id]["tulokoneajastin"]["tulokonetier"]*10 + " x perustulo. Saatu: " + data[target_id]["tulokoneajastin"]["summa"] + coins;
+    }
+    if ("tuloimuajastin" in data[target_id]) {
+      _tuloimu = "\n" + tuloimu + " Tuloimu päällä (" + data[target_id]["tulokoneajastin"]["tuloimuaika"] + "mins jäljellä): Kohde: <@" + data[target_id]["tulokoneajastin"]["kohde"] + ">. Imetty: " + data[target_id]["tuloimuajastin"]["summa"] + coins;
+    }
 
     msg.channel.send({
       "embed": {
@@ -1998,7 +2291,7 @@ const commands = {
         "color": 15466496,
         "fields": [{
             "name": "***___Tiedot:___***",
-            "value": massikeisari + "Rahat: " + money + coins + "\nPeak rahat: " + maxrahat + coins + "\nPerustulo: " + perustulo + coins
+            "value": massikeisari + "Rahat: " + money + coins + "\nPeak rahat: " + maxrahat + coins + "\nPerustulo: " + perustulo + coins + _tulokone + _tuloimu
           },
           {
             "name": "***___Slotit:___***",
@@ -2055,6 +2348,759 @@ const commands = {
 
   },
 
+  'kalasta' : (msg) => {
+
+    ref.on('value', gotData, errData);
+    var has_rod = data[msg.author.id]["omistus"]["onki"];
+    var has_rod2 = data[msg.author.id]["omistus"]["lasikuituonki"];
+
+    if (has_rod == true || has_rod2 == true) {
+    } else {
+      return msg.channel.send("Sulla ei ole vielä onkea...");
+    }
+
+    var date = new Date();
+    var hour = date.getHours();
+    var part_day = "";
+    var time;
+
+    if (hour > 6 && hour <= 10) {
+      part_day = "A";
+      time = "Aamu";
+    }
+    if (hour > 10 && hour <= 18) {
+      part_day = "P";
+      time = "Päivä";
+    }
+    if (hour > 18 && hour <= 23) {
+      part_day = "I";
+      time = "Ilta";
+    }
+    if (hour > 23 || hour <= 6) {
+      part_day = "Y";
+      time = "Yö";
+    }
+    if ("kalastusajastin" in data[msg.author.id]) return msg.channel.send("Olet jo kalastamassa!");
+
+    let depth = msg.content.split(' ')[1];
+    let distance = msg.content.split(' ')[2];
+    let extra = msg.content.split(' ')[3];
+
+    var extras = ["joki", "meri", "järvi", "supersytti", "hypersytti"];
+    if (isNaN(depth) || isNaN(distance)) return msg.channel.send("Syvyys tarvitsee olla välillä 1-10 ja matka välillä 1-100m (joki 10m)");
+    if (depth < 1 || depth > 10) return msg.channel.send("Syvyys tarvitsee olla välillä 1-10 ja matka välillä 1-100m (joki 10m)");
+    if (distance < 1 || distance > 100) return msg.channel.send("Syvyys tarvitsee olla välillä 1-10 ja matka välillä 1-100m (joki 10m)");
+    if (extra == "" || extra == undefined) return msg.channel.send("Kirjoita paikka tai sytti!");
+    if (!extras.includes(extra)) return msg.channel.send("Virheellinen paikka tai syötti! Kirjoita joko joki, meri, järvi tai erikoisyötti.");
+
+    var fishes;
+    var place;
+    var bait;
+    if (extra == "järvi") {
+      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole syttiä!");
+      if (!("sytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole syttiä!");
+      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] <= 0) return msg.channel.send("Sinulla ei ole syttiä!");
+
+      data[msg.author.id]["omistus"]["inventory"]["sytti"] -= 1;
+      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] == 0) {
+        delete data[msg.author.id]["omistus"]["inventory"]["sytti"];
+      }
+
+      place = "Järvi";
+      bait = sytti;
+      fishes = {
+        "Katkaravut" : {
+          "syvyys": 10,
+          "matka": 5,
+          "emoji": shrimps,
+          "paino_min": 0.01,
+          "paino_max" : 0.06,
+          "hinta" : 1900,
+          "hajonta": 3,
+          "aika" : "PAIY"
+        },
+        "Ahven" : {
+          "syvyys": 4,
+          "matka": 50,
+          "emoji": bass,
+          "paino_min": 0.1,
+          "paino_max" : 1.5,
+          "hinta" : 450,
+          "hajonta": 6,
+          "aika" : "PAI"
+        },
+        "Hummeri" : {
+          "syvyys": 10,
+          "matka": 60,
+          "emoji": lobster,
+          "paino_min": 0.2,
+          "paino_max" : 0.5,
+          "hinta" : 2000,
+          "hajonta": 1,
+          "aika" : "IY"
+        },
+        "Lohi" : {
+          "syvyys": 7,
+          "matka": 40,
+          "emoji": salmon,
+          "paino_min": 0.5,
+          "paino_max" : 5,
+          "hinta" : 200,
+          "hajonta": 5,
+          "aika" : "AI"
+        },
+        "Taimen" : {
+          "syvyys": 5,
+          "matka": 35,
+          "emoji": trout,
+          "paino_min": 0.4,
+          "paino_max" : 3,
+          "hinta" : 320,
+          "hajonta": 7,
+          "aika" : "AI"
+        },
+        "Hauki" : {
+          "syvyys": 7,
+          "matka": 80,
+          "emoji": pike,
+          "paino_min": 0.5,
+          "paino_max" : 4,
+          "hinta" : 80,
+          "hajonta": 7,
+          "aika" : "PAI"
+        },
+        "Kuha" : {
+          "syvyys": 6,
+          "matka": 30,
+          "emoji": cod,
+          "paino_min": 0.5,
+          "paino_max" : 1.5,
+          "hinta" : 150,
+          "hajonta": 4,
+          "aika" : "PAIY"
+        },
+        "Ankerias" : {
+          "syvyys": 9,
+          "matka": 80,
+          "emoji": eel,
+          "paino_min": 0.2,
+          "paino_max" : 1,
+          "hinta" : 1500,
+          "hajonta": 1,
+          "aika" : "YA"
+        }
+      }
+    }
+    else if (extra == "joki") {
+      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole syttiä!");
+      if (!("sytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole syttiä!");
+      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] <= 0) return msg.channel.send("Sinulla ei ole syttiä!");
+
+      data[msg.author.id]["omistus"]["inventory"]["sytti"] -= 1;
+      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] == 0) {
+        delete data[msg.author.id]["omistus"]["inventory"]["sytti"];
+      }
+
+      place = "Joki";
+      bait = sytti;
+      if (distance < 1 || distance > 10) return msg.channel.send("Joessa syvyys 1-10m ja matka 1-10m...");
+      fishes = {
+        "Katkaravut" : {
+          "syvyys": 10,
+          "matka": 1,
+          "emoji": shrimps,
+          "paino_min": 0.01,
+          "paino_max" : 0.06,
+          "hinta" : 750,
+          "aika" : "PAIY",
+          "hajonta" : 6
+        },
+        "Sardellit" : {
+          "syvyys": 2,
+          "matka": 3,
+          "emoji": anchovies,
+          "paino_min": 0.01,
+          "paino_max" : 0.06,
+          "hinta" : 3000,
+          "aika" : "PA",
+          "hajonta" : 4
+        },
+        "Hummeri" : {
+          "syvyys": 10,
+          "matka": 3,
+          "emoji": lobster,
+          "paino_min": 0.2,
+          "paino_max" : 0.5,
+          "hinta" : 2000,
+          "aika" : "Y",
+          "hajonta" : 1
+        },
+        "Lohi" : {
+          "syvyys": 4,
+          "matka": 9,
+          "emoji": salmon,
+          "paino_min": 0.5,
+          "paino_max" : 5,
+          "hinta" : 150,
+          "aika" : "AI",
+          "hajonta" : 2
+        },
+        "Taimen" : {
+          "syvyys": 5,
+          "matka": 4,
+          "emoji": trout,
+          "paino_min": 0.4,
+          "paino_max" : 3,
+          "hinta" : 150,
+          "aika" : "AI",
+          "hajonta" : 4
+        },
+        "Jokitaimen" : {
+          "syvyys": 7,
+          "matka": 8,
+          "emoji": leaping_trout,
+          "paino_min": 0.4,
+          "paino_max" : 3,
+          "hinta" : 290,
+          "aika" : "AIP",
+          "hajonta" : 3
+        },
+        "Jokilohi" : {
+          "syvyys": 5,
+          "matka": 7,
+          "emoji": leaping_salmon,
+          "paino_min": 0.4,
+          "paino_max" : 2.5,
+          "hinta" : 220,
+          "aika" : "AIY",
+          "hajonta" : 4
+        },
+        "Jokisampi" : {
+          "syvyys": 8,
+          "matka": 9,
+          "emoji": leaping_sturgeon,
+          "paino_min": 0.6,
+          "paino_max" : 4,
+          "hinta" : 210,
+          "aika" : "AYP",
+          "hajonta" : 2
+        }
+      }
+    }
+    else if (extra == "meri") {
+      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole syttiä!");
+      if (!("sytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole syttiä!");
+      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] <= 0) return msg.channel.send("Sinulla ei ole syttiä!");
+
+      data[msg.author.id]["omistus"]["inventory"]["sytti"] -= 1;
+      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] == 0) {
+        delete data[msg.author.id]["omistus"]["inventory"]["sytti"];
+      }
+
+      place = "Meri";
+      bait = sytti;
+      fishes = {
+        "Sardellit" : {
+          "syvyys": 2,
+          "matka": 60,
+          "emoji": anchovies,
+          "paino_min": 0.01,
+          "paino_max" : 0.06,
+          "hinta" : 1200,
+          "hajonta": 7,
+          "aika" : "P"
+        },
+        "Ahven" : {
+          "syvyys": 3,
+          "matka": 62,
+          "emoji": bass,
+          "paino_min": 0.1,
+          "paino_max" : 0.7,
+          "hinta" : 650,
+          "hajonta": 4,
+          "aika" : "PAIY"
+        },
+        "Hummeri" : {
+          "syvyys": 10,
+          "matka": 65,
+          "emoji": lobster,
+          "paino_min": 0.2,
+          "paino_max" : 0.5,
+          "hinta" : 1500,
+          "hajonta": 1,
+          "aika" : "YA"
+        },
+        "Lohi" : {
+          "syvyys": 7,
+          "matka": 22,
+          "emoji": salmon,
+          "paino_min": 0.5,
+          "paino_max" : 5,
+          "hinta" : 150,
+          "hajonta": 3,
+          "aika" : "AI"
+        },
+        "Hauki" : {
+          "syvyys": 6.5,
+          "matka": 52,
+          "emoji": pike,
+          "paino_min": 0.5,
+          "paino_max" : 3,
+          "hinta" : 80,
+          "hajonta": 5,
+          "aika" : "PAI"
+        },
+        "Sardiini" : {
+          "syvyys": 2,
+          "matka": 20,
+          "emoji": sardine,
+          "paino_min": 0.05,
+          "paino_max" : 0.1,
+          "hinta" : 250,
+          "hajonta": 3,
+          "aika" : "PAIY"
+        },
+        "Silakka" : {
+          "syvyys": 3,
+          "matka": 70,
+          "emoji": herring,
+          "paino_min": 0.08,
+          "paino_max" : 0.15,
+          "hinta" : 1500,
+          "hajonta": 6,
+          "aika" : "PAIY"
+        },
+        "Kuha" : {
+          "syvyys": 6,
+          "matka": 30,
+          "emoji": cod,
+          "paino_min": 0.5,
+          "paino_max" : 3,
+          "hinta" : 80,
+          "hajonta": 6,
+          "aika" : "PAIY"
+        },
+        "Merikrotti" : {
+          "syvyys": 9,
+          "matka": 83,
+          "emoji": monkfish,
+          "paino_min": 1,
+          "paino_max" : 8,
+          "hinta" : 100,
+          "hajonta": 1,
+          "aika" : "P"
+        },
+        "Makrilli" : {
+          "syvyys": 8,
+          "matka": 70,
+          "emoji": mackerel,
+          "paino_min": 0.1,
+          "paino_max" : 0.2,
+          "hinta" : 1000,
+          "hajonta": 5,
+          "aika" : "PAY"
+        },
+        "Tonnikala" : {
+          "syvyys": 5,
+          "matka": 90,
+          "emoji": tuna,
+          "paino_min": 70,
+          "paino_max" : 333,
+          "hinta" : 2.5,
+          "hajonta": 2,
+          "aika" : "P"
+        },
+        "Merilevää" : {
+          "syvyys": 1,
+          "matka": 25,
+          "emoji": seaweed,
+          "paino_min": 0.02,
+          "paino_max" : 0.05,
+          "hinta" : 0,
+          "hajonta": 3,
+          "aika" : "P"
+        }
+      }
+    }
+    else if (extra == "supersytti") {
+      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole supersyttiä!");
+      if (!("supersytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole supersyttiä!");
+      if (data[msg.author.id]["omistus"]["inventory"]["supersytti"] <= 0) return msg.channel.send("Sinulla ei ole supersyttiä!");
+
+      data[msg.author.id]["omistus"]["inventory"]["supersytti"] -= 1;
+      if (data[msg.author.id]["omistus"]["inventory"]["supersytti"] == 0) {
+        delete data[msg.author.id]["omistus"]["inventory"]["supersytti"];
+      }
+
+      place = "Meri";
+      bait = supersytti;
+      fishes = {
+        "Hai" : {
+          "syvyys": 7,
+          "matka": 75,
+          "emoji": shark,
+          "paino_min": 500,
+          "paino_max" : 1000,
+          "hinta" : 3,
+          "hajonta": 1,
+          "aika" : "PAIY"
+        },
+        "Merikilpikonna" : {
+          "syvyys": 2,
+          "matka": 60,
+          "emoji": sea_turtle,
+          "paino_min": 30,
+          "paino_max" : 70,
+          "hinta" : 40,
+          "hajonta": 2,
+          "aika" : "PA"
+        },
+        "Miekkakala" : {
+          "syvyys": 4,
+          "matka": 50,
+          "emoji": swordfish,
+          "paino_min": 200,
+          "paino_max" : 600,
+          "hinta" : 4,
+          "hajonta": 5,
+          "aika" : "PAI"
+        },
+        "Pallokala" : {
+          "syvyys": 8,
+          "matka": 20,
+          "emoji": pufferfish,
+          "paino_min": 2,
+          "paino_max" : 22,
+          "hinta" : 125,
+          "hajonta": 7,
+          "aika" : "PAIY"
+        },
+        "Piikkirausku" : {
+          "syvyys": 9,
+          "matka": 50,
+          "emoji": manta_ray,
+          "paino_min": 1600,
+          "paino_max" : 2600,
+          "hinta" : 1,
+          "hajonta": 4,
+          "aika" : "PA"
+        },
+        "Luola-ankerias" : {
+          "syvyys": 8,
+          "matka": 80,
+          "emoji": cave_eel,
+          "paino_min": 0.2,
+          "paino_max" : 1,
+          "hinta" : 3000,
+          "hajonta": 3,
+          "aika" : "IY"
+        },
+        "Karambwan" : {
+          "syvyys": 10,
+          "matka": 5,
+          "emoji": karambwan,
+          "paino_min": 0.2,
+          "paino_max" : 2,
+          "hinta" : 1500,
+          "hajonta": 3,
+          "aika" : "PIY"
+        },
+        "Merikrotti" : {
+          "syvyys": 8,
+          "matka": 64,
+          "emoji": monkfish,
+          "paino_min": 7,
+          "paino_max" : 45,
+          "hinta" : 50,
+          "hajonta": 6,
+          "aika" : "IY"
+        },
+        "Hummeri" : {
+          "syvyys": 10,
+          "matka": 40,
+          "emoji": lobster,
+          "paino_min": 0.3,
+          "paino_max" : 1,
+          "hinta" : 1000,
+          "hajonta": 3,
+          "aika" : "Y"
+        }
+
+      }
+    }
+    else if (extra == "hypersytti") {
+      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole hypersyttiä!");
+      if (!("hypersytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole hypersyttiä!");
+      if (data[msg.author.id]["omistus"]["inventory"]["hypersytti"] <= 0) return msg.channel.send("Sinulla ei ole hypersyttiä!");
+
+      data[msg.author.id]["omistus"]["inventory"]["hypersytti"] -= 1;
+      if (data[msg.author.id]["omistus"]["inventory"]["hypersytti"] == 0) {
+        delete data[msg.author.id]["omistus"]["inventory"]["hypersytti"];
+      }
+
+      place = "Meri";
+      bait = hypersytti;
+      fishes = {
+        "Megahai" : {
+          "syvyys": 8,
+          "matka": 90,
+          "emoji": big_shark,
+          "paino_min": 3200,
+          "paino_max" : 5600,
+          "hinta" : 3,
+          "hajonta": 2,
+          "aika" : "PI"
+        },
+        "Sateenkaarikala" : {
+          "syvyys": 2,
+          "matka": 60,
+          "emoji": rainbow_fish,
+          "paino_min": 0.2,
+          "paino_max" : 0.9,
+          "hinta" : 20250,
+          "hajonta": 2,
+          "aika" : "AP"
+        },
+        "Suphi" : {
+          "syvyys": 4,
+          "matka": 70,
+          "emoji": suphi_fish,
+          "paino_min": 4,
+          "paino_max" : 10.5,
+          "hinta" : 1625,
+          "hajonta": 2,
+          "aika" : "IY"
+        },
+        "Infernaalinen ankerias" : {
+          "syvyys": 8,
+          "matka": 20,
+          "emoji": infernal_eel,
+          "paino_min": 1.8,
+          "paino_max" : 7.2,
+          "hinta" : 2321,
+          "hajonta": 4,
+          "aika" : "YA"
+        },
+        "Antennikrotti" : {
+          "syvyys": 10,
+          "matka": 95,
+          "emoji": anglerfish,
+          "paino_min": 12,
+          "paino_max" : 25,
+          "hinta" : 488,
+          "hajonta": 3,
+          "aika" : "Y"
+        },
+        "Merikilpikonna" : {
+          "syvyys": 3.5,
+          "matka": 65,
+          "emoji": sea_turtle,
+          "paino_min": 40,
+          "paino_max" : 100,
+          "hinta" : 120,
+          "hajonta": 3,
+          "aika" : "P"
+        },
+        "Luola-ankerias" : {
+          "syvyys": 8,
+          "matka": 30,
+          "emoji": cave_eel,
+          "paino_min": 3,
+          "paino_max" : 7,
+          "hinta" : 1900,
+          "hajonta": 3,
+          "aika" : "PY"
+        },
+        "Tummarapu" : {
+          "syvyys": 10,
+          "matka": 50,
+          "emoji": dark_crab,
+          "paino_min": 0.5,
+          "paino_max" : 2,
+          "hinta" : 5200,
+          "hajonta": 4,
+          "aika" : "IY"
+        },
+        "Pyhäankerias" : {
+          "syvyys": 7,
+          "matka": 40,
+          "emoji": sacred_eel,
+          "paino_min": 2,
+          "paino_max" : 3,
+          "hinta" : 4000,
+          "hajonta": 4,
+          "aika" : "PAIY"
+        }
+
+      }
+    }
+
+    var rod;
+    if (data[msg.author.id]["omistus"]["hiilikuituonki"]) {
+      weight_multi = 1.4;
+      rod = hiilikuituonki;
+    } else {
+      weight_multi = 1;
+      rod = onki;
+    }
+    var bucket = [];
+
+    for (var fish in fishes) {
+      var de = fishes[fish]["syvyys"];
+      var di = fishes[fish]["matka"];
+      var ti = fishes[fish]["aika"];
+      var variance = fishes[fish]["hajonta"];
+
+      if (fish == "Merilevää" && Math.random() > 0.3) {
+        continue;
+      }
+
+      var difference_x;
+      if (extra == "joki") {
+        difference_x = Math.abs(distance - di);
+      } else {
+        difference_x = Math.abs(distance - di)/10;
+      }
+      var difference_y = Math.abs(depth - de);
+
+      if (difference_x == 0) {
+        difference_x = 0.1;
+      }
+      if (difference_y == 0) {
+        difference_y = 0.1;
+
+      }
+
+      var prop_x = 1*Math.exp(-(difference_x)^2/(2*(variance/1.5)^2))*1000;
+      var prop_y = 1*Math.exp(-(difference_y)^2/(2*(variance/1.5)^2))*1000;
+
+      var multi_prob = Math.sqrt(prop_x*prop_y);
+
+      if (ti.includes(part_day)) {
+        multi_prob = multi_prob*1;
+      } else {
+        multi_prob = multi_prob*0.05;
+      }
+
+      var multi_prob = multi_prob * (1+(-0.5+Math.random()));
+
+
+      for (var x = 0; x < Math.floor(multi_prob); x++) {
+        bucket.push(fish);
+      }
+    }
+
+    if (depth > 8 && place == "Meri" && distance < 25 && Math.random() > 0.5 && bucket.length > 50) {
+      var aarre;
+      if (bait == sytti) {
+        aarre = {
+            "syvyys": 0,
+            "matka": 0,
+            "emoji": casket,
+            "paino_min": 12,
+            "paino_max" : 12,
+            "hinta" : 1500,
+            "hajonta": 0,
+            "aika" : "PAIY"
+          }
+      }
+      if (bait == supersytti) {
+        aarre = {
+          "syvyys": 0,
+          "matka": 0,
+          "emoji": casket,
+          "paino_min": 12,
+          "paino_max" : 12,
+          "hinta" : 1000,
+          "hajonta": 0,
+          "aika" : "PAIY"
+        }
+      }
+      if (bait == hypersytti) {
+
+        aarre =  {
+          "syvyys": 0,
+          "matka": 0,
+          "emoji": casket,
+          "paino_min": 12,
+          "paino_max" : 12,
+          "hinta" : 2000,
+          "hajonta": 0,
+          "aika" : "PAIY"
+        }
+    }
+
+      bucket.push[aarre];
+    }
+
+    var _rnd = Math.floor(Math.random() * Math.floor(bucket.length));
+
+    var caught_fish = bucket[_rnd];
+
+    var weight_var = Math.random();
+
+
+    var weight = map(weight_var, 0, 1, fishes[caught_fish]["paino_min"], fishes[caught_fish]["paino_max"]*weight_multi).toFixed(2);
+    if (extra == "hypersytti"){
+      var price = Math.floor(weight * fishes[caught_fish]["hinta"]);
+    }
+    if (extra == "megasytti"){
+      var price = Math.floor(weight * fishes[caught_fish]["hinta"]);
+    }
+    else {
+      var price = Math.floor(weight * fishes[caught_fish]["hinta"]);
+    }
+
+    var timer;
+
+    if (extra == "hypersytti") {
+      var lure_time = map(bucket.length, 0, 1000, 8, 0);
+      if (lure_time < 0) {
+        lure_time = 1;
+      }
+      if (lure_time > 8) {
+        lure_time = 8;
+      }
+      timer = Math.floor(Math.random() * Math.floor(lure_time)) + 1;
+    }
+    else if (extra == "supersytti") {
+      var lure_time = map(bucket.length, 0, 1000, 6, 0);
+      if (lure_time < 0) {
+        lure_time = 1;
+      }
+      if (lure_time > 6) {
+        lure_time = 6;
+      }
+      timer = Math.floor(Math.random() * Math.floor(lure_time)) + 1;
+    }
+    else {
+      var lure_time = map(bucket.length, 0, 1000, 4, 0);
+      if (lure_time < 0) {
+        lure_time = 1;
+      }
+      if (lure_time > 4) {
+        lure_time = 4;
+      }
+      timer = Math.floor(Math.random() * Math.floor(lure_time)) + 1;
+    }
+
+    data[msg.author.id]["kalastusajastin"] = {
+      "kala" : caught_fish,
+      "paino" : weight,
+      "hinta" : price,
+      "päiväaika" : time,
+      "sytti" : bait.name,
+      "emoji" : fishes[caught_fish]["emoji"].name,
+      "timer" : timer,
+      "onki" : rod.name,
+      "paikka" : place
+    };
+
+    msg.channel.send("Kalastetaan!");
+    firebase.database().ref('profiles').set(data);
+
+  },
+
   // Money commands
 
   'rahat': (msg) => {
@@ -2097,7 +3143,7 @@ const commands = {
     let amount = msg.content.split(' ')[2];
     let product = msg.content.split(' ')[3];
 
-    const products = ["rahat", "ES"];
+    const products = ["rahat", "ES", "sytti", "hypersytti", "supersytti", "tulokone", "tulokone-x", "tulokiihdytin", "maski", "keppi", "es"];
 
     if (product == undefined || product == null) {
       product = "rahat";
@@ -2139,12 +3185,16 @@ const commands = {
     user_check_database(sender_id)
     user_check_database(target_id)
 
+    if ("ironman" in data[sender_id]) return msg.channel.send(`Olet Ironman... et voi antaa mitään...`);
+    if ("ironman" in data[target_id]) return msg.channel.send(`Kohde on Ironman... Hän ei huoli lahjustasi`);
+
     if (BOT_IDs.includes(target_id)) {
       delete data[target_id];
       return msg.channel.send("Botille ei voi antaa :/");
     }
 
     if (target_id == sender_id) return msg.channel.send(`Turhaa siirrät ittelles mitää...`);
+    amount = Math.floor(parseInt(amount));
 
 
     if (product == "rahat") {
@@ -2157,15 +3207,227 @@ const commands = {
       if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
         data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
       }
+      firebase.database().ref('profiles').set(data);
+      return msg.channel.send(`Rahat siirretty!`);
 
-    } else {
-      if (data[sender_id][product] < parseInt(amount)) return msg.channel.send(`Sulla ei oo tarpeeks ` + product);
-      data[target_id]["pelit"][product] += parseInt(amount);
-      data[sender_id]["pelit"][product] -= parseInt(amount);
+    }
+    else if (product == "sytti") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["syötit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["syötit"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("syötit" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["syötit"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["syötit"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["syötit"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["syötit"];
+          }
+
+      } catch(err) {
+
+      }
+    }
+    else if (product == "keppi") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["kepit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["kepit"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("kepit" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["kepit"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["kepit"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["kepit"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["kepit"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "maski") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["maskit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["maskit"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("maskit" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["maskit"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["maskit"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["maskit"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["maskit"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "supersytti") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["mehevätsyötit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["maskit"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("mehevätsyötit" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["mehevätsyötit"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["mehevätsyötit"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["mehevätsyötit"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["mehevätsyötit"];
+          }
+
+      } catch(err) {
+
+      }
+    }
+    else if (product == "hypersytti") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["megasyötit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["megasyötit"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("megasyötit" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["megasyötit"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["megasyötit"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["megasyötit"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["megasyötit"];
+          }
+
+      } catch(err) {
+
+      }
+    }
+    else if (product == "dupepyssy") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["dupepyssyt"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["dupepyssyt"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("dupepyssyt" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["dupepyssyt"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["dupepyssyt"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["dupepyssyt"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["dupepyssyt"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "tulokone") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["tulokone"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["tulokone"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tulokone" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["tulokone"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["tulokone"] += amount;
+
+          if (data[target_id]["omistus"]["inventory"]["tulokone"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["tulokone"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "tulokone-x") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["tulokone-x"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["tulokone-x"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tulokone-x" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["tulokone-x"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["tulokone-x"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["tulokone-x"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["tulokone-x"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "tulokiihdytin") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tulokiihdytin" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["tulokiihdytin"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["tulokiihdytin"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["tulokiihdytin"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["tulokone-x"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "tuloimu") {
+      try {
+        if (data[sender_id]["omistus"]["inventory"]["tuloimu"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["tuloimu"] -= amount;
+
+          if (!("inventory" in data[target_id]["omistus"])) {
+            data[target_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tuloimu" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["tuloimu"] = 0;
+          }
+
+          data[target_id]["omistus"]["inventory"]["tuloimu"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["tuloimu"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["tuloimu"];
+          }
+      } catch(err) {
+
+      }
+    }
+    else if (product == "es") {
+      try {
+        if (data[sender_id]["omistus"]["ES"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["ES"] -= amount;
+          data[target_id]["omistus"]["ES"] += amount;
+
+      } catch(err) {
+
+      }
     }
 
     firebase.database().ref('profiles').set(data);
-    msg.channel.send(product.charAt(0).toUpperCase() + product.slice(1) + " siirretty!");
+    msg.channel.send(product.charAt(0).toUpperCase() + product.slice(1) + " siirretty! (" + amount + " kpl)");
 
   },
 
@@ -2188,7 +3450,7 @@ const commands = {
           "url": "https://upload.wikimedia.org/wikipedia/fi/thumb/3/3a/Lidlin_logo.svg/1024px-Lidlin_logo.svg.png"
         },
         "fields": [{
-          "name": "***___\:euro: Perustulo +5:___***",
+          "name": "***___"+ _perustulo + " Perustulo +5:___***",
           "value": "___Hinta:___ " + cost_next_basic_income + coins + ". Se olisi sun " + (((basic_income - 10) / 5) + 1) + ". perustulon korotus."
         }, {
           "name": "***___" + es + "ES:___***",
@@ -2274,6 +3536,682 @@ const commands = {
 
   },
 
+  'inv' : (msg) => {
+    let name = msg.content.split(' ')[1];
+
+    ref.on('value', gotData, errData);
+    var sender_id = msg.author.id;
+
+    user_check_database(sender_id);
+
+    if ((name == '' || name === undefined)) return print_inventory(sender_id);
+
+    name = name.replace(/\D/g, '');
+
+    var target_id = name;
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+    user_check_database(name);
+    print_inventory(name);
+
+    function print_inventory(_id) {
+      var avatar;
+
+      client.fetchUser(_id).then(myUser => {
+        avatar = myUser.avatarURL;
+        jatka(avatar);
+      });
+
+      function jatka(avatar) {
+        var items = "Ei mitään";
+        var lootboxes = "";
+        var keyitems = "";
+        if ("inventory" in data[_id]["omistus"]){
+          items = "";
+          var items1 = "";
+          var items2 = "";
+          var items3 = "";
+          var items4 = "";
+          var items5 = "";
+          var items6 = "";
+          var items7 = "";
+          var items8 = "";
+          var items9 = "";
+          var items10 = "";
+          var items11 = "";
+          var items12 = "";
+          for (let item in data[_id]["omistus"]["inventory"]) {
+            if (item == "kepit") {
+              items1 += keppi + " Kepit: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "sytti") {
+              items2 += sytti + " Sytit: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "supersytti") {
+              items3 += supersytti + " Supersytit: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "hypersytti") {
+              items4 += hypersytti + " Hypersytit: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "maskit") {
+              items5 += maski + " Maskit: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "tulokone") {
+              items6 += tulokone + " Tulokoneet: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "tulokone-x") {
+              items7 += tulokonex + " Tulokone-X: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "tulokiihdytin") {
+              items8 += tulokiihdytin + " Tulokiihdyttimet: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "tuloimu") {
+              items9 += tuloimu + " Tuloimut: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "gem") {
+              items10 += gem + " Gemit: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "dupepyssyt") {
+              items11 += dupepyssy + " Dupepyssyt: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+            if (item == "perustulo") {
+              items12 += _perustulo + " Perustulot: " + data[_id]["omistus"]["inventory"][item] + "\n";
+            }
+          }
+        }
+        items = items1+items2+items3+items4+items5+items6+items7+items8+items9+items10+items11+items12;
+
+        lootboxes += chest_common + " Common: " + data[_id]["omistus"]["lootboxit"]["common"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["common"]+data[_id]["omistus"]["lootboxit"]["common"]) + ")\n";
+        lootboxes += chest_uncommon + " Uncommon : " + data[_id]["omistus"]["lootboxit"]["uncommon"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["uncommon"]+data[_id]["omistus"]["lootboxit"]["uncommon"]) + ")\n";
+        lootboxes += chest_rare + " Rare: " + data[_id]["omistus"]["lootboxit"]["rare"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["rare"]+data[_id]["omistus"]["lootboxit"]["rare"]) + ")\n";
+        lootboxes += chest_epic + " Epic: " + data[_id]["omistus"]["lootboxit"]["epic"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["epic"]+data[_id]["omistus"]["lootboxit"]["epic"]) + ")\n";
+        lootboxes += chest_legendary + " Legendary: " + data[_id]["omistus"]["lootboxit"]["legendary"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["legendary"]+data[_id]["omistus"]["lootboxit"]["legendary"]) + ")\n";
+
+
+        if (data[_id]["omistus"]["kultainen_harppuuna"]) {
+          keyitems += harpoon_e + "\n";
+        }
+        if (data[_id]["omistus"]["onki"]) {
+          keyitems += onki + "\n";
+        }
+        if (data[_id]["omistus"]["hiilikuituonki"]) {
+          keyitems += hiilikuituonki + "\n";
+        }
+
+        if (keyitems == "") {
+          keyitems = "Ei mitään";
+        }
+
+
+        msg.channel.send({
+          "embed": {
+            "title": "***INVENTORY***",
+            "color": 15466496,
+            "thumbnail": {
+              "url": avatar
+            },
+            "fields": [{
+                "name": "***___Tavarat:___***",
+                "value": items
+              },
+              {
+                "name": "***___Avaintavarat:___***",
+                "value": keyitems
+              },
+              {
+                "name": "***___LootBoxit:___***",
+                "value": lootboxes
+              }
+            ]
+          }
+        })
+      }
+    }
+  },
+
+  'avaa' : (msg) => {
+    ref.on('value', gotData, errData);
+    let type = msg.content.split(' ')[1];
+
+    if ((type == '' || type === undefined)) {
+      if ( data[msg.author.id]["omistus"]["lootboxit"]["common"] > 0) {
+        type = "common";
+      }
+      else if ( data[msg.author.id]["omistus"]["lootboxit"]["uncommon"] > 0) {
+        type = "uncommon";
+      }
+      else if (data[msg.author.id]["omistus"]["lootboxit"]["rare"] > 0) {
+        type = "rare";
+      }
+      else if (data[msg.author.id]["omistus"]["lootboxit"]["epic"] > 0) {
+        type = "epic";
+      }
+      else if (data[msg.author.id]["omistus"]["lootboxit"]["legendary"] > 0) {
+        type = "legendary";
+      } else {
+        return msg.channel.send(`Sinulla ei ole LootBoxeja...`);
+      }
+    }
+
+    var boxtypes = ["uncommon", "common", "rare", "epic", "legendary"];
+    if (!(boxtypes.includes(type))) return msg.channel.send(`Ei ole olemassa tuollaista LootBoxia.`);
+
+    if (data[msg.author.id]["omistus"]["lootboxit"][type] > 0) {
+
+      data[msg.author.id]["omistus"]["lootboxit"][type] -= 1;
+      firebase.database().ref('profiles').set(data);
+      open_lootbox(msg, msg.author.id, type);
+
+    } else {
+      msg.channel.send(`Sulla ei ole LootBoxia...`);
+    }
+
+    function open_lootbox(_msg, _id, _rarity) {
+      ref.on('value', gotData, errData);
+      var color;
+      if (_rarity == "common") {
+        msg1 = chest_common + " Common LootBox" ;
+        msg2 = "";
+        color = 10197915;
+        data[_id]["omistus"]["avatut_lootboxit"]["common"] += 1;
+        for (var x = 0; x < 2; x++) {
+          var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+          if (rnd > 9) {
+            msg2 += "- Paska (ei mitään)\n";
+          }
+          else if (rnd > 5) {
+            msg2 += "- 500" + coins + "\n";
+            data[_id]["omistus"]["rahat"] += 500;
+          }
+          else if (rnd > 2) {
+            msg2 += "- 500" + es + "\n";
+            data[_id]["omistus"]["ES"] += 500;
+          }
+          else if (rnd >= 0) {
+            msg2 += "- 2 x "+ sytti + "\n";
+            if (!("inventory" in data[_id]["omistus"])) {
+              data[_id]["omistus"]["inventory"] = {};
+            }
+            if (!("sytti" in data[_id]["omistus"]["inventory"])) {
+              data[_id]["omistus"]["inventory"]["sytti"] = 0;
+            }
+            data[_id]["omistus"]["inventory"]["sytti"] += 2;
+          }
+        }
+      }
+      if (_rarity == "uncommon") {
+        msg1 = chest_uncommon + " Uncommon LootBox" ;
+        msg2 = "";
+        color = 1276418;
+        data[_id]["omistus"]["avatut_lootboxit"]["uncommon"] += 1;
+        for (var x = 0; x < 2; x++) {
+          var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+          if (rnd > 90) {
+            msg2 += "- 3 Keppiä " + keppi + "\n";
+            if (!("inventory" in data[_id]["omistus"])) {
+              data[_id]["omistus"]["inventory"] = {};
+            }
+            if (!("kepit" in data[_id]["omistus"]["inventory"])) {
+              data[_id]["omistus"]["inventory"]["kepit"] = 0;
+            }
+            data[_id]["omistus"]["inventory"]["kepit"] += 5;
+          }
+          else if (rnd > 55) {
+            msg2 += "- 2000" + coins + "\n";
+            data[_id]["omistus"]["rahat"] += 2000;
+          }
+          else if (rnd > 37) {
+            msg2 += "- 2000" + es + "\n";
+            data[_id]["omistus"]["ES"] += 2000;
+          }
+          else if (rnd > 27) {
+            msg2 += "- 1 x " + supersytti + "!\n";
+            if (!("inventory" in data[_id]["omistus"])) {
+              data[_id]["omistus"]["inventory"] = {};
+            }
+            if (!("supersytti" in data[_id]["omistus"]["inventory"])) {
+              data[_id]["omistus"]["inventory"]["supersytti"] = 0;
+            }
+            data[_id]["omistus"]["inventory"]["supersytti"] += 1;
+          }
+          else if (rnd > 2) {
+            msg2 += "- 4 x "+ sytti + "\n";
+            if (!("inventory" in data[_id]["omistus"])) {
+              data[_id]["omistus"]["inventory"] = {};
+            }
+            if (!("sytti" in data[_id]["omistus"]["inventory"])) {
+              data[_id]["omistus"]["inventory"]["sytti"] = 0;
+            }
+            data[_id]["omistus"]["inventory"]["sytti"] += 4;
+          }
+          else if (rnd >= 0) {
+            if (data[_id]["omistus"]["onki"] == false){
+              msg2 += "- "+ onki +" Onki! (Saatavilla vain kerran)\n";
+              data[_id]["omistus"]["onki"] = true;
+
+            } else {
+              msg2 += "- 3 x "+ sytti;
+              if (!("inventory" in data[_id]["omistus"])) {
+                data[_id]["omistus"]["inventory"] = {};
+              }
+              if (!("sytti" in data[_id]["omistus"]["inventory"])) {
+                data[_id]["omistus"]["inventory"]["sytti"] = 0;
+              }
+              data[_id]["omistus"]["inventory"]["sytti"] += 3;
+            }
+          }
+        }
+      }
+      if (_rarity == "rare") {
+        msg1 = chest_rare + " Rare LootBox" ;
+        msg2 = "";
+        color = 1146367;
+        data[_id]["omistus"]["avatut_lootboxit"]["rare"] += 1;
+        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+        if (rnd > 80) {
+
+          if (data[_id]["omistus"]["onki"] == false){
+            msg2 += "- "+ onki +" Onki! (Saatavilla vain kerran)\n";
+            data[_id]["omistus"]["onki"] = true;
+
+          } else {
+            msg2 += "- 10 x "+ sytti +"!\n- 5000" + coins;
+            if (!("inventory" in data[_id]["omistus"])) {
+              data[_id]["omistus"]["inventory"] = {};
+            }
+            if (!("sytti" in data[_id]["omistus"]["inventory"])) {
+              data[_id]["omistus"]["inventory"]["sytti"] = 0;
+            }
+            data[_id]["omistus"]["inventory"]["sytti"] += 10;
+            data[_id]["omistus"]["rahat"] += 5000;
+          }
+
+
+        }
+        else if (rnd > 50) {
+          msg2 += "- 10000" + coins + "\n- 10000" + es;
+          data[_id]["omistus"]["rahat"] += 10000;
+          data[_id]["omistus"]["ES"] += 10000;
+        }
+        else if (rnd > 25) {
+          msg2 += "- " + tulokone + "Tulokone\n";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tulokone" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["tulokone"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["tulokone"] += 1;
+        }
+        else if (rnd > 25) {
+          msg2 += "- 1 x " + hypersytti + " Hypersytti\n";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["hypersytti"] += 1;
+        }
+        else if (rnd >= 0) {
+          msg2 += "- 5 x " + supersytti + " Supersytti";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("supersytti" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["supersytti"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["supersytti"] += 5;
+        }
+      }
+      if (_rarity == "epic") {
+        msg1 = chest_epic + " Epic LootBox" ;
+        msg2 = "";
+        color = 12390624;
+        data[_id]["omistus"]["avatut_lootboxit"]["epic"] += 1;
+        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+        if (rnd > 90) {
+          msg2 += "- " + _perustulo + "Perustulo +5!";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("perustulo" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["perustulo"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["perustulo"] += 1;
+        }
+        else if (rnd > 65) {
+          msg2 += "- 5 " + maski;
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("maskit" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["maskit"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["maskit"] += 5;
+        }
+        else if (rnd > 55) {
+          msg2 += "- " + tulokone_x + " Tulokone-X";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tulokone-x" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["tulokone-x"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["tulokone-x"] += 1;
+        }
+        else if (rnd > 35) {
+          msg2 += "- 5 x " + hypersytti + " Hypersytti";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["hypersytti"] += 5;
+        }
+        else if (rnd > 20) {
+          msg2 += "- " + tuloimu + " Tuloimu!";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tuloimu" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["tuloimu"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["tuloimu"] += 1;
+        }
+        else if (rnd >= 0) {
+          msg2 += "- 50000" + coins + "\n";
+          data[_id]["omistus"]["rahat"] += 50000;
+
+        }
+      }
+      if (_rarity == "legendary") {
+        msg1 = chest_legendary + " Legendary LootBox" ;
+        msg2 = "";
+        color = 16098851;
+        data[_id]["omistus"]["avatut_lootboxit"]["legendary"] += 1;
+        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+        if (rnd > 80) {
+          if (data[_id]["omistus"]["kultainen_harppuuna"] == false){
+            msg2 += "- " + harpoon_e + "Kultainen harpuuna! (Saatavilla vain kerran)";
+            data[_id]["omistus"]["kultainen_harppuuna"] = true;
+
+          } else {
+            msg2 += "- 100000" + coins;
+            data[_id]["omistus"]["rahat"] += 100000;
+          }
+        }
+        else if (rnd > 60) {
+          msg2 += "- "+ dupepyssy + " Dupepyssy!";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("dupepyssyt" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["dupepyssyt"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["dupepyssyt"] += 1;
+        }
+        else if (rnd > 40) {
+          msg2 += "- " + gem + " Gem!";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("gem" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["gem"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["gem"] += 1;
+        }
+        else if (rnd > 20) {
+          if (data[_id]["omistus"]["hiilikuituonki"] == false){
+            msg2 += "- "+ hiilikuituonki + " Hiilikuituonki (Saatavilla vain kerran)";
+            data[_id]["omistus"]["hiilikuituonki"] = true;
+
+          } else {
+            msg2 += "- 80000" + coins + "\n- " + hypersytti + " Hypersytti!";
+            data[_id]["omistus"]["rahat"] += 100000;
+            if (!("inventory" in data[_id]["omistus"])) {
+              data[_id]["omistus"]["inventory"] = {};
+            }
+            if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
+              data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
+            }
+            data[_id]["omistus"]["inventory"]["hypersytti"] += 1;
+          }
+        }
+        else if (rnd >= 0) {
+          msg2 += "- " + tulokiihdytin + " Tulokiihdytin!\n";
+          if (!("inventory" in data[_id]["omistus"])) {
+            data[_id]["omistus"]["inventory"] = {};
+          }
+          if (!("tulokiihdytin" in data[_id]["omistus"]["inventory"])) {
+            data[_id]["omistus"]["inventory"]["tulokiihdytin"] = 0;
+          }
+          data[_id]["omistus"]["inventory"]["tulokiihdytin"] += 1;
+        }
+      }
+
+      firebase.database().ref('profiles').set(data);
+      _msg.channel.send({
+        "embed": {
+          "title": "***" + msg1 + "***",
+          "color": color,
+          "fields": [{
+              "name": "***___Loot:___***",
+              "value": msg2
+            }
+          ]
+        }
+      });
+    }
+  },
+
+  'aktivoi' : (msg) => {
+
+    let item = msg.content.split(' ')[1];
+    let name = msg.content.split(' ')[2];
+
+    if ((name == '' || name === undefined)) {
+      name = msg.author.id;
+    }
+
+    if ((item == '' || item === undefined)) {
+      return msg.channel.send(`Valitse aktivoitava tavara ja mahdollinen kohde!`);
+    }
+
+    name = name.replace(/\D/g, '');
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return ref.on('value', gotData, errData);
+    ref.on('value', gotData, errData);
+
+
+    var target_id = name;
+    var sender_id = msg.author.id;
+
+    user_check_database(target_id);
+    user_check_database(sender_id);
+
+
+    if (!("inventory" in data[sender_id]["omistus"])) return msg.channel.send(`Sulla ei ole mitään tavaraa...`);
+
+    if (item == "tulokone" ) {
+      if (!("tulokone" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tulokonetta`);
+      if ("tulokoneajastin" in data[sender_id]) return msg.channel.send(`Sulla on jo Tulokone päällä!`);
+      data[sender_id]["tulokoneajastin"] = {
+        "tulokonetier" : 1,
+        "tulokoneaika": 60,
+        "summa" : 0
+      };
+
+      data[sender_id]["omistus"]["inventory"]["tulokone"] -= 1;
+      if (data[sender_id]["omistus"]["inventory"]["tulokone"] == 0) {
+        delete data[sender_id]["omistus"]["inventory"]["tulokone"];
+      }
+
+      msg.channel.send(`Hurraa! Tulokone hurraa!`);
+      firebase.database().ref('profiles').set(data);
+      return;
+    }
+    else if (item == "tulokone-x" ) {
+      if (!("tulokone-x" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tulokone-X:ää`);
+      if ("tulokoneajastin" in data[sender_id]) return msg.channel.send("Sulla on jo Tulokone päällä!");
+      data[sender_id]["tulokoneajastin"] = {
+        "tulokonetier" : 2,
+        "tulokoneaika": 60,
+        "summa" : 0,
+      };
+
+      data[sender_id]["omistus"]["inventory"]["tulokone-x"] -= 1;
+      if (data[sender_id]["omistus"]["inventory"]["tulokone-x"] == 0) {
+        delete data[sender_id]["omistus"]["inventory"]["tulokone-x"];
+      }
+
+      msg.channel.send(`Hurraa! Tulokone-X hurraa!`);
+      firebase.database().ref('profiles').set(data);
+      return;
+    }
+    else if (item == "tulokiihdytin" ) {
+      if (!("tulokiihdytin" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tulokiihdytintä`);
+      if ("tulokoneajastin" in data[sender_id]) return msg.channel.send(`Sulla on jo Tulokone päällä!`);
+      data[sender_id]["tulokoneajastin"] = {
+        "tulokonetier" : 4,
+        "tulokoneaika": 60,
+        "summa" : 0
+      };
+
+      data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] -= 1;
+      if (data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] == 0) {
+        delete data[sender_id]["omistus"]["inventory"]["tulokiihdytin"];
+      }
+
+      msg.channel.send(`Hurraa! Tulokiihdytin hurraa!`);
+      firebase.database().ref('profiles').set(data);
+      return;
+    }
+    else if (item == "gem" ) {
+      if (!("gem" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole gemiä...`);
+
+        data[name]["omistus"]["rahat"] = data[name]["omistus"]["rahat"] * 2;
+        msg.channel.send(`Uiui, rahasi tuplaantuivat!`);
+
+        data[sender_id]["omistus"]["inventory"]["gem"] -= 1;
+        if (data[sender_id]["omistus"]["inventory"]["gem"] == 0) {
+          delete data[sender_id]["omistus"]["inventory"]["gem"];
+        }
+    }
+    else if (item == "perustulo" ) {
+      if (!("perustulo" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole perustuloa...`);
+
+        data[name]["omistus"]["perustulo"] += 5;
+        msg.channel.send(`Uiui, sait perustuloa +5!`);
+
+        data[sender_id]["omistus"]["inventory"]["perustulo"] -= 1;
+        if (data[sender_id]["omistus"]["inventory"]["perustulo"] == 0) {
+          delete data[sender_id]["omistus"]["inventory"]["perustulo"];
+        }
+    }
+
+    if ("ironman" in data[sender_id]) return msg.channel.send(`Olet Ironman... et voi koskea muihin`);
+    if ("ironman" in data[target_id]) return msg.channel.send(`Kohde on Ironman...`);
+
+    if (item == "keppi" ) {
+
+      if (!("kepit" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole keppejä`);
+      if (name == sender_id) return msg.channel.send(`Ai vittu!`);
+        var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+        if (rnd > 3 && data[name]["omistus"]["rahat"] > 100) {
+          msg.channel.send("Löit jäbää <@" + name +  ">! Hän pudotti 100" + coins + " maahan... Keppikin meni poikki...");
+          data[name]["omistus"]["rahat"] -= 100;
+        } else {
+          msg.channel.send("Löit jäbää <@" + name +  ">! Hän muistaa tämän seuraavan kerran... Keppi meni poikki...");
+        }
+        data[sender_id]["omistus"]["inventory"]["kepit"] -= 1;
+        data[sender_id]["omistus"]["lyöty"] += 1;
+        data[target_id]["omistus"]["suo_lyöty"] += 1;
+        if (data[sender_id]["omistus"]["inventory"]["kepit"] == 0) {
+          delete data[sender_id]["omistus"]["inventory"]["kepit"];
+        }
+    }
+    if (item == "maski" ) {
+      if (name == sender_id) return msg.channel.send(`Et voi varastaa omaa rahaa, lol!`);
+      if (!("maskit" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole maskeja`);
+      if (data[name]["omistus"]["rahat"] <= 0) return msg.channel.send(`Kohteella ei ole oikein rahaa...`);
+        var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+        var sum = Math.floor(Math.random() * Math.floor(data[name]["omistus"]["rahat"]/100 + 1))*10+10;
+        if (sum > 28000){
+          sum == 28000;
+        }
+
+        if (rnd > 2) {
+          msg.channel.send("Varastit jäbältä <@" + name +  ">! Sait: " + sum + coins);
+          data[sender_id]["omistus"]["rahat"] += sum;
+          data[sender_id]["omistus"]["varastetut"] += sum;
+          data[name]["omistus"]["rahat"] -= sum;
+          data[name]["omistus"]["sulta_varastetut"] -= sum;
+        } else {
+          msg.channel.send("Jäit kiinni varastaessasi jäbältä <@" + name +  ">! Sait sakkoa " + sum + coins + ". Kohdehenkilö saa korvausta: " + Math.floor(sum/2) + coins);
+          data[sender_id]["omistus"]["rahat"] -= sum;
+          data[sender_id]["omistus"]["sakot"] += sum;
+          data[name]["omistus"]["rahat"] += Math.floor(sum/2);
+          data[name]["omistus"]["korvaukset"] += Math.floor(sum/2);
+        }
+        data[sender_id]["omistus"]["inventory"]["maskit"] -= 1;
+        if (data[sender_id]["omistus"]["inventory"]["maskit"] == 0) {
+          delete data[sender_id]["omistus"]["inventory"]["maskit"];
+        }
+    }
+    if (item == "dupepyssy" ) {
+      if (name == sender_id) return msg.channel.send(`Et voi käyttää pyssyä itseesi, pelottaa!`);
+      if (!("dupepyssyt" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole dupepyssyä...`);
+
+        data[name]["omistus"]["rahat"] = data[name]["omistus"]["rahat"] * 2;
+        msg.channel.send(`Uiui, hänen rahat tuplaantuivat!`);
+
+        data[sender_id]["omistus"]["inventory"]["dupepyssyt"] -= 1;
+        if (data[sender_id]["omistus"]["inventory"]["dupepyssyt"] == 0) {
+          delete data[sender_id]["omistus"]["inventory"]["dupepyssyt"];
+        }
+    }
+    if (item == "tuloimu" ) {
+      if (!("tuloimu" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tuloimuria`);
+      if ("tuloimuajastin" in data[sender_id]) return msg.channel.send(`Sulla on jo imuri päällä!`);
+      data[sender_id]["tuloimuajastin"] = {
+        "kohde" : name,
+        "tuloimuaika": 240,
+        "summa": 0
+      };
+
+      data[sender_id]["omistus"]["inventory"]["tuloimu"] -= 1;
+      if (data[sender_id]["omistus"]["inventory"]["tuloimu"] == 0) {
+        delete data[sender_id]["omistus"]["inventory"]["tuloimu"];
+      }
+
+      msg.channel.send(`Imet tuloa!`);
+    }
+
+    firebase.database().ref('profiles').set(data);
+
+  },
+
   // Other commands
 
   'juo': (msg) => {
@@ -2317,6 +4255,15 @@ const commands = {
     firebase.database().ref('profiles').set(data);
 
 
+  },
+
+  'ironman': (msg) => {
+    ref.on('value', gotData, errData);
+    if ("ironman" in data[msg.author.id]) return msg.channel.send(`Olet jo Ironman, etkä muuksi muutu...`);
+    data[msg.author.id]["ironman"] = true;
+
+    msg.channel.send(`Olet nyt Ironman. Sinä et voi vaihtaa mitään. Muut eivät voi varastaa sinulta, etkä sinä muilta!`);
+    firebase.database().ref('profiles').set(data);
   },
 
   'dj': (msg) => {
@@ -2787,7 +4734,6 @@ const commands = {
     for (var i = 1; i < text_parts.length; i++) {
       str += text_parts[i] + " ";
     }
-
     msg.channel.send(str);
     msg.delete();
 
@@ -3029,8 +4975,12 @@ const commands = {
             value: "Aloittaa harppuuna-pelin (maksaa 50 coins)"
           },
           {
-            name: tokens.prefix + "shoot_harpoon [asteet 1-90] [voima 1-100]",
-            value: "ampuu harppuunan"
+            name: tokens.prefix + "Ammu [asteet 1-90] [voima 1-100]",
+            value: "Ampuu harppuunan"
+          },
+          {
+            name: tokens.prefix + "Kalasta [Syvyys 1-10] [Matka 1-100] [Paikka/Sytti]",
+            value: "Kalastetaan! Tarvitset ongen. Jos tavallinen sytti, valitse paikka: (joki, järvi, meri). Jos erikoisytti, niin laita sen nimi."
           },
           {
             name: tokens.prefix + "bj + (panos)",
@@ -3041,8 +4991,8 @@ const commands = {
             value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
           },
           {
-            name: tokens.prefix + "winningstaulu",
-            value: "Näyttää winningstaulun"
+            name: tokens.prefix + "voittotaulu",
+            value: "Näyttää voittostaulun"
           },
           {
             name: tokens.prefix + "kauppa",
@@ -3112,14 +5062,8 @@ const commands = {
 
 };
 
-// When bot is ready
-client.on('ready', () => {
-  //if (msg.guild.id != "180699479379410944") return;
-
-  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
-
-  ref.on('value', gotData, errData);
-
+// Loads emojies to server
+function loadEmojies() {
   coins = client.emojis.find(x => x.name === "coin");
 
   karvis = client.emojis.find(x => x.name === "karvis");
@@ -3154,6 +5098,87 @@ client.on('ready', () => {
   double_emoji = client.emojis.find(x => x.name === "D_");
   stand_emoji = client.emojis.find(x => x.name === "S_");
   jako_emoji = client.emojis.find(x => x.name === "J_");
+  poggersrow = client.emojis.find(x => x.name === "PoggersRow");
+
+  chest_common = client.emojis.find(x => x.name === "chest_common");
+  chest_uncommon = client.emojis.find(x => x.name === "chest_uncommon");
+  chest_rare = client.emojis.find(x => x.name === "chest_rare");
+  chest_epic = client.emojis.find(x => x.name === "chest_epic");
+  chest_legendary = client.emojis.find(x => x.name === "chest_legendary");
+
+  sytti = client.emojis.find(x => x.name === "sytti");
+  supersytti = client.emojis.find(x => x.name === "supersytti");
+  hypersytti = client.emojis.find(x => x.name === "hypersytti");
+
+  maski = client.emojis.find(x => x.name === "maski");
+  onki = client.emojis.find(x => x.name === "onki");
+  hiilikuituonki = client.emojis.find(x => x.name === "hiilikuituonki");
+  gem = client.emojis.find(x => x.name === "gemi");
+  dupepyssy = client.emojis.find(x => x.name === "dupepyssy");
+  keppi = client.emojis.find(x => x.name === "keppi");
+
+  tulokone = client.emojis.find(x => x.name === "tulokone");
+  tulokone_x = client.emojis.find(x => x.name === "tulokonex");
+  tulokiihdytin = client.emojis.find(x => x.name === "tulokiihdytin");
+  tuloimu = client.emojis.find(x => x.name === "tuloimu");
+  _perustulo = client.emojis.find(x => x.name === "perustulo");
+
+  big_shark = client.emojis.find(x => x.name === "big_shark");
+  pufferfish = client.emojis.find(x => x.name === "pufferfish");
+  suphi_fish = client.emojis.find(x => x.name === "suphi_fish");
+  shrimps = client.emojis.find(x => x.name === "shrimps");
+  sacred_eel = client.emojis.find(x => x.name === "sacred_eel");
+  anchovies = client.emojis.find(x => x.name === "anchovies");
+  salmon = client.emojis.find(x => x.name === "salmon");
+  dark_crab = client.emojis.find(x => x.name === "dark_crab");
+  manta_ray = client.emojis.find(x => x.name === "manta_ray");
+  eel = client.emojis.find(x => x.name === "eel");
+  lobster = client.emojis.find(x => x.name === "lobster");
+  shark = client.emojis.find(x => x.name === "shark");
+  mackerel = client.emojis.find(x => x.name === "mackerel");
+  monkfish = client.emojis.find(x => x.name === "monkfish");
+  cave_eel = client.emojis.find(x => x.name === "cave_eel");
+  cod = client.emojis.find(x => x.name === "cod");
+  anglerfish = client.emojis.find(x => x.name === "anglerfish");
+  bass = client.emojis.find(x => x.name === "bass");
+  tuna = client.emojis.find(x => x.name === "tuna");
+  herring = client.emojis.find(x => x.name === "herring");
+  pike = client.emojis.find(x => x.name === "pike");
+  trout = client.emojis.find(x => x.name === "trout");
+  rainbow_fish = client.emojis.find(x => x.name === "rainbow_fish");
+  sea_turtle = client.emojis.find(x => x.name === "sea_turtle");
+  sardine = client.emojis.find(x => x.name === "sardine");
+  karambwan = client.emojis.find(x => x.name === "karambwan");
+  swordfish = client.emojis.find(x => x.name === "swordfish");
+  infernal_eel = client.emojis.find(x => x.name === "infernal_eel");
+  leaping_trout = client.emojis.find(x => x.name === "leaping_trout");
+  leaping_salmon = client.emojis.find(x => x.name === "leaping_salmon");
+  leaping_sturgeon = client.emojis.find(x => x.name === "leaping_sturgeon");
+  seaweed = client.emojis.find(x => x.name === "seaweed");
+  casket = client.emojis.find(x => x.name === "casket");
+}
+
+// When bot is ready
+client.on('ready', () => {
+
+  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
+
+  ref.on('value', gotData, errData);
+
+  loadEmojies();
+
+  // Setting up "Title"
+  if (pääpäivä == true) {
+    change_title("PÄÄPÄIVÄ");
+  } else if (day === 3) {
+    change_title("Wednesday");
+  } else {
+    change_title("ttunes");
+  }
+  if (data["deck"] == undefined) {
+    check_deck();
+    data["deck"] = deck;
+  }
 
 });
 
@@ -3176,14 +5201,16 @@ client.on("error", e => {
 });
 
 // INTERVALLIFUNKTIO MINUUTIN VÄLEIN
+var minute_count = 0;
+
 setInterval(function() {
-  //if (client.guild.id != "180699479379410944") return;
   ref.on('value', gotData, errData);
 
   var date = new Date();
   var date_array = [date.getDate(), date.getMonth(), date.getYear()];
   var day = date.getDay();
 
+  // Next day
   if (date_array[0] == data["date"][0] && date_array[1] == data["date"][1] && date_array[2] == data["date"][2]) {
     pääpäivä = true;
   } else {
@@ -3192,6 +5219,7 @@ setInterval(function() {
     data["date"] = [0, 0, 0];
   }
 
+  // Check if there is no card deck
   try {
     deck = data["deck"];
   } catch(err) {
@@ -3201,6 +5229,7 @@ setInterval(function() {
     firebase.database().ref('profiles').set(data);
   }
 
+  // Setting up "Title"
   if (pääpäivä == true) {
     change_title("PÄÄPÄIVÄ");
   } else if (day === 3) {
@@ -3213,24 +5242,29 @@ setInterval(function() {
     data["deck"] = deck;
   }
 
-  var keyarr = client.channels.keyArray();
+  // Happens every time user is active on voicechannel
+  var voicechannels_array = client.channels.keyArray();
+  for (var i of voicechannels_array) {
+    var channel = client.channels.get(i);
 
-  for (var i of keyarr) {
-    var kan = client.channels.get(i);
-
-    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "404378873380470786" && kan.id != "422007359507005440") {
-      var membrs = kan.members.keyArray();
-      for (var m of membrs) {
-        var usr = kan.members.get(m);
+    if (channel.type == 'voice' && channel.id != "300242143702679552" && channel.id != "422007359507005440") {
+      var channel_members = channel.members.keyArray();
+      for (var m of channel_members) {
+        var usr = channel.members.get(m);
         user_check_database(m);
+        if (usr.id == "430827809418772481" || usr.id == "232916519594491906" || usr.id == "155149108183695360") continue;
         if (!usr.deaf) {
-          if (usr.id == "430827809418772481" || usr.id == "232916519594491906" || usr.id == "155149108183695360") continue;
 
-          data[m]["omistus"]["rahat"] += data[m]["omistus"]["perustulo"];
           if (data[m]["omistus"]["rahat"] > data[m]["omistus"]["maxrahat"]) {
             data[m]["omistus"]["maxrahat"] = data[m]["omistus"]["rahat"]
           }
+
           data[m]["aika_kannuilla"] += 1;
+
+          data[m]["omistus"]["rahat"] += data[m]["omistus"]["perustulo"];
+
+          var weight = map(data[m]["omistus"]["perustulo"], 10, 80, 1, 1);
+          draw_lootbox_weighted(usr.id, 14400, weight, 180); // 180
 
         }
         if (BOT_IDs.includes(usr.id)) {
@@ -3240,11 +5274,128 @@ setInterval(function() {
       }
     }
   }
-  console.log("Intervalli meni!");
-  console.log(bj);
+
+  // Happens every minute
+  var server_members = client.users.keyArray();
+  for (var m of server_members) {
+    if (m in data) {
+
+      // Tuloimuajastin -> imee tuloa vain jos kohde on paikalla -> muuten kuluu
+      if ("tuloimuajastin" in data[m]) {
+        var trg = client.users.get(data[m]["tuloimuajastin"]["kohde"]);
+
+        if (is_on_voicechannel(trg.id, voicechannels_array) && !(trg.deaf)) {
+
+          if ("tulokoneajastin" in data[trg.id]) {
+            multi = data[trg.id]["tulokoneajastin"]["tulokonetier"]*10;
+          } else {
+            multi = 1;
+          }
+
+          data[trg.id]["omistus"]["rahat"] -= data[trg.id]["omistus"]["perustulo"]*multi;
+          data[trg.id]["omistus"]["sulta_imetyt"] -= data[trg.id]["omistus"]["perustulo"]*multi;
+          data[trg.id]["omistus"]["sulta_imetyt_minuutit"] += 1;
+
+
+          data[m]["omistus"]["rahat"] += data[trg.id]["omistus"]["perustulo"]*multi;
+          data[m]["omistus"]["imetyt"] += data[trg.id]["omistus"]["perustulo"]*multi;
+          data[m]["omistus"]["imetyt_minuutit"] += 1;
+          data[m]["tuloimuajastin"]["summa"] += data[trg.id]["omistus"]["perustulo"]*multi;
+
+        }
+
+        data[m]["tuloimuajastin"]["tuloimuaika"] -= 1;
+        if (data[m]["tuloimuajastin"]["tuloimuaika"] == 0) {
+          client.channels.get("280272696560975872").send("<@" + m + ">, Tuloimusi on päättynyt... Sait: " + data[m]["tuloimuajastin"]["summa"] + coins);
+          delete data[m]["tuloimuajastin"];
+        }
+      }
+
+      // Tulokoneajastin -> kuluu kokoajan. antaa enemmän rahaa jos paikalla
+      if ("tulokoneajastin" in data[m]) {
+
+        if (is_on_voicechannel(m, voicechannels_array) && !(client.users.get(m).deaf)) {
+
+          data[m]["omistus"]["rahat"] += data[m]["omistus"]["perustulo"]*data[m]["tulokoneajastin"]["tulokonetier"]*10 - data[m]["omistus"]["perustulo"];
+          data[m]["tulokoneajastin"]["summa"] += data[m]["omistus"]["perustulo"]*data[m]["tulokoneajastin"]["tulokonetier"]*10 - data[m]["omistus"]["perustulo"];
+          data[m]["tulokoneajastin"]["tulokoneaika"] -= 1;
+          if (data[m]["tulokoneajastin"]["tulokoneaika"] == 0) {
+            client.channels.get("280272696560975872").send("<@" + m + "> ,Tulokoneesi on päättynyt... Sait: " + (data[m]["tulokoneajastin"]["summa"]) + coins);
+            delete data[m]["tulokoneajastin"];
+          }
+        }
+        else {
+          data[m]["tulokoneajastin"]["tulokoneaika"] -= 1;
+          if (data[m]["tulokoneajastin"]["tulokoneaika"] == 0) {
+            client.channels.get("280272696560975872").send("<@" + m + "> ,Tulokoneesi on päättynyt... Sait: " + (data[m]["tulokoneajastin"]["summa"]) + coins);
+            delete data[m]["tulokoneajastin"];
+          }
+        }
+      }
+
+      // Kuluu aina -> kalastaminen loppuu kun ajastin päättyy
+      if ("kalastusajastin" in data[m]) {
+
+        data[m]["kalastusajastin"]["timer"] -= 1;
+
+        if (data[m]["kalastusajastin"]["timer"] == 0) {
+          data[m]["omistus"]["rahat"] += data[m]["kalastusajastin"]["hinta"];
+
+          var fish_pic = client.emojis.find(x => x.name === data[m]["kalastusajastin"]["emoji"]);
+          var rod_picture = client.emojis.find(x => x.name === data[m]["kalastusajastin"]["onki"]);
+          var bait_picture = client.emojis.find(x => x.name === data[m]["kalastusajastin"]["sytti"]);
+
+          client.channels.get("280272696560975872").send({
+            "embed": {
+              "title": "***" + client.users.get(m).username + " " + "saaliisi:***",
+              "color": 15466496,
+              "fields": [{
+                  "name": fish_pic + " " + data[m]["kalastusajastin"]["kala"],
+                  "value": "(Paino: " + data[m]["kalastusajastin"]["paino"] + "0kg , Arvo: " + data[m]["kalastusajastin"]["hinta"] + coins + ")"
+                },
+                {
+                  "name": "***___Tiedot:___***",
+                  "value": "***Paikka:*** " + data[m]["kalastusajastin"]["paikka"] + "\n***Aika:*** " + data[m]["kalastusajastin"]["päiväaika"] + "\n***Onki:*** " + rod_picture + "\n***Sytti:*** " + bait_picture
+                }
+              ]
+            }
+          });
+
+          data[m]["omistus"]["kaloista_saadut_rahat"] += data[m]["kalastusajastin"]["hinta"];
+          data[m]["omistus"]["kalastetut_kalat"] += 1;
+          if (data[m]["omistus"]["painavin_kala"] < data[m]["kalastusajastin"]["paino"]) {
+            data[m]["omistus"]["painavin_kala"] = data[m]["kalastusajastin"]["paino"];
+          }
+
+          delete fish_pic;
+          delete rod_picture;
+          delete bait_picture;
+          delete data[m]["kalastusajastin"];
+        }
+      }
+    }
+  }
+  minute_count += 1;
+  console.log("Intervalli meni! (" + minute_count + ")");
+
   firebase.database().ref('profiles').set(data);
 
 }, 60000);
+
+function is_on_voicechannel(_id, _voice_channels) {
+  for (var i of _voice_channels) {
+    var kan = client.channels.get(i);
+    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "422007359507005440") {
+      var membrs = kan.members.keyArray();
+      for (var c of membrs) {
+        if (c == _id) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
 
 // FIREBASEN DATAKÄSITTELYFUNKTIOITA
 function gotData(_data) {
