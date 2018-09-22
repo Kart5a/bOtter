@@ -5166,6 +5166,10 @@ client.on('ready', () => {
   ref.on('value', gotData, errData);
 
   loadEmojies();
+  
+  var date = new Date();
+  var date_array = [date.getDate(), date.getMonth(), date.getYear()];
+  var day = date.getDay();
 
   // Setting up "Title"
   if (pääpäivä == true) {
