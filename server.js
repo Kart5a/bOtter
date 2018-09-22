@@ -2053,7 +2053,10 @@ const commands = {
 
       let basic_income = data[msg.author.id]["omistus"]["perustulo"];
 
-      var weight = map(bet, min_bet, (basic_income*1500 + starting_money/2.5)/2, 1, 10);
+      var weight = map(bet, min_bet, (basic_income*2500 + starting_money/2.5)/2, 1, 10);
+      if (bet < 5*basic_income) {
+        weight = 0.2;
+      }
       draw_lootbox_weighted(msg.author.id, 14400, weight, 550);
       firebase.database().ref('profiles').set(data);
 
@@ -2999,7 +3002,7 @@ const commands = {
             "emoji": casket,
             "paino_min": 12,
             "paino_max" : 12,
-            "hinta" : 1500,
+            "hinta" : 1000,
             "hajonta": 0,
             "aika" : "PAIY"
           }
@@ -3011,7 +3014,7 @@ const commands = {
           "emoji": casket,
           "paino_min": 12,
           "paino_max" : 12,
-          "hinta" : 1000,
+          "hinta" : 1500,
           "hajonta": 0,
           "aika" : "PAIY"
         }
@@ -3213,19 +3216,19 @@ const commands = {
     }
     else if (product == "sytti") {
       try {
-        if (data[sender_id]["omistus"]["inventory"]["syötit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["syötit"] -= amount;
+        if (data[sender_id]["omistus"]["inventory"]["sytti"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["sytti"] -= amount;
 
           if (!("inventory" in data[target_id]["omistus"])) {
             data[target_id]["omistus"]["inventory"] = {};
           }
-          if (!("syötit" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["syötit"] = 0;
+          if (!("sytti" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["sytti"] = 0;
           }
 
-          data[target_id]["omistus"]["inventory"]["syötit"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["syötit"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["syötit"];
+          data[target_id]["omistus"]["inventory"]["sytti"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["sytti"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["sytti"];
           }
 
       } catch(err) {
@@ -3274,19 +3277,19 @@ const commands = {
     }
     else if (product == "supersytti") {
       try {
-        if (data[sender_id]["omistus"]["inventory"]["mehevätsyötit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["maskit"] -= amount;
+        if (data[sender_id]["omistus"]["inventory"]["supersytti"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["supersytti"] -= amount;
 
           if (!("inventory" in data[target_id]["omistus"])) {
             data[target_id]["omistus"]["inventory"] = {};
           }
-          if (!("mehevätsyötit" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["mehevätsyötit"] = 0;
+          if (!("supersytti" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["supersytti"] = 0;
           }
 
-          data[target_id]["omistus"]["inventory"]["mehevätsyötit"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["mehevätsyötit"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["mehevätsyötit"];
+          data[target_id]["omistus"]["inventory"]["supersytti"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["supersytti"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["supersytti"];
           }
 
       } catch(err) {
@@ -3295,19 +3298,19 @@ const commands = {
     }
     else if (product == "hypersytti") {
       try {
-        if (data[sender_id]["omistus"]["inventory"]["megasyötit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["megasyötit"] -= amount;
+        if (data[sender_id]["omistus"]["inventory"]["hypersytti"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
+          data[sender_id]["omistus"]["inventory"]["hypersytti"] -= amount;
 
           if (!("inventory" in data[target_id]["omistus"])) {
             data[target_id]["omistus"]["inventory"] = {};
           }
-          if (!("megasyötit" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["megasyötit"] = 0;
+          if (!("hypersytti" in data[target_id]["omistus"]["inventory"])) {
+            data[target_id]["omistus"]["inventory"]["hypersytti"] = 0;
           }
 
-          data[target_id]["omistus"]["inventory"]["megasyötit"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["megasyötit"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["megasyötit"];
+          data[target_id]["omistus"]["inventory"]["hypersytti"] += amount;
+          if (data[target_id]["omistus"]["inventory"]["hypersytti"] == 0) {
+            delete data[target_id]["omistus"]["inventory"]["hypersytti"];
           }
 
       } catch(err) {
@@ -3978,7 +3981,7 @@ const commands = {
             data[_id]["omistus"]["hiilikuituonki"] = true;
 
           } else {
-            msg2 += "- 80000" + coins + "\n- " + hypersytti + " Hypersytti!";
+            msg2 += "- 80000" + coins + "\n- 3 x "+ hypersytti + " Hypersytti!";
             data[_id]["omistus"]["rahat"] += 100000;
             if (!("inventory" in data[_id]["omistus"])) {
               data[_id]["omistus"]["inventory"] = {};
@@ -3986,7 +3989,7 @@ const commands = {
             if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
               data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
             }
-            data[_id]["omistus"]["inventory"]["hypersytti"] += 1;
+            data[_id]["omistus"]["inventory"]["hypersytti"] += 3;
           }
         }
         else if (rnd >= 0) {
@@ -5166,7 +5169,7 @@ client.on('ready', () => {
   ref.on('value', gotData, errData);
 
   loadEmojies();
-  
+
   var date = new Date();
   var date_array = [date.getDate(), date.getMonth(), date.getYear()];
   var day = date.getDay();
@@ -5178,10 +5181,6 @@ client.on('ready', () => {
     change_title("Wednesday");
   } else {
     change_title("ttunes");
-  }
-  if (data["deck"] == undefined) {
-    check_deck();
-    data["deck"] = deck;
   }
 
 });
