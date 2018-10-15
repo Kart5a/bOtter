@@ -3529,10 +3529,10 @@ const commands = {
     }
      else if (purchase.toLowerCase() == "rahapussi") {
 
-      if (money < amount) return msg.channel.send("Lol, köyhä " + jaa);
+      if (money < amount * 1000000) return msg.channel.send("Lol, köyhä " + jaa);
 
       data[customer]["omistus"]["rahapussi"] += amount;
-      data[customer]["omistus"]["rahat"] -= 1000000;
+      data[customer]["omistus"]["rahat"] -= 1000000 * amount;
 
       msg.channel.send("Ostit " + amount + " \:moneybag:");
 
@@ -4324,7 +4324,6 @@ const commands = {
       msg.channel.send("Pääpäivän DJ on jo valittu, ttunettaja on " + data["dj"] + "!");
     }
     firebase.database().ref('profiles').set(data);
-
 
   },
 
@@ -5294,6 +5293,18 @@ setInterval(function() {
 
     if (channel.type == 'voice' && channel.id != "300242143702679552" && channel.id != "422007359507005440") {
       var channel_members = channel.members.keyArray();
+      if (channel_members.length != 0) {
+
+        console.log("Channel: " + channel.name);
+        var list = [];
+
+        for (i of channel_members) {
+          list.push(channel.members.get(i).user.username);
+        }
+        console.log("Members: " + list);
+      }
+      if (channel.id == "404378873380470786") continue;
+
       for (var m of channel_members) {
         var usr = channel.members.get(m);
         user_check_database(m);
@@ -5435,7 +5446,7 @@ setInterval(function() {
 function is_on_voicechannel(_id, _voice_channels) {
   for (var i of _voice_channels) {
     var kan = client.channels.get(i);
-    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "422007359507005440") {
+    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "422007359507005440" && kan.id != "404378873380470786") {
       var membrs = kan.members.keyArray();
       for (var c of membrs) {
         if (c == _id) {
