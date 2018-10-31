@@ -7,48 +7,27 @@
 // User profiles, money system, shop, games, musicbot (ttunebot) and some tools.
 
 // This season (2) started on 30.8.2018.
-
-const {
-  Client
-} = require('discord.js');
-const Discord = require('discord.js');
-const yt = require('ytdl-core');
-const tokens = require('./tokens.json');
-const fireb = require('./config.json');
-const firebase = require('firebase');
+// This seasun (3) started on 31.10.2018.
+const {Client} = require("discord.js");
+const Discord = require("discord.js");
+const tokens = require("./tokens.json");
+const fireb = require("./config.json");
+const fishes = require("./fishes.json");
+const firebase = require("firebase");
 const client = new Client();
 
-// ttunesbot variables
-let voiceChannel;
-let dispatcher;
-let queue = {};
-
-const streamOptions = {
-  seek: 0,
-  volume: 0.06,
-  audioonly: true
-};
-
-// Emojies
-var coins, karvis, sasu, protect, poggers, kys, tyhjä, es, harpoon_e;
-var jaa, empty_e;
-var card_emojies, card_back, hit_emoji, double_emoji, stand_emoji, jako_emoji;
-
 // FIREBASE SETUP
-var data;
+var users;
+
+// Collectors
+var harpoon_collectors = {};
+var msg = {};
+var bj = {};
+
 firebase.initializeApp(fireb);
 var database = firebase.database();
-var ref = database.ref('profiles');
-ref.on('value', gotData, errData);
-
-// Other variables
-let deck = []; // Deck of card for BJ
-const BOT_IDs = ["232916519594491906","155149108183695360","430827809418772481"];
-
-let bj = {};
-let harpoon_collectors = {};
-
-var pääpäivä = false;
+var bot_users = database.ref("users");
+var global_data = database.ref("global_data");
 
 function change_title(text) {
   // Changes title of bOtter
@@ -60,1697 +39,2835 @@ function change_title(text) {
   });
 }
 
-function print_profile(target_id, msg) {
+function map(value, a, b, c, d) {
+  value = (value - a) / (b - a);
+  return c + value * (d - c);
+}
 
-  ref.on('value', gotData, errData);
+function randn_bm(min, max, skew) {
+  var u = 0,
+    v = 0;
+  while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+  while (v === 0) v = Math.random();
+  let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 
-  var name = data[target_id]["nimi"];
-  var motto = data[target_id]["motto"];
-  var description = data[target_id]["kuvaus"];
-  var picture = data[target_id]["kuva"];
-  var money = data[target_id]["omistus"]["rahat"];
-  var time = data[target_id]["aika_kannuilla"];
-  var basic_incoming = data[target_id]["omistus"]["perustulo"];
-  var es_amount = data[target_id]["omistus"]["ES"];
-  var es_amount_empty = data[target_id]["omistus"]["ES_tyhjät"];
+  num = num / 10.0 + 0.5; // Translate to 0 -> 1
+  if (num > 1 || num < 0) num = randn_bm(min, max, skew); // resample between 0 and 1 if out of range
+  num = Math.pow(num, skew); // Skew
+  num *= max - min; // Stretch to fill range
+  num += min; // offset to min
+  return num;
+}
+
+//// Database management
+function get_user(_id) {
+  return firebase
+    .database()
+    .ref("users/" + _id)
+    .once("value")
+    .then(d => {
+      user = d.val();
+      return user;
+    });
+}
+
+function save_user(user) {
+  firebase
+    .database()
+    .ref("users/" + user["id"])
+    .update(user);
+}
+
+function get_all_users() {
+  return firebase.database().ref("users").once("value").then(d => {
+      user = d.val();
+      return user;
+    });
+}
+
+function save_all_users(users) {
+  firebase
+    .database()
+    .ref("users")
+    .update(users);
+}
+
+function print_profile(user, msg) {
+  var name = user["name"];
+  var motto = user["info"]["motto"];
+  var description = user["info"]["description"];
+  var picture = user["info"]["picture"];
+  var money = user["inventory"]["money"];
+  var time = user["basic_statistics"]["minutes_on_channel"];
+  var basic_incoming = user["inventory"]["income"];
+  var wealth = calculate_wealth(user);
+  var color = parseInt(user["info"]["color"]);
 
   var avatar;
 
-  client.fetchUser(target_id).then(myUser => {
+  client.fetchUser(user["id"]).then(myUser => {
     avatar = myUser.avatarURL;
     send_profile(avatar);
   });
 
-  if (data[target_id]["omistus"]["kultainen_harppuuna"]) {
-    harp = "\nLöytyy: " + harpoon_e ;
-  } else {
-    harp = "";
-  }
-
-  if (data[target_id]["omistus"]["valaankasvatusohjelma"]) {
-    val1 = "\nKasvatan valaita 🐳";
-  } else {
-    val1 = "";
+  var safe_t = "";
+  if (user["inventory"]["key_items"]["safe"]["own"]) {
+    safe_t = `\n${emojies["tallelokero"]} ${user["inventory"]["key_items"]["safe"]["money"]}${emojies["coin"]}`
   }
 
   function send_profile(avatar) {
     msg.channel.send({
-      "embed": {
-        "title": "***DISCORDPROFIILI***",
-        "color": 15466496,
-        "thumbnail": {
-          "url": avatar
+      embed: {
+        title: "***DISCORDPROFIILI***",
+        color: color,
+        thumbnail: {
+          url: avatar
         },
-        "image": {
-          "url": picture
+        image: {
+          url: picture
         },
-        "fields": [{
-            "name": "***___Nimi:___***",
-            "value": name
+        fields: [
+          {
+            name: "***___Nimi:___***",
+            value: name
           },
           {
-            "name": "***___Motto:___***",
-            "value": motto
+            name: "***___Motto:___***",
+            value: motto
           },
           {
-            "name": "***___Kuvaus:___***",
-            "value": description
+            name: "***___Kuvaus:___***",
+            value: description
           },
           {
-            "name": "***___Rahat:___***",
-            "value": money + coins + " (Perustulo: " + basic_incoming + ")"
+            name: "***___Rahat:___***",
+            value:
+              money +
+              emojies["coin"] +
+              " (Perustulo: " +
+              basic_incoming +
+              emojies["coin"] +
+              "/min)" + safe_t
           },
           {
-            "name": "***___Muut romut:___***",
-            "value": es_amount + es + " (Juodut: " + es_amount_empty + ")" + harp + val1
+            name: "***___Aika kannulla:___***",
+            value: time + " min"
           },
           {
-            "name": "***___Aika kannulla:___***",
-            "value": time + " min"
+            name: "***___Omaisuus:___***",
+            value: wealth + emojies["coin"]
           }
-
         ]
       }
-    })
-
+    });
   }
 }
 
-// Reacts emojies when message contains words
-function react_to_message(wordlist, emojilist, msg) {
-  var f = false;
-  for (var word of wordlist) {
-    if (word.test(msg.content) === true) {
-      f = true;
-    }
-  }
-  if (!f) return;
-  for (var emo of emojilist) {
-    var emoji = msg.guild.emojis.find(x => x.name === emo);
-    msg.react(emoji);
-  }
-}
-
-function check_URL(str) {
-  if (str.includes("http")) {
-    return true;
-
-  } else {
-    return false;
-  }
-}
-
-function user_check_database(_id) {
-
-  if (_id == "date" || _id == undefined || _id == "dj" || _id == "deck") return;
-  var usr = client.users;
-
-  var name;
-  try {
-    name = usr.get(_id).username;
-  } catch (err) {
-    name = "<@" + _id + ">"
-  }
-
-  if (BOT_IDs.includes(_id)) {
-    delete data[_id];
-    return;
-  }
-
-  if (!(_id in data)) {
-    console.log(_id + ", Uusi profiili luodaan!");
-
-    new_data = {
-      "nimi": name,
-      "motto": "-",
-      "kuvaus": "-",
-      "kuva": " ",
-      "aika_kannuilla": 0,
-      "omistus": {
-        "rahat": 500,
-        "maxrahat": 500,
-        "annetut_rahat": 0,
-        "saadut_rahat": 0,
-        "perustulo": 10,
-        "ES": 0,
-        "ES_tyhjät": 0,
-        "kultainen_harppuuna": false,
-        "varastetut": 0,
-        "sulta_varastetut" : 0,
-        "sakot" : 0,
-        "imetyt" : 0,
-        "imetyt_minuutit" : 0,
-        "sulta_imetyt_minuutit" : 0,
-        "sulta_imetyt": 0,
-        "korvaukset": 0,
-        "tulokoneista_saadut_rahat" : 0,
-        "lyöty" : 0,
-        "suo_lyöty" : 0,
-        "kalastetut_kalat" : 0,
-        "painavin_kala" : 0,
-        "kaloista_saadut_rahat" : 0,
-        "rahapussi" : 0,
-        "lootboxit" : {
-          "common" : 0,
-          "uncommon" : 0,
-          "rare" : 0,
-          "epic" : 0,
-          "legendary" : 0
-        },
-        "avatut_lootboxit" : {
-          "common" : 0,
-          "uncommon" : 0,
-          "rare" : 0,
-          "epic" : 0,
-          "legendary" : 0
-        }
-      },
-      "pelit": {
-        "slot_pelit": 0,
-        "slot_voitot": 0,
-        "slot_häviöt_yhteensä": 0,
-        "slot_voitot_yhteensä": 0,
-        "slot_yksittäisvoitot": {
-          "sasu": 0,
-          "karvis": 0,
-          "alfa": 0,
-          "meloni": 0,
-          "poggers1": 0,
-          "poggers2": 0,
-          "poggers3": 0
-        },
-        "KTEM_pelit": 0,
-        "KTEM_voitot": 0,
-        "KTEM_häviöt": 0,
-        "KTEM_voitetut_pelit": 0,
-        "ryhmäpelit": 0,
-        "ryhmäpelivoitot": 0,
-        "ryhmäpelivoitot_yht": 0,
-        "ryhmäpelihäviöt_yht": 0,
-        "harpoon_pelit": 0,
-        "harpoon_voitetut": 0,
-        "harpoon_hävityt": 0,
-        "harpoon_osumat": 0,
-        "harpoon_yksittäiset": {
-          "harpoon_hai": 0,
-          "harpoon_pallo": 0,
-          "harpoon_valas": 0
-        },
-        "BJ_pelit": 0,
-        "BJ_voitetut_pelit": 0,
-        "BJ_hävityt_pelit": 0,
-        "BJ_voitetut_rahat": 0,
-        "BJ_hävityt_rahat" : 0,
-        "BJ_panokset" : 0,
-        "BJ_yli": 0,
-        "BJ_21" : 0,
-        "BJ_vähemmän": 0,
-        "BJ_hit" : 0,
-        "BJ_stand" : 0,
-        "BJ_double" : 0,
-        "BJ_split" : 0,
-        "kortteja_pelannut" : 0
-      }
+//// Adders
+function draw_lootbox(user, multi, game = true) {
+  get_user(user).then(user => {
+    var propabilities = {
+      legendary: 480,
+      epic: 48,
+      rare: 12,
+      uncommon: 3,
+      common: 1
     };
 
-    data[_id] = new_data;
+    var rnd_legendary = Math.floor(
+      Math.random() * Math.floor(propabilities["legendary"] * multi + 1)
+    );
+    var rnd_epic = Math.floor(
+      Math.random() * Math.floor(propabilities["epic"] * multi + 1)
+    );
+    var rnd_rare = Math.floor(
+      Math.random() * Math.floor(propabilities["rare"] * multi + 1)
+    );
+    var rnd_uncommon = Math.floor(
+      Math.random() * Math.floor(propabilities["uncommon"] * multi + 1)
+    );
+    var rnd_common = Math.floor(
+      Math.random() * Math.floor(propabilities["common"] * multi + 1)
+    );
 
-  } else {
-
-    if (!("nimi" in data[_id])) {
-      data[_id]["nimi"] = name;
-    }
-    if (!("motto" in data[_id])) {
-      data[_id]["motto"] = "-";
-    }
-    if (!("kuvaus" in data[_id])) {
-      data[_id]["kuvaus"] = "-";
-    }
-    if (!("kuva" in data[_id])) {
-      data[_id]["kuva"] = " ";
-    }
-    if (!("aika_kannuilla" in data[_id])) {
-      data[_id]["aika_kannuilla"] = 0;
-    }
-    if (!("varastetut" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["varastetut"] = 0;
-    }
-    if (!("rahapussi" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["rahapussi"] = 0;
-    }
-    if (!("sulta_varastetut" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["sulta_varastetut"] = 0;
-    }
-    if (!("lyöty" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["lyöty"] = 0;
-    }
-    if (!("suo_lyöty" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["suo_lyöty"] = 0;
-    }
-    if (!("sakot" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["sakot"] = 0;
-    }
-    if (!("imetyt" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["imetyt"] = 0;
-    }
-    if (!("sulta_imetyt" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["sulta_imetyt"] = 0;
-    }
-    if (!("korvaukset" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["korvaukset"] = 0;
-    }
-    if (!("imetyt_minuutit" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["imetyt_minuutit"] = 0;
-    }
-    if (!("sulta_imetyt_minuutit" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["sulta_imetyt_minuutit"] = 0;
-    }
-    if (!("kalastetut_kalat" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["kalastetut_kalat"] = 0;
-    }
-    if (!("kaloista_saadut_rahat" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["kaloista_saadut_rahat"] = 0;
-    }
-    if (!("painavin_kala" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["painavin_kala"] = 0;
-    }
-    if (!("aika_kannuilla" in data[_id])) {
-      data[_id]["aika_kannuilla"] = 0;
+    var lootbox_text = "";
+    var name = "<@" + user["id"] + ">: ";
+    if (user["info"]["notifications"] == false) {
+      var uz = client.users.get(user["id"]);
+      name = uz.username + ": ";
     }
 
-    if (!("omistus" in data[_id])) {
-      data[_id]["omistus"] = {
-        "rahat": 500,
-        "maxrahat": 500,
-        "annetut_rahat": 0,
-        "saadut_rahat": 0,
-        "perustulo": 10,
-        "ES": 0,
-        "ES_tyhjät": 0,
-        "kultainen_harppuuna": false,
-        "valaankasvatusohjelma": false,
-        "onki" : true,
-        "hiilikuituonki" : true,
-        "lootboxit" : {
-          "common" : 0,
-          "uncommon" : 0,
-          "rare" : 0,
-          "epic" : 0,
-          "legendary" : 0
+    if (rnd_common == 0) {
+      user["inventory"]["lootboxes"]["common"] += 1;
+
+      if (game) {
+        user["basic_statistics"]["lootboxes_by_playing_common"] += 1;
+      } else {
+        user["basic_statistics"]["lootboxes_by_afking_common"] += 1;
+      }
+
+
+      lootbox_text +=
+         name + emojies["chest_common"] + "\n";
+    }
+    if (rnd_uncommon == 0) {
+
+      if (game) {
+        user["basic_statistics"]["lootboxes_by_playing_uncommon"] += 1;
+      } else {
+        user["basic_statistics"]["lootboxes_by_afking_uncommon"] += 1;
+      }
+
+      user["inventory"]["lootboxes"]["uncommon"] += 1;
+      lootbox_text +=
+        "Jes! " + name + emojies["chest_uncommon"] + "\n";
+    }
+    if (rnd_rare == 0) {
+
+      if (game) {
+        user["basic_statistics"]["lootboxes_by_playing_rare"] += 1;
+      } else {
+        user["basic_statistics"]["lootboxes_by_afking_rare"] += 1;
+      }
+
+      user["inventory"]["lootboxes"]["rare"] += 1;
+      lootbox_text +=
+        "Oujee! " + name + emojies["chest_rare"] + "\n";
+    }
+    if (rnd_epic == 0) {
+
+      if (game) {
+        user["basic_statistics"]["lootboxes_by_playing_epic"] += 1;
+      } else {
+        user["basic_statistics"]["lootboxes_by_afking_epic"] += 1;
+      }
+
+      user["inventory"]["lootboxes"]["epic"] += 1;
+      lootbox_text +=
+        "Eeppistä! " + name + emojies["chest_epic"] + "\n";
+    }
+    if (rnd_legendary == 0) {
+
+      if (game) {
+        user["basic_statistics"]["lootboxes_by_playing_legendary"] += 1;
+      } else {
+        user["basic_statistics"]["lootboxes_by_afking_legendary"] += 1;
+      }
+
+      user["inventory"]["lootboxes"]["legendary"] += 1;
+      lootbox_text +=
+        "Legendaarista! " + name + emojies["chest_legendary"] + "\n";
+    }
+    if (game) {
+      user["basic_statistics"]["lootboxes_by_playing"] += 1;
+    } else {
+      user["basic_statistics"]["lootboxes_by_afking"] += 1;
+    }
+
+    save_user(user);
+    if (lootbox_text != "") {
+      client.channels.get("494044533479440384").send(lootbox_text);
+    }
+  });
+}
+
+function add_income(_id) {
+  get_user(_id).then(user => {
+    user["inventory"]["money"] += user["inventory"]["income"];
+    user["basic_statistics"]["money_from_incomes"] +=
+      user["inventory"]["income"];
+    user["basic_statistics"]["minutes_on_channel"] += 1;
+
+    save_user(user);
+  });
+}
+
+//// Checkers
+function check_user_in_database(_id) {
+  return firebase
+    .database()
+    .ref("users/" + _id)
+    .once("value")
+    .then(d => {
+      var users = d.val();
+      var all_users = client.users;
+
+      var name;
+      try {
+        name = all_users.get(_id).username;
+      } catch (err) {
+        name = "<@" + _id + ">";
+      }
+
+      if (all_users.get(_id).bot) return;
+
+      var new_user_users = {
+        id: _id,
+        name: client.users.get(_id).username,
+        info: {
+          description: "-",
+          motto: "-",
+          picture: "",
+          ironman: false,
+          color: 10197915,
+          notifications: true
         },
-        "avatut_lootboxit" : {
-          "common" : 0,
-          "uncommon" : 0,
-          "rare" : 0,
-          "epic" : 0,
-          "legendary" : 0
+        inventory: {
+          money: 500,
+          income: 10,
+          items: {
+            bait: 0,
+            super_bait: 0,
+            hyper_bait: 0,
+            stick: 0,
+            mask: 0,
+            ES: 0,
+            ES_can: 0,
+            income_machine: 0,
+            income_machine_X: 0,
+            income_accelerator: 0,
+            income_absorber: 0,
+            gem: 0,
+            glitch: 0,
+            bomb: 0,
+            shield: 0,
+            security_cam: 0,
+            bronze_income: 0,
+            silver_income: 0,
+            gold_income: 0
+          },
+          key_items: {
+            rod: false,
+            super_rod: false,
+            hyper_rod: false,
+            fishing_boat: false,
+            golden_harpoon: false,
+            whale_breeding_program: false,
+            safe: {
+              own: false,
+              money: 0,
+              capasity: 1000000,
+            },
+            bush: {
+              own: false,
+              on: false
+            }
+          },
+          lootboxes: {
+            common: 0,
+            uncommon: 0,
+            rare: 0,
+            epic: 0,
+            legendary: 0
+          }
+        },
+        basic_statistics: {
+          minutes_on_channel: 0,
+          peak_money: 500,
+          income_bought: 0,
+          money_from_incomes: 0,
+          money_from_opening_lootboxes: 0,
+          money_from_lootboxes: 0,
+          money_from_income_machines: 0,
+          lootboxes_by_afking: 0,
+          lootboxes_by_afking_common: 0,
+          lootboxes_by_afking_uncommon: 0,
+          lootboxes_by_afking_rare: 0,
+          lootboxes_by_afking_epic: 0,
+          lootboxes_by_afking_legendary: 0,
+          lootboxes_by_playing: 0,
+          lootboxes_by_playing_common: 0,
+          lootboxes_by_playing_uncommon: 0,
+          lootboxes_by_playing_rare: 0,
+          lootboxes_by_playing_epic: 0,
+          lootboxes_by_playing_legendary: 0,
+          money_stolen: 0,
+          money_stolen_from_you: 0,
+          bomb_used: 0,
+          bombed: 0,
+          opened_lootboxes: {
+            common: 0,
+            uncommon: 0,
+            rare: 0,
+            epic: 0,
+            legendary: 0
+          },
+          money_recieved: 0,
+          money_given: 0,
+          fines: 0,
+          compensations: 0,
+          hit: 0,
+          stick_used: 0,
+          money_absorbed_from_you: 0,
+          money_absorbed_to_you: 0
+        },
+        game_blackjack: {
+          "21": 0,
+          double: 0,
+          hit: 0,
+          games_lost: 0,
+          money_lost: 0,
+          all_bets: 0,
+          games: 0,
+          stand: 0,
+          games_won: 0,
+          money_won: 0,
+          less: 0,
+          over: 0,
+          tie: 0,
+          cards_played: 0
+        },
+        game_slot: {
+          money_lost: 0,
+          all_bets: 0,
+          games: 0,
+          games_lost: 0,
+          games_won: 0,
+          money_won: 0,
+          wins: {
+            alfa: 0,
+            karvis: 0,
+            jesilmero: 0,
+            poggers1: 0,
+            poggers2: 0,
+            poggers3: 0,
+            sasu: 0
+          }
+        },
+        game_harpoon: {
+          money_lost: 0,
+          hits: 0,
+          games: 0,
+          money_won: 0,
+          games_lost: 0,
+          games_won: 0,
+          targets: {
+            shark: 0,
+            balloon: 0,
+            whale: 0
+          }
+        },
+        game_KTEM: {
+          money_lost: 0,
+          games_lost: 0,
+          games: 0,
+          games_won: 0,
+          money_won: 0,
+          all_bets: 0
+        },
+        game_ryhmäpeli: {
+          money_lost: 0,
+          games: 0,
+          games_lost: 0,
+          games_won: 0,
+          money_won: 0
+        },
+        game_kalastus: {
+          bait_consumed: 0,
+          super_bait_consumed: 0,
+          hyper_bait_consumed: 0,
+          fish_caught: 0,
+          money_got: 0,
+          in_sea: 0,
+          in_river: 0,
+          in_lake: 0,
+          top: 0,
+          mid: 0,
+          bot: 0,
+          rod_used: 0,
+          super_rod_used: 0,
+          hyper_rod_used: 0,
+          tier1_completed: false,
+          tier2_completed: false,
+          tier3_completed: false,
+          all_fish_weight: 0,
+          fishing_boat_used : 0,
+          KalaDex: {}
         }
       };
-    }
+      for (var fish in fishes) {
+        if (!(fish in new_user_users["game_kalastus"]["KalaDex"])) {
+          new_user_users["game_kalastus"]["KalaDex"][fish] = {
+            caught: 0,
+            index: fishes[fish]["index"],
+            heaviest: 0,
+            money_got: 0
+          };
+        }
+      }
 
-    if (!("rahat" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["rahat"] = 500;
-    }
-    if (!("kultainen_harppuuna" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["kultainen_harppuuna"] = false;
-    }
-    if (!("valaankasvatusohjelma" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["valaankasvatusohjelma"] = false;
-    }
-    if (!("maxrahat" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["maxrahat"] = 500;
-    }
-    if (!("annetut_rahat" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["annetut_rahat"] = 0;
-    }
-    if (!("saadut_rahat" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["saadut_rahat"] = 0;
-    }
-    if (!("perustulo" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["perustulo"] = 10;
-    }
-    if (!("ES" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["ES"] = 0;
-    }
-    if (!("ES_tyhjät" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["ES_tyhjät"] = 0;
-    }
-    if (!("onki" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["onki"] = false;
-    }
-    if (!("hiilikuituonki" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["hiilikuituonki"] = false;
-    }
-    if (!("lootboxit" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["lootboxit"] = {
-        "common" : 0,
-        "uncommon" : 0,
-        "rare" : 0,
-        "epic" : 0,
-        "legendary" : 0
-      };
-    }
+      if (users == undefined) {
+        firebase
+          .database()
+          .ref("users/" + _id)
+          .set(new_user_users);
+      } else {
+        Object.keys(new_user_users).forEach(function(key) {
+          if (!(key in users)) {
+            firebase
+              .database()
+              .ref("users/" + _id + "/" + key)
+              .set(new_user_users[key]);
+          }
+          if (typeof new_user_users[key] == "object") {
+            Object.keys(new_user_users[key]).forEach(function(key2) {
+              if (!(key2 in users[key])) {
+                firebase
+                  .database()
+                  .ref("users/" + _id + "/" + key + "/" + key2)
+                  .set(new_user_users[key][key2]);
+              }
 
-    if (!("common" in data[_id]["omistus"]["lootboxit"])) {
-      data[_id]["omistus"]["lootboxit"]["common"] = 0;
-    }
-    if (!("uncommon" in data[_id]["omistus"]["lootboxit"])) {
-      data[_id]["omistus"]["lootboxit"]["uncommon"] = 0;
-    }
-    if (!("rare" in data[_id]["omistus"]["lootboxit"])) {
-      data[_id]["omistus"]["lootboxit"]["rare"] = 0;
-    }
-    if (!("epic" in data[_id]["omistus"]["lootboxit"])) {
-      data[_id]["omistus"]["lootboxit"]["epic"] = 0;
-    }
-    if (!("legendary" in data[_id]["omistus"]["lootboxit"])) {
-      data[_id]["omistus"]["lootboxit"]["legendary"] = 0;
-    }
+              if (typeof new_user_users[key][key2] == "object") {
+                Object.keys(new_user_users[key][key2]).forEach(function(key3) {
+                  if (!(key3 in users[key][key2])) {
+                    firebase
+                      .database()
+                      .ref("users/" + _id + "/" + key + "/" + key2 + "/" + key3)
+                      .set(new_user_users[key][key2][key3]);
+                  }
 
-    if (!("avatut_lootboxit" in data[_id]["omistus"])) {
-      data[_id]["omistus"]["avatut_lootboxit"] = {
-        "common" : 0,
-        "uncommon" : 0,
-        "rare" : 0,
-        "epic" : 0,
-        "legendary" : 0
-      };
-    }
+                  if (typeof new_user_users[key][key2][key3] == "object") {
+                    Object.keys(new_user_users[key][key2][key3]).forEach(
+                      function(key4) {
+                        if (!(key4 in users[key][key2][key3])) {
+                          firebase
+                            .database()
+                            .ref(
+                              "users/" +
+                                _id +
+                                "/" +
+                                key +
+                                "/" +
+                                key2 +
+                                "/" +
+                                key3 +
+                                "/" +
+                                key4
+                            )
+                            .set(new_user_users[key][key2][key3][key4]);
+                        }
 
-    if (!("common" in data[_id]["omistus"]["avatut_lootboxit"])) {
-      data[_id]["omistus"]["avatut_lootboxit"]["common"] = 0;
-    }
-    if (!("uncommon" in data[_id]["omistus"]["avatut_lootboxit"])) {
-      data[_id]["omistus"]["avatut_lootboxit"]["uncommon"] = 0;
-    }
-    if (!("rare" in data[_id]["omistus"]["avatut_lootboxit"])) {
-      data[_id]["omistus"]["avatut_lootboxit"]["rare"] = 0;
-    }
-    if (!("epic" in data[_id]["omistus"]["avatut_lootboxit"])) {
-      data[_id]["omistus"]["avatut_lootboxit"]["epic"] = 0;
-    }
-    if (!("legendary" in data[_id]["omistus"]["avatut_lootboxit"])) {
-      data[_id]["omistus"]["avatut_lootboxit"]["legendary"] = 0;
-    }
+                        if (
+                          typeof new_user_users[key][key2][key3][key4] ==
+                          "object"
+                        ) {
+                          Object.keys(
+                            new_user_users[key][key2][key3][key4]
+                          ).forEach(function(key5) {
+                            if (!(key5 in users[key][key2][key3][key4])) {
+                              firebase
+                                .database()
+                                .ref(
+                                  "users/" +
+                                    _id +
+                                    "/" +
+                                    key +
+                                    "/" +
+                                    key2 +
+                                    "/" +
+                                    key3 +
+                                    "/" +
+                                    key4 +
+                                    "/" +
+                                    key5
+                                )
+                                .set(
+                                  new_user_users[key][key2][key3][key4][key5]
+                                );
+                            }
+                          });
+                        }
+                      }
+                    );
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+}
 
-    if (!("pelit" in data[_id])) {
-      data[_id]["pelit"] = {
-        "slot_pelit": 0,
-        "slot_voitot": 0,
-        "slot_voitot_yhteensä": 0,
-        "slot_häviöt_yhteensä": 0,
-        "slot_yksittäisvoitot": {
-          "sasu": 0,
-          "karvis": 0,
-          "alfa": 0,
-          "meloni": 0,
-          "poggers1": 0,
-          "poggers2": 0,
-          "poggers3": 0
+function check_income_absorbtion() {
+  var users = get_all_users();
+  var already_checked = [];
+  var end_chain_user;
+
+  // Finding user on "top of the chain"
+  for (let u in users) {
+    if ("income_absorb" in users[u] && !already_checked.includes(u)) {
+      while (true) {
+        var temp_id = users[u].income_absorb.target;
+
+        if ("income_absorb" in users[temp_id]) {
+          u = users[u]["income_absorb"]["target"];
+        } else {
+          end_chain_user = users[u].income_absorb.target;
+          break;
+        }
+      }
+    }
+    if (end_chain_user == undefined) continue;
+
+    // Going down chain and moving money down
+
+    var id = end_chain_user;
+    var all_money = 0;
+    while (true) {
+      already_checked.push(users[id]);
+      if ("absorb_target" in users[id] && user_under_income(users[id])) {
+        all_money += users[id]["inventory"]["income"];
+        users[id]["inventory"]["money"] -= users[id]["inventory"]["income"];
+
+        users[id]["basic_statistics"]["money_from_incomes"] -=
+          users[id]["inventory"]["income"];
+        users[id]["basic_statistics"]["money_absorbed_from_you"] +=
+          users[id]["inventory"]["income"];
+        users[id]["absorb_target"]["sum"] += users[id]["inventory"]["income"];
+
+        if ("income_machine" in users[id]) {
+          all_money +=
+            users[id]["inventory"]["income"] *
+              users[id]["income_machine"]["multi"] -
+            users[id]["inventory"]["income"];
+          users[id]["inventory"]["money"] -=
+            users[id]["inventory"]["income"] *
+              users[id]["income_machine"]["multi"] -
+            users[id]["inventory"]["income"];
+          users[id]["basic_statistics"]["money_from_incomes"] -=
+            users[id]["inventory"]["income"] *
+              users[id]["income_machine"]["multi"] -
+            users[id]["inventory"]["income"];
+
+          users[id]["income_machine"]["sum"] -=
+            users[id]["inventory"]["income"] *
+              users[id]["income_machine"]["multi"] -
+            users[id]["inventory"]["income"];
+          users[id]["basic_statistics"]["money_absorbed_from_you"] +=
+            users[id]["inventory"]["income"] *
+              users[id]["income_machine"]["multi"] -
+            users[id]["inventory"]["income"];
+          users[id]["absorb_target"]["sum"] +=
+            users[id]["inventory"]["income"] *
+              users[id]["income_machine"]["multi"] -
+            users[id]["inventory"]["income"];
+        }
+
+        save_user(users[id]);
+        console.log("Imetty: " + id);
+        id = users[id]["absorb_target"]["absorber"];
+        continue;
+      } else {
+        users[id]["inventory"]["money"] += all_money;
+        users[id]["basic_statistics"]["money_absorbed_to_you"] += all_money;
+        users[id]["income_absorb"]["sum"] += all_money;
+        save_user(users[id]);
+        console.log("Imi kaikki: " + id);
+        return;
+      }
+    }
+  }
+}
+
+function check_peak(user) {
+  if (user["inventory"]["money"] > user["basic_statistics"]["peak_money"]) {
+    user["basic_statistics"]["peak_money"] = user["inventory"]["money"];
+  }
+  save_user(user);
+}
+
+function user_on_voice(user) {
+  var voicechannels_array = client.channels.keyArray();
+  for (var i of voicechannels_array) {
+    var channel = client.channels.get(i);
+    if (channel.type == "voice" && !banned_channels.includes(channel)) {
+      var channel_members = channel.members.keyArray();
+      if (channel_members.includes(user["id"])) {
+        var usr = channel.members.get(user["id"]);
+        if (!usr.deaf) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function user_under_income(user) {
+  if (user_on_voice(user) && !user["inventory"]["key_items"]["bush"]["on"])
+    return true;
+  return false;
+}
+
+function check_pääpäivä() {
+
+  return firebase
+    .database()
+    .ref("global_data/pääpäivä")
+    .once("value")
+    .then( async d => {
+      pp = d.val();
+      if (pp == undefined) {
+        pp = {
+          on: false,
+          date: [0, 0, 0]
+        };
+        firebase
+          .database()
+          .ref("global_data/pääpäivä")
+          .set(pp);
+      }
+      return pp["on"];
+    });
+}
+
+function calculate_wealth(user) {
+  var all_money = 0;
+
+  all_money += user["inventory"]["money"];
+  all_money += user["inventory"]["key_items"]["safe"]["money"];
+
+  if (user["inventory"]["key_items"]["whale_breeding_program"]) {
+    all_money += 250000;
+  }
+
+  if (user["inventory"]["key_items"]["golden_harpoon"]) {
+    all_money += 150000;
+  }
+  for (var i = 0; i < user["basic_statistics"]["income_bought"]; i++) {
+    all_money +=
+      Math.floor((1000 * Math.pow(1.08, i) * (10 + 5 * i)) / 100) * 100;
+  }
+
+  all_money += user["inventory"]["items"]["ES"];
+  all_money += user["inventory"]["items"]["bait"] * 400;
+  all_money += user["inventory"]["items"]["super_bait"] * 2000;
+  all_money += user["inventory"]["items"]["hyper_bait"] * 12000;
+  all_money += user["inventory"]["items"]["bomb"] * 2000;
+
+  all_money +=
+    user["inventory"]["money"] * Math.pow(user["inventory"]["items"]["gem"], 2);
+  all_money +=
+    user["inventory"]["money"] * (user["inventory"]["items"]["glitch"] * 10);
+  all_money += user["inventory"]["items"]["bronze_income"] * 10000;
+  all_money += user["inventory"]["items"]["silver_income"] * 10000 * 3;
+  all_money += user["inventory"]["items"]["gold_income"] * 10000 * 5;
+
+  all_money += user["inventory"]["items"]["income_absorber"] * 50000;
+  all_money +=
+    user["inventory"]["items"]["income_accelerator"] *
+    60 *
+    40 *
+    user["inventory"]["income"];
+  all_money +=
+    user["inventory"]["items"]["income_machine_X"] *
+    60 *
+    20 *
+    user["inventory"]["income"];
+  all_money +=
+    user["inventory"]["items"]["income_machine"] *
+    60 *
+    10 *
+    user["inventory"]["income"];
+  all_money += user["inventory"]["items"]["mask"] * 10000;
+  all_money += user["inventory"]["items"]["security_cam"] * 8000;
+  all_money += user["inventory"]["items"]["shield"] * 3000;
+  all_money += user["inventory"]["items"]["stick"] * 100;
+
+  all_money += user["inventory"]["lootboxes"]["common"] * 1000;
+  all_money += user["inventory"]["lootboxes"]["uncommon"] * 3000;
+  all_money += user["inventory"]["lootboxes"]["rare"] * 12000;
+  all_money += user["inventory"]["lootboxes"]["epic"] * 40000;
+  all_money += user["inventory"]["lootboxes"]["legendary"] * 200000;
+
+  if (user["inventory"]["key_items"]["bush"]["own"]) {
+    all_money += 200000;
+  }
+  console.log(all_money);
+  if (user["inventory"]["key_items"]["safe"]["own"]) {
+    all_money += 200000;
+  }
+
+  return all_money;
+}
+
+function fish_caught(user, _users) {
+  var users = _users;
+  var place = "";
+  if (user["fishing_timer"]["place"] == "S") {
+    place = "Meri";
+  }
+  if (user["fishing_timer"]["place"] == "R") {
+    place = "Joki";
+  }
+  if (user["fishing_timer"]["place"] == "L") {
+    place = "Järvi";
+  }
+
+  var rod = "";
+  if (user["fishing_timer"]["rod"] == "N") {
+    rod = emojies["onki"] + " Perusonki";
+  }
+  if (user["fishing_timer"]["rod"] == "S") {
+    rod = emojies["superonki"] + " Superonki";
+  }
+  if (user["fishing_timer"]["rod"] == "H") {
+    rod = emojies["hyperonki"] + " Hyperonki";
+  }
+
+  var bait = "";
+  if (user["fishing_timer"]["bait"] == "N") {
+    bait = emojies["sytti"] + " Sytti";
+  }
+  if (user["fishing_timer"]["bait"] == "S") {
+    bait = emojies["supersytti"] + " Supersytti";
+  }
+  if (user["fishing_timer"]["bait"] == "H") {
+    bait = emojies["hypersytti"] + " Hypersytti";
+  }
+
+  var time = "";
+  if (user["fishing_timer"]["time"] == "A") {
+    time = "Päivä";
+  }
+  if (user["fishing_timer"]["time"] == "M") {
+    time = "Aamu";
+  }
+  if (user["fishing_timer"]["time"] == "E") {
+    time = "Ilta";
+  }
+  if (user["fishing_timer"]["time"] == "N") {
+    time = "Yö";
+  }
+  var _new = "";
+  if (
+    user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]]["caught"] ==
+    0
+  ) {
+    _new = "***(UUSI)***";
+  }
+  user["game_kalastus"]["fish_caught"] += 1;
+  var heaviest = "";
+  user["inventory"]["money"] += user["fishing_timer"]["price"];
+  user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
+    "caught"
+  ] += 1;
+  user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
+    "money_got"
+  ] += user["fishing_timer"]["price"];
+  if (
+    user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
+      "heaviest"
+    ] < user["fishing_timer"]["weight"]
+  ) {
+    user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
+      "heaviest"
+    ] = user["fishing_timer"]["weight"];
+    heaviest = "(Oma enkka)";
+  }
+  user["game_kalastus"]["all_fish_weight"] += parseFloat(
+    user["fishing_timer"]["weight"]
+  );
+
+  all_time_heaviest = "Kaikkien aikojen isoin! :trophy:";
+  for (var u in users) {
+    if (
+      users[u]["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
+        "heaviest"
+      ] > user["fishing_timer"]["weight"]
+    ) {
+      all_time_heaviest = "";
+    }
+  }
+  if (all_time_heaviest != "") {
+    heaviest = "";
+  } else {
+    all_time_heaviest = heaviest;
+  }
+  user["game_kalastus"]["money_got"] += user["fishing_timer"]["price"];
+  save_user(user);
+  var uz = client.users.get(user["id"]);
+  var avatar = uz.avatarURL;
+
+  return {
+    embed: {
+      color: user["info"]["color"],
+      author: {
+        name: user["name"] + " saalisti:",
+        icon_url: avatar
+      },
+      fields: [
+        {
+          name: user["fishing_timer"]["name"] + " " + _new,
+          value:
+            emojies[fishes[user["fishing_timer"]["name"]]["emoji"]] +
+            "\n___Arvo:___ " +
+            user["fishing_timer"]["price"] +
+            emojies["coin"] +
+            "\n___Paino:___ " +
+            user["fishing_timer"]["weight"] +
+            "kg\n" +
+            all_time_heaviest,
+          inline: true
         },
-        "KTEM_pelit": 0,
-        "KTEM_voitot": 0,
-        "KTEM_häviöt": 0,
-        "KTEM_voitetut_pelit": 0,
-        "ryhmäpelit": 0,
-        "ryhmäpelivoitot": 0,
-        "ryhmäpelivoitot_yht": 0,
-        "ryhmäpelihäviöt_yht": 0,
-        "harpoon_pelit": 0,
-        "harpoon_voitetut": 0,
-        "harpoon_hävityt": 0,
-        "harpoon_osumat": 0,
-        "BJ_pelit": 0,
-        "BJ_voitetut_pelit": 0,
-        "BJ_hävityt_pelit": 0,
-        "BJ_voitetut_rahat": 0,
-        "BJ_hävityt_rahat" : 0,
-        "BJ_panokset" : 0,
-        "BJ_yli": 0,
-        "BJ_21" : 0,
-        "BJ_vähemmän": 0,
-        "BJ_hit" : 0,
-        "BJ_stand" : 0,
-        "BJ_double" : 0,
-        "BJ_split" : 0,
-        "kortteja_pelannut" : 0
-      };
+        {
+          name: "***___Tiedot:___***",
+          value:
+            "***Paikka:*** " +
+            place +
+            "\n***Aika:*** " +
+            time +
+            "\n***Onki:*** " +
+            rod +
+            "\n***Sytti:*** " +
+            bait,
+          inline: true
+        },
+        {
+          name: "***___Yleistä:___***",
+          value: user["fishing_timer"]["fish"]["description"]
+        }
+      ]
     }
-    if (!("BJ_pelit" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_pelit"] = 0;
-    }
-    if (!("BJ_voitetut_pelit" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_voitetut_pelit"] = 0;
-    }
-    if (!("BJ_hävityt_pelit" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_hävityt_pelit"] = 0;
-    }
-    if (!("BJ_voitetut_rahat" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_voitetut_rahat"] = 0;
-    }
-    if (!("BJ_hävityt_rahat" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_hävityt_rahat"] = 0;
-    }
-    if (!("BJ_panokset" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_panokset"] = 0;
-    }
-    if (!("BJ_yli" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_yli"] = 0;
-    }
-    if (!("BJ_21" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_21"] = 0;
-    }
-    if (!("BJ_vähemmän" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_vähemmän"] = 0;
-    }
-    if (!("BJ_hit" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_hit"] = 0;
-    }
-    if (!("BJ_stand" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_stand"] = 0;
-    }
-    if (!("BJ_double" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_double"] = 0;
-    }
-    if (!("BJ_split" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["BJ_split"] = 0;
-    }
-    if (!("kortteja_pelannut" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["kortteja_pelannut"] = 0;
-    }
-    if (!("slot_voitot_yhteensä" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["slot_voitot_yhteensä"] = 0;
-    }
-    if (!("slot_häviöt_yhteensä" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["slot_häviöt_yhteensä"] = 0;
-    }
-    if (!("KTEM_pelit" in data[_id]["pelit"])) {
-      data[_id]["KTEM_pelit"] = 0;
-    }
-    if (!("KTEM_voitot" in data[_id]["pelit"])) {
-      data[_id]["KTEM_voitot"] = 0;
-    }
-    if (!("KTEM_häviöt" in data[_id]["pelit"])) {
-      data[_id]["KTEM_häviöt"] = 0;
-    }
-    if (!("KTEM_voitetut_pelit" in data[_id]["pelit"])) {
-      data[_id]["KTEM_voitetut_pelit"] = 0;
-    }
-    if (!("ryhmäpelit" in data[_id]["pelit"])) {
-      data[_id]["ryhmäpelit"] = 0;
-    }
-    if (!("ryhmäpelivoitot" in data[_id]["pelit"])) {
-      data[_id]["ryhmäpelivoitot"] = 0;
-    }
-    if (!("ryhmäpelivoitot_yht" in data[_id]["pelit"])) {
-      data[_id]["ryhmäpelivoitot_yht"] = 0;
-    }
-    if (!("ryhmäpelihäviöt_yht" in data[_id]["pelit"])) {
-      data[_id]["ryhmäpelihäviöt_yht"] = 0;
-    }
-    if (!("slot_yksittäisvoitot" in data[_id]["pelit"])) {
-      data[_id]["slot_yksittäisvoitot"] = {
-        "sasu": 0,
-        "karvis": 0,
-        "alfa": 0,
-        "meloni": 0,
-        "poggers1": 0,
-        "poggers2": 0,
-        "poggers3": 0
-      };
-    }
-    if (!("sasu" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["sasu"] = 0;
-    }
-    if (!("karvis" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["karvis"] = 0;
-    }
-    if (!("alfa" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["alfa"] = 0;
-    }
-    if (!("meloni" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["meloni"] = 0;
-    }
-    if (!("poggers1" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["poggers1"] = 0;
-    }
-    if (!("poggers2" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["poggers2"] = 0;
-    }
-    if (!("poggers3" in data[_id]["pelit"]["slot_yksittäisvoitot"])) {
-      data[_id]["poggers3"] = 0;
-    }
-
-    if (!check_URL(data[_id]["kuva"])) {
-      data[_id]["kuva"] = " ";
-    }
-
-    if (!("harpoon_yksittäiset" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["harpoon_yksittäiset"] = {
-        "harpoon_hai": 0,
-        "harpoon_pallo": 0,
-        "harpoon_valas": 0
-      };
-    }
-    if (!("harpoon_hai" in data[_id]["pelit"]["harpoon_yksittäiset"])) {
-      data[_id]["harpoon_hai"] = 0;
-    }
-    if (!("harpoon_pallo" in data[_id]["pelit"]["harpoon_yksittäiset"])) {
-      data[_id]["harpoon_pallo"] = 0;
-    }
-    if (!("harpoon_valas" in data[_id]["pelit"]["harpoon_yksittäiset"])) {
-      data[_id]["harpoon_valas"] = 0;
-    }
-    if (!("harpoon_pelit" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["harpoon_pelit"] = 0;
-    }
-    if (!("harpoon_voitetut" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["harpoon_voitetut"] = 0;
-    }
-    if (!("harpoon_hävityt" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["harpoon_hävityt"] = 0;
-    }
-    if (!("harpoon_osumat" in data[_id]["pelit"])) {
-      data[_id]["pelit"]["harpoon_osumat"] = 0;
-    }
-
-  }
-  firebase.database().ref('profiles').set(data);
+  };
 }
 
-function draw_lootbox(_id, _max_rate) {
-  var msg = "";
-
-  // rates
-  var rate_legendary =_max_rate;
-  var rate_epic = _max_rate * 0.25;
-  var rate_rare = _max_rate * 0.1;
-  var rate_uncommon = _max_rate * 0.016666666667;
-  var rate_common = _max_rate * 0.008333333333;
-
-  var legendary = Math.floor(Math.random() * Math.floor(rate_legendary + 1));
-  var epic = Math.floor(Math.random() * Math.floor(rate_epic + 1));
-  var rare = Math.floor(Math.random() * Math.floor(rate_rare + 1));
-  var uncommon = Math.floor(Math.random() * Math.floor(rate_uncommon + 1));
-  var common = Math.floor(Math.random() * Math.floor(rate_common + 1));
-
-  if (legendary == 0) {
-    data[_id]["omistus"]["lootboxit"]["legendary"] += 1;
-    msg = "OMG <@" + _id + ">: 1 x " + chest_legendary;
+function fishes_caught(user, _users) {
+  var users = _users;
+  var place = "";
+  if (user["fishing_boat_timer"][0]["place"] == "S") {
+    place = "Meri";
   }
-  else if (epic == 0) {
-    data[_id]["omistus"]["lootboxit"]["epic"] += 1;
-    msg = "Eeppistä <@" + _id + ">: 1 x " + chest_epic;
+  if (user["fishing_boat_timer"][0]["place"] == "R") {
+    place = "Joki";
   }
-  else if (rare == 0) {
-    data[_id]["omistus"]["lootboxit"]["rare"] += 1;
-    msg = "<@" + _id + ">: 1 x " + chest_rare;
-  }
-  else if (uncommon == 0) {
-    data[_id]["omistus"]["lootboxit"]["uncommon"] += 1;
-    msg = "<@" + _id + ">: 1 x " + chest_uncommon;
-  }
-  else if (common == 0) {
-    data[_id]["omistus"]["lootboxit"]["common"] += 1;
-    msg = "<@" + _id + ">: 1 x " + chest_common;
-  }
-  if (msg != "") {
-    client.channels.get("280272696560975872").send(msg);
+  if (user["fishing_boat_timer"][0]["place"] == "L") {
+    place = "Järvi";
   }
 
+  var rod = "";
+  if (user["fishing_boat_timer"][0]["rod"] == "N") {
+    rod = emojies["onki"] + " Perusonki";
+  }
+  if (user["fishing_boat_timer"][0]["rod"] == "S") {
+    rod = emojies["superonki"] + " Superonki";
+  }
+  if (user["fishing_boat_timer"][0]["rod"] == "H") {
+    rod = emojies["hyperonki"] + " Hyperonki";
+  }
+
+  var bait = "";
+  if (user["fishing_boat_timer"][0]["bait"] == "N") {
+    bait = emojies["sytti"] + " Sytti";
+  }
+  if (user["fishing_boat_timer"][0]["bait"] == "S") {
+    bait = emojies["supersytti"] + " Supersytti";
+  }
+  if (user["fishing_boat_timer"][0]["bait"] == "H") {
+    bait = emojies["hypersytti"] + " Hypersytti";
+  }
+
+  var time = "";
+  if (user["fishing_boat_timer"][0]["time"] == "A") {
+    time = "Päivä";
+  }
+  if (user["fishing_boat_timer"][0]["time"] == "M") {
+    time = "Aamu";
+  }
+  if (user["fishing_boat_timer"][0]["time"] == "E") {
+    time = "Ilta";
+  }
+  if (user["fishing_boat_timer"][0]["time"] == "N") {
+    time = "Yö";
+  }
+  var all_fishes = "";
+  var value = 0;
+  for (var i = 0; i < user["fishing_boat_timer"].length; i++) {
+    var _new = "";
+    if (
+      user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]]["caught"] ==
+      0
+    ) {
+      _new = "***(UUSI)***\n";
+    }
+    user["game_kalastus"]["fish_caught"] += 1;
+    value += user["fishing_boat_timer"][i]["price"];
+
+    var heaviest = "(Oma enkka!)\n";
+    user["inventory"]["money"] += user["fishing_boat_timer"][i]["price"];
+    user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
+      "caught"
+    ] += 1;
+    user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
+      "money_got"
+    ] += user["fishing_boat_timer"][i]["price"];
+
+    user["game_kalastus"]["all_fish_weight"] += parseFloat(
+      user["fishing_boat_timer"][i]["weight"]
+    );
+
+    if (
+      user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
+        "heaviest"
+      ] < user["fishing_boat_timer"][i]["weight"]
+    ) {
+      user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
+        "heaviest"
+      ] = user["fishing_boat_timer"][i]["weight"];
+      heaviest = "(Oma enkka)";
+    }
+
+    all_time_heaviest = "Kaikkien aikojen isoin! :trophy:\n";
+    for (var u in users) {
+      if (users[u]["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]]["heaviest"] > user["fishing_boat_timer"][i]["weight"]) {
+        all_time_heaviest = "";
+      }
+    }
+    for (var z = 0; z < user["fishing_boat_timer"].length; z++) {
+      if (user["fishing_boat_timer"][i]["name"] == user["fishing_boat_timer"][z]["name"]) {
+        if (user["fishing_boat_timer"][z]["weight"] > user["fishing_boat_timer"][i]["weight"]) {
+          all_time_heaviest = "";
+          heaviest = "";
+        }
+        if (user["fishing_boat_timer"][i]["weight"] < user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]]["heaviest"]) {
+          heaviest = "";
+        }
+      }
+    }
+
+    if (all_time_heaviest != "") {
+      heaviest = "";
+    } else {
+      all_time_heaviest = heaviest;
+    }
+
+    all_fishes += emojies[fishes[user["fishing_boat_timer"][i]["name"]]["emoji"]] + " " + user["fishing_boat_timer"][i]["name"] + "\n___Arvo:___ " + user["fishing_boat_timer"][i]["price"] +
+    emojies["coin"] + "___Paino:___ " + user["fishing_boat_timer"][i]["weight"] + "kg\n" + all_time_heaviest + _new + "\n";
+
+  }
+    user["game_kalastus"]["money_got"] += value;
+    save_user(user);
+    var uz = client.users.get(user["id"]);
+    var avatar = uz.avatarURL;
+
+    return {
+      embed: {
+        color: user["info"]["color"],
+        author: {
+          name: "Saalistaja: " + user["name"],
+          icon_url: avatar
+        },
+        "description" : all_fishes,
+        fields: [
+          {
+            name: "***___Tiedot:___***",
+            value:
+            "***Yhteisumma:*** " + value + emojies["coin"] + "\n" +
+            "***Syöttien määrä:*** " + user["fishing_boat_timer"].length + "\n" +
+              "***Paikka:*** " +
+              place +
+              "\n***Aika:*** " +
+              time +
+              "\n***Onki:*** " +
+              rod +
+              "\n***Sytti:*** " +
+              bait
+          }
+        ]
+      }
+    };
 }
 
-function draw_lootbox_weighted(_id, _max_rate, _weight=1, _commonness=100) {
-  var msg = "";
+function check_kaladex(user) {
+  if (user["game_kalastus"]["tier1_completed"] == false) {
+    for (var fish in fishes) {
+      if (fishes[fish]["tier"] != 1) continue;
+      if (user["game_kalastus"]["KalaDex"][fish]["caught"] == 0) {
+        return;
+      }
+    }
 
-  // rates
-  var rate_legendary =_max_rate * (1/_weight);
-  var rate_epic = _max_rate * 0.25 * (1/_weight);
-  var rate_rare = _max_rate * 0.1 * (1/_weight);
-  var rate_uncommon = _max_rate * 0.016666666667 * (1/_weight);
-  var rate_common = _max_rate * 0.008333333333 * (1/_weight);
+    user["game_kalastus"]["tier1_completed"] = true;
+    user["inventory"]["money"] += 100000;
+    user["inventory"]["key_items"]["super_rod"] = true;
+    client.channels
+      .get("494044533479440384")
+      .send(
+        "Onnea <@" +
+          user["id"] +
+          "> olet suorittanut KalaDexin ensimmäisen osion. Palkinnoksi saat 100000" +
+          emojies["coin"] +
+          " ja Superongen " +
+          emojies["superonki"]
+      );
+  } else if (user["game_kalastus"]["tier2_completed"] == false) {
+    for (var fish in fishes) {
+      if (fishes[fish]["tier"] != 2) continue;
+      if (user["game_kalastus"]["KalaDex"][fish]["caught"] == 0) {
+        return;
+      }
+    }
 
-  var legendary = Math.floor(Math.random() * Math.floor(rate_legendary*(100/_commonness) + 1));
-  var epic = Math.floor(Math.random() * Math.floor(rate_epic*(100/_commonness) + 1));
-  var rare = Math.floor(Math.random() * Math.floor(rate_rare*(100/_commonness) + 1));
-  var uncommon = Math.floor(Math.random() * Math.floor(rate_uncommon*(100/_commonness) + 1));
-  var common = Math.floor(Math.random() * Math.floor(rate_common*(100/_commonness) + 1));
+    user["game_kalastus"]["tier2_completed"] = true;
+    user["inventory"]["money"] += 200000;
+    user["inventory"]["key_items"]["hyper_rod"] = true;
+    client.channels
+      .get("494044533479440384")
+      .send(
+        "Onnea <@" +
+          user["id"] +
+          "> olet suorittanut KalaDexin toisen osion. Palkinnoksi saat 200000" +
+          emojies["coin"] +
+          " ja Hyperongen " +
+          emojies["hyperonki"]
+      );
+  } else if (user["game_kalastus"]["tier3_completed"] == false) {
+    for (var fish in fishes) {
+      if (fishes[fish]["tier"] != 3) continue;
+      if (user["game_kalastus"]["KalaDex"][fish]["caught"] == 0) {
+        return;
+      }
+    }
+    user["game_kalastus"]["tier3_completed"] = true;
+    user["inventory"]["money"] += 500000;
+    user["inventory"]["key_items"]["fishing_boat"] = true;
 
-  if (legendary == 0) {
-    data[_id]["omistus"]["lootboxit"]["legendary"] += 1;
-    msg = "OMG <@" + _id + ">: 1 x " + chest_legendary;
-  }
-  else if (epic == 0) {
-    data[_id]["omistus"]["lootboxit"]["epic"] += 1;
-    msg = "Eeppistä <@" + _id + ">: 1 x " + chest_epic;
-  }
-  else if (rare == 0) {
-    data[_id]["omistus"]["lootboxit"]["rare"] += 1;
-    msg = "Oujee <@" + _id + ">: 1 x " + chest_rare;
-  }
-  else if (uncommon == 0) {
-    data[_id]["omistus"]["lootboxit"]["uncommon"] += 1;
-    msg = "<@" + _id + ">: 1 x " + chest_uncommon;
-  }
-  else if (common == 0) {
-    data[_id]["omistus"]["lootboxit"]["common"] += 1;
-    msg = "<@" + _id + ">: 1 x " + chest_common;
-  }
-  if (msg != "") {
-    client.channels.get("280272696560975872").send(msg);
+    client.channels
+      .get("494044533479440384")
+      .send(
+        "Onnea <@" +
+          user["id"] +
+          "> olet suorittanut koko KalaDexin. Palkinnoksi saat 500000" +
+          emojies["coin"] +
+          " ja Kalastusveneen " +
+          emojies["kalastusvene"]
+      );
   }
 
+  save_user(user);
 }
 
-function map(value, a, b, c, d) {
-    value = (value - a) / (b - a);
-    return c + value * (d - c);
+function start_fishing(user, _part_day, _bait, _place, _depth, _rod_tier) {
+
+  var bait = "";
+  if (_bait == 1) {
+    bait = "N";
+  }
+  if (_bait == 2) {
+    bait = "S";
+  }
+  if (_bait == 3) {
+    bait = "H";
+  }
+
+  var multi = 2;
+  var rod = "";
+  if (_rod_tier == 1) {
+    rod = "N";
+  }
+  if (_rod_tier == 2) {
+    rod = "S";
+    multi = 2 * 1.2;
+  }
+  if (_rod_tier == 3) {
+    rod = "H";
+    multi = 2 * 1.3;
+  }
+
+  var depth = "";
+  if (_depth == "pinta") {
+    depth = "T";
+  }
+  if (_depth == "keski") {
+    depth = "M";
+  }
+  if (_depth == "pohja") {
+    depth = "B";
+  }
+
+  var place = "";
+  if (_place == "meri") {
+    place = "S";
+  }
+  if (_place == "joki") {
+    place = "R";
+  }
+  if (_place == "järvi") {
+    place = "L";
+  }
+
+  var available_fishes = {};
+  for (var fish in fishes) {
+    if (fish == "Aarrearkku") continue;
+    if (
+      fishes[fish]["depth"].includes(depth) &&
+      fishes[fish]["place"].includes(place) &&
+      fishes[fish]["time"].includes(_part_day) &&
+      fishes[fish]["bait"].includes(bait) &&
+      fishes[fish]["rod"].includes(rod)
+    ) {
+      available_fishes[fish] = fishes[fish];
+    }
+
+  }
+
+  // Randomizer
+  var bucket = [];
+  for (var fish in available_fishes) {
+    if (fish == "Aarrearkku") continue;
+    var rarity = available_fishes[fish]["rarity"];
+    var r = Math.floor((-rarity / 10 + 1) * 200);
+    for (var i = 0; i < r; i++) {
+      bucket.push(fish);
+    }
+  }
+
+  var _rnd = Math.floor(Math.random() * Math.floor(bucket.length));
+
+  var caught_fish = bucket[_rnd];
+
+  var weight = randn_bm(0, fishes[caught_fish]["weight"] * multi, 1).toFixed(2);
+  var cost = Math.floor((weight * fishes[caught_fish]["price"]) / 10) * 10;
+
+  var time = Math.floor(Math.random() * Math.floor(3)) + 1;
+  var rng_chest = Math.floor(Math.random() * Math.floor(250)) + 1;
+  if (depth == "B" && rng_chest == 400) {
+    var _fish = {"Aarrearkku" : {
+      "index" : 100,
+      "weight": 100,
+      "price" : 500,
+      "emoji" : "aarrearkku",
+      "description" : "Aarteinen arkku, näyttää olevan kivasti rahea sisällä!"
+    }};
+
+    return {
+      fish: fishes["Aarrearkku"],
+      name: "Aarrearkku",
+      price: fishes["Aarrearkku"]["price"],
+      weight: fishes["Aarrearkku"]["weight"],
+      place: place,
+      depth: depth,
+      rod: rod,
+      bait: bait,
+      timer: time,
+      time: _part_day
+    };
+
+  } else {
+    return {
+      fish: fishes[caught_fish],
+      name: caught_fish,
+      price: cost,
+      weight: weight,
+      place: place,
+      depth: depth,
+      rod: rod,
+      bait: bait,
+      timer: time,
+      time: _part_day
+    };
+  }
+
+
+
 }
 
 // All commands
 const commands = {
 
-  // Game commands
+  /// Game commands
 
-  'bj': (msg) => {
-    ref.on('value', gotData, errData);
+  bj: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        check_deck();
+        var deck = get_deck();
 
-    check_deck();
-    user_check_database(msg.author.id);
+        msg.delete();
 
-    var player = msg.author.id;
+        const BJRATE = 20;
 
-    msg.delete();
+        let bet = msg.content.split(" ")[1];
+        let starting_money = user["inventory"]["money"];
+        let peak_money = user["basic_statistics"]["peak_money"];
+        let basic_income = user["inventory"]["income"];
 
-    const BJRATE = 20;
-
-    let bet = msg.content.split(' ')[1];
-    let starting_money = data[msg.author.id]["omistus"]["rahat"];
-    let peak_money = data[msg.author.id]["omistus"]["maxrahat"];
-    let basic_income = data[msg.author.id]["omistus"]["perustulo"];
-
-    try {
-      bet = eval(bet);
-    } catch (err) {
-      bet = bet;
-    }
-    if (bet == "e") {
-      bet = 272;
-    } else if (bet == "pi") {
-      bet = 314;
-    } else if ((bet + "").startsWith("log(")) {
-      try {
-        bet = Math.log(bet.replace(/\D/g, '')) * 100;
-      } catch (err) {
-        return msg.channel.send("Virhe logaritmissä!");
-      }
-    }
-
-    let min_bet = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (BJRATE * 10)) * 10;
-    if (min_bet < 5) {
-      min_bet = 5
-    }
-
-    if (bet == "min") {
-      bet = min_bet;
-    }
-    if (bet == "max") {
-      bet = data[msg.author.id]["omistus"]["rahat"];
-    }
-    if (bet == "puolet") {
-      bet = data[msg.author.id]["omistus"]["rahat"] / 2;
-    }
-
-    if (bet == 0) return msg.channel.send(`bet pitää olla vähintään ` + min_bet + ' coins');
-    if ((bet == '' || bet === undefined)) {
-      bet = min_bet;
-    }
-    if (isNaN(bet)) return msg.channel.send("Panos tarvitsee olla positiivinen luku");
-    if (bet < min_bet) return msg.channel.send(`Panos pitää olla vähintään ` + min_bet + ' coins');
-
-    bet = Math.floor(bet);
-
-    if (data[msg.author.id]["omistus"]["rahat"] < bet) {
-      return msg.channel.send("Liian iso panos!");
-    }
-
-    data[msg.author.id]["omistus"]["rahat"] -= bet;
-    data[msg.author.id]["pelit"]["BJ_panokset"] += bet;
-    data[msg.author.id]["pelit"]["BJ_pelit"] += 1;
-
-    if (bj[msg.author.id] != undefined) {
-      data[msg.author.id]["pelit"]["BJ_hävityt_pelit"] += 1;
-      bj[msg.author.id].stop();
-      delete bj[msg.author.id];
-    }
-
-    // PELI //
-    let dealer_hand = [];
-    let player_hand = [];
-
-    let dealer_sum = 0;
-    let player_sum = 0;
-
-    for (let i = 0; i < 2; i++) {
-      dealer_hand = deal_card(msg.author.id, dealer_hand);
-    }
-
-    for (let u = 0; u < 2; u++) {
-      player_hand = deal_card(msg.author.id, player_hand);
-    }
-    dealer_sum = calculate_sum(dealer_hand, true, 21);
-    player_sum = calculate_sum(player_hand, false, 21);
-
-    var history_log = [];
-    history_log.push("" + jako_emoji);
-
-    if (player_sum == 21) {
-      data[msg.author.id]["pelit"]["BJ_21"] += 1;
-      data[msg.author.id]["pelit"]["BJ_voitetut_pelit"] += 1;
-      data[msg.author.id]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet*1.5);
-      data[msg.author.id]["omistus"]["rahat"] += Math.floor(bet*2.5);
-      firebase.database().ref('profiles').set(data);
-      msg.channel.send(print_BJ(msg.author.id, player_hand, dealer_hand, Math.floor(bet), true, "Blackjack! Voitit " + Math.floor(bet*1.5) + coins, 5348864, history_log));
-      return;
-    } else if (player_sum > 21) {
-      data[msg.author.id]["pelit"]["BJ_yli"] += 1;
-      data[msg.author.id]["pelit"]["BJ_hävityt_pelit"] += 1;
-      data[msg.author.id]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet);
-      firebase.database().ref('profiles').set(data);
-      msg.channel.send(print_BJ(msg.author.id, player_hand, dealer_hand, Math.floor(bet), true, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
-      return;
-    }
-
-    firebase.database().ref('profiles').set(data);
-
-    let bot_message;
-
-    msg.channel.send(print_BJ(msg.author.id, player_hand, dealer_hand, Math.floor(bet), true, " ", 6842472, history_log)).then(m => {
-      bot_message = m;
-      return bot_message;
-    }).then(async m => {
-      await m.react(hit_emoji);
-      await m.react(stand_emoji);
-
-      let sum_u = calculate_sum(player_hand, false, 21);
-
-      let sum = 0;
-      for (let k = 0; k < player_hand.length; k++) {
-
-        if (parseInt(player_hand[k].replace(/\D/g,'')) == 1) {
-          sum += 1;
-        }
-        else if (parseInt(player_hand[k].replace(/\D/g,'')) > 10) {
-          sum += 10;
-        } else {
-          sum += parseInt(player_hand[k].replace(/\D/g,''));
-        }
-      }
-
-      if (data[msg.author.id]["omistus"]["rahat"] > Math.floor(bet) && ((sum_u >= 9 && sum_u <= 11) || ((sum >= 9 && sum <= 11))) && player_hand.length == 2 && sum_u < 21) {
-        await m.react(double_emoji)
-      }
-
-      return m;
-    }).then(m => {
-      bot_message = m;
-
-      bj[msg.author.id] = m.createReactionCollector((reaction, user) => user.id === msg.author.id, { time : 60 * 1000});
-      bj[msg.author.id].on('collect', (reaction, user) => {
-
-        if (reaction.emoji == stand_emoji) {
-          stand();
-        }
-
-        else if (reaction.emoji == hit_emoji) {
-          reaction.remove(msg.author.id);
-
-          for (let re of bot_message.reactions.array()) {
-            if (re.emoji == double_emoji) {
-              re.remove(user.id);
-            }
-          }
-          hit();
-
-        }
-
-        else if (reaction.emoji == double_emoji) {
-
-          let sum_u = calculate_sum(player_hand, false, 21);
-
-          let sum = 0;
-          for (let k = 0; k < player_hand.length; k++) {
-
-            if (parseInt(player_hand[k].replace(/\D/g,'')) == 1) {
-              sum += 1;
-            }
-            else if (parseInt(player_hand[k].replace(/\D/g,'')) > 10) {
-              sum += 10;
-            } else {
-              sum += parseInt(player_hand[k].replace(/\D/g,''));
-            }
-          }
-          if ((sum_u >= 9 && sum_u <= 11) || (sum >= 9 && sum <= 11) && player_hand.length == 2 && sum_u < 21) {
-            double();
-          }
-        }
-
-      });
-
-      bj[msg.author.id].on('end', () => {
-        delete bj[msg.author.id];
-        var weight = map(bet, min_bet, (basic_income*1000 + starting_money)/2, 1, 3);
-        draw_lootbox_weighted(msg.author.id, 14400, weight, 1350);
-        firebase.database().ref('profiles').set(data);
-      });
-
-      function hit() {
-
-        ref.on('value', gotData, errData);
-        history_log.push("" + hit_emoji);
-
-        // Aloittaa pelin jakamalla pelaajalle
-        player_hand = deal_card(player, player_hand);
-        data[player]["pelit"]["BJ_hit"] += 1;
-        firebase.database().ref('profiles').set(data);
-
-        // Tutkii playern summan
-        let player_sum = calculate_sum(player_hand, false, 21);
-
-        // Katsoo jos player voitti tai hävisi suoraan
-        if (player_sum == 21 && player_hand.length == 2) {
-          data[player]["pelit"]["BJ_21"] += 1;
-          data[player]["pelit"]["BJ_voitetut_pelit"] += 1;
-          data[player]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet*1.5);
-          data[player]["omistus"]["rahat"] += Math.floor(bet*2.5);
-          firebase.database().ref('profiles').set(data);
-          bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), true, "Blackjack! Voitit " + Math.floor(bet*1.5) + coins, 5348864, history_log));
-          bj[player].stop();
-          return;
-
-        } else if (player_sum == 21) {
-          stand();
-
-          return;
-
-        } else if (player_sum > 21) {
-          data[player]["pelit"]["BJ_yli"] += 1;
-          data[player]["pelit"]["BJ_hävityt_pelit"] += 1;
-          data[player]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet);
-
-          firebase.database().ref('profiles').set(data);
-          bot_message.clearReactions();
-          bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
-          bj[player].stop();
-
-        } else {
-          bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), true, " ", 6842472, history_log));
-        }
-      }
-
-      function stand() {
-        ref.on('value', gotData, errData);
-        history_log.push("" + stand_emoji);
-        bot_message.clearReactions();
-
-        // katsoo summan -> jakaa ->
-        data[player]["pelit"]["BJ_stand"] += 1;
-        firebase.database().ref('profiles').set(data);
-
-        let player_sum = calculate_sum(player_hand, false, 21);
-
-        while (true) {
-
-          let jakaja_sum = calculate_sum(dealer_hand, false, 21);
-
-          let sum_2 = 0;
-          for (let k = 0; k < dealer_hand.length; k++) {
-
-            if (parseInt(dealer_hand[k].replace(/\D/g,'')) == 1) {
-              sum_2 += 1;
-            }
-            else if (parseInt(dealer_hand[k].replace(/\D/g,'')) > 10) {
-              sum_2 += 10;
-            } else {
-              sum_2 += parseInt(dealer_hand[k].replace(/\D/g,''));
-            }
-          }
-
-          // Katsoo jos player voitti tai hävisi suoraan
-          if (jakaja_sum == 21 && dealer_hand.length == 2) {
-
-            data[player]["pelit"]["BJ_hävityt_pelit"] += 1;
-            data[player]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet);
-
-            firebase.database().ref('profiles').set(data);
-            bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakajan Blackjack! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
-            bj[player].stop();
-            return;
-
-          } else if (jakaja_sum > 21) {
-
-            data[player]["pelit"]["BJ_voitetut_pelit"] += 1;
-            data[player]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet);
-            data[player]["omistus"]["rahat"] += Math.floor(bet*2);
-
-            firebase.database().ref('profiles').set(data);
-            bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja meni yli! Voitit " + Math.floor(bet) + coins, 5348864, history_log));
-            bj[player].stop();
-            return;
-
-          } else if (jakaja_sum >= 17) {
-
-            if (jakaja_sum >= player_sum) {
-              data[player]["pelit"]["BJ_hävityt_pelit"] += 1;
-              data[player]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet);
-              data[player]["pelit"]["BJ_vähemmän"] += 1;
-
-              firebase.database().ref('profiles').set(data);
-              bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Jakaja voitti! Hävisit " + Math.floor(bet) + coins, 9381414, history_log));
-              bj[player].stop();
-              return;
-
-            } else {
-              data[player]["pelit"]["BJ_voitetut_pelit"] += 1;
-              data[player]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet);
-              data[player]["omistus"]["rahat"] += Math.floor(bet*2);
-
-              firebase.database().ref('profiles').set(data);
-              bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet), false, "Voitit: " + Math.floor(bet) + coins, 5348864, history_log));
-              bj[player].stop();
-              return;
-            }
-
-          } else {
-
-            dealer_hand = deal_card(player, dealer_hand);
-
-          }
-
-        }
-      }
-
-      function double() {
-        ref.on('value', gotData, errData);
-        history_log.push("" + double_emoji);
-        bot_message.clearReactions();
-        // katsoo summan -> jakaa ->
-
-        data[player]["pelit"]["BJ_double"] += 1;
-        data[player]["omistus"]["rahat"] -= bet;
-
-        player_hand = deal_card(player, player_hand);
-        player_sum = calculate_sum(player_hand, false, 21);
-
-        if (player_sum > 21) {
-          data[player]["pelit"]["BJ_yli"] += 1;
-          data[player]["pelit"]["BJ_hävityt_pelit"] += 1;
-          data[player]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet*2);
-
-          firebase.database().ref('profiles').set(data);
-          msg.channel.send(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakaja voitti! Hävisit " + Math.floor(bet*2) + coins, 9381414, history_log));
-          bj[player].stop();
-          return;
-
-        }
-
-        while (true) {
-
-          jakaja_sum = calculate_sum(dealer_hand, false, 21);
-
-          let sum_2 = 0;
-          for (let k = 0; k < dealer_hand.length; k++) {
-
-            if (parseInt(dealer_hand[k].replace(/\D/g,'')) == 1) {
-              sum_2 += 1;
-            }
-            else if (parseInt(dealer_hand[k].replace(/\D/g,'')) > 10) {
-              sum_2 += 10;
-            } else {
-              sum_2 += parseInt(dealer_hand[k].replace(/\D/g,''));
-            }
-          }
-
-          // Katsoo jos player voitti tai hävisi suoraan
-          if (jakaja_sum == 21 && dealer_hand.length == 2) {
-
-            data[player]["pelit"]["BJ_hävityt_pelit"] += 1;
-            data[player]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet*2);
-
-            firebase.database().ref('profiles').set(data);
-            bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakajan Blackjack! Hävisit " + Math.floor(bet*2) + coins, 9381414, history_log));
-            bj[player].stop();
-            return;
-
-          } else if (jakaja_sum > 21) {
-
-            data[player]["pelit"]["BJ_voitetut_pelit"] += 1;
-            data[player]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet*2);
-            data[player]["omistus"]["rahat"] += Math.floor(bet*2*2);
-
-            firebase.database().ref('profiles').set(data);
-            bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakaja meni yli! Voitit " + Math.floor(bet*2) + coins, 5348864, history_log));
-            bj[player].stop();
-            return;
-
-          } else if (jakaja_sum >= 17) {
-
-            if (jakaja_sum >= player_sum) {
-              data[player]["pelit"]["BJ_hävityt_pelit"] += 1;
-              data[player]["pelit"]["BJ_hävityt_rahat"] += Math.floor(bet*2);
-              data[player]["pelit"]["BJ_vähemmän"] += 1;
-
-              firebase.database().ref('profiles').set(data);
-              bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Jakaja voitti! Hävisit " + Math.floor(bet*2) + coins, 9381414, history_log));
-              bj[player].stop();
-              return;
-
-            } else {
-              data[player]["pelit"]["BJ_voitetut_pelit"] += 1;
-              data[player]["pelit"]["BJ_voitetut_rahat"] += Math.floor(bet*2);
-              data[player]["omistus"]["rahat"] += Math.floor(bet*2*2);
-
-              firebase.database().ref('profiles').set(data);
-              bot_message.edit(print_BJ(player, player_hand, dealer_hand, Math.floor(bet)*2, false, "Voitit: " + Math.floor(bet*2) + coins, 5348864, history_log));
-              bj[player].stop();
-              return;
-            }
-
-          } else {
-
-            // Jaa uusi kortti
-            dealer_hand = deal_card(player, dealer_hand);
-
-          }
-
-        }
-
-      }
-
-    });
-
-    // Tool commands for BJ
-
-    function check_deck() {
-      // Checks if there is enough cards in the deck and makes new decks
-      if (!("deck" in data)) {
-        data["deck"] = deck;
-      }
-      deck = data["deck"];
-
-      if (deck.length < 15) {
-        deck = [];
-        for (let m = 0; m < 3; m++) {
-          for (let p = 1; p < 14; p++) {
-            deck.push(p+"S");
-          }
-          for (let h = 1; h < 14; h++) {
-            deck.push(h+"H");
-          }
-          for (let r = 1; r < 14; r++) {
-            deck.push(r+"C");
-          }
-          for (let ru = 1; ru < 14; ru++) {
-            deck.push(ru+"D");
-          }
-        }
-      }
-
-      data["deck"] = deck;
-    }
-
-    function deal_card(_player, _hand) {
-      // Adds new card to the hand
-      deck = data["deck"];
-
-      let player = _player;
-      let hand = _hand;
-      var rnd_c = Math.floor(Math.random() * Math.floor(deck.length));
-
-      hand.push(deck[rnd_c]);
-      deck.splice(rnd_c, 1);
-
-      data[player]["pelit"]["kortteja_pelannut"] += 1;
-      data["deck"] = deck;
-      return hand;
-    }
-
-    function calculate_sum(_hand, _dealer_first, _threshhold) {
-
-      //  Calculates sum of cards for a hand
-      let hand = _hand;
-      let dealer_first = _dealer_first;
-
-      let sum = 0;
-      let threshhold = _threshhold;
-      let len;
-
-      if (dealer_first == true) {
-        len = hand.length - 1;
-      } else {
-        len = hand.length;
-      }
-
-      for (let k = 0; k < len; k++) {
-
-        if (parseInt(hand[k].replace(/\D/g,'')) == 1) {
-          sum += 11;
-        }
-        else if (parseInt(hand[k].replace(/\D/g,'')) > 10) {
-          sum += 10;
-        } else {
-          sum += parseInt(hand[k].replace(/\D/g,''));
-        }
-      }
-
-      for (let x = 0; x < hand.length; x++) {
-        if (sum > threshhold) {
-          if (parseInt(hand[x].replace(/\D/g,'')) == 1) {
-            sum -= 10;
-          }
-        }
-      }
-      return sum;
-    }
-
-    function print_BJ(_user, _player_hand, _dealer_hand, _bet, _first_time, _info_text, _color, _history_log) {
-
-      // Prints embed message that contains BJ game
-      var dealer_hand_str = "";
-      var player_hand_str = "";
-
-      var dealer_sum = 0;
-      var player_sum = 0;
-
-      var avatar = " ";
-      var username = " ";
-      var user = _user;
-
-      var color = _color;
-      var history = "";
-
-      dealer_sum = calculate_sum(_dealer_hand, _first_time, 21);
-      player_sum = calculate_sum(_player_hand, false, 21);
-
-      let count = 0;
-      for (let card of _dealer_hand) {
-        if (count == 1 && _first_time) {
-          dealer_hand_str += card_back;
-        } else {
-          dealer_hand_str += "" + card_emojies[card];
-        }
-        count++;
-      }
-
-      for (let card of _player_hand) {
-        player_hand_str += "" + card_emojies[card];
-      }
-
-      let sum = 0;
-      for (let k = 0; k < _player_hand.length; k++) {
-
-        if (parseInt(_player_hand[k].replace(/\D/g,'')) == 1) {
-          sum += 1;
-        }
-        else if (parseInt(_player_hand[k].replace(/\D/g,'')) > 10) {
-          sum += 10;
-        } else {
-          sum += parseInt(_player_hand[k].replace(/\D/g,''));
-        }
-      }
-
-
-      dealer_hand_str += "\nYht: " + dealer_sum ;
-      player_hand_str += "\nYht: " + player_sum;
-
-      avatar = client.users.get(user).avatarURL;
-      username = client.users.get(user).username;
-
-      for (var i of _history_log) {
-        history += i;
-      }
-      return {
-          "embed": {
-            "color": color,
-            "author": {
-              "name": "BLACKJACK",
-              "icon_url": avatar
-            },
-            "description" : "Rahat: " + data[user]["omistus"]["rahat"] + coins + ", Panos: " + _bet + coins,
-            "fields": [
-                {
-                "name": "***Jakaja:***",
-                "value": dealer_hand_str,
-                "inline" : false
-              },
-              {
-                "name": "***" + username + ":***",
-                "value": player_hand_str + "\n"  + _info_text,
-                "inline": true
-              },
-
-              {
-                "name": "***Historia:***",
-                "value": history,
-                "inline": true
-              }
-            ],
-            footer: {
-              text: "Kortteja jäljellä: " + deck.length
-            }
-          }
-        };
-    }
-
-  },
-
-  'harpoon': (msg) => {
-
-    ref.on('value', gotData, errData);
-    msg.delete();
-    user_check_database(msg.author.id);
-
-    let multi = 1;
-    if (data[msg.author.id]["omistus"]["kultainen_harppuuna"]) {
-      multi = 5;
-    } else {
-      multi = 1;
-    }
-
-    if (data[msg.author.id]["omistus"]["rahat"] < 50 * multi) {
-      return msg.channel.send("Tarvitset vähintään " + 50 * multi + coins + "!");
-    }
-
-
-    data[msg.author.id]["omistus"]["rahat"] -= 50 * multi;
-    data[msg.author.id]["pelit"]["harpoon_pelit"] += 1;
-
-    firebase.database().ref('profiles').set(data);
-
-    if (msg.author.id in harpoon_collectors) {
-      harpoon_collectors[msg.author.id].stop();
-      delete harpoon_collectors[msg.author.id];
-    }
-    // Tehdään kenttä
-    const W = 18;
-    const H = 10;
-
-    var field_matrix = [];
-    for (var i = 0; i < H; i++) {
-      field_matrix[i] = [];
-      for (var j = 0; j < W; j++) {
-        if (i == H - 1) {
-          field_matrix[i][j] = 8;
-        } else {
-          field_matrix[i][j] = 0;
-        }
-
-      }
-    }
-
-    // Tehdään tarketit
-    field_matrix[H - 1][0] = 9;
-
-    // shark
-    var shark_rnd = Math.floor(Math.random() * Math.floor(5 + 1));
-
-
-    if (shark_rnd < 2) {
-
-      var balloon_x = Math.floor(Math.random() * Math.floor(W - 4 + 1)) + 3;
-      var balloon_y = Math.floor(Math.random() * Math.floor(H - 3));
-      field_matrix[balloon_y][balloon_x] = 2;
-
-    } else {
-
-      var balloon = Math.floor(Math.random() * Math.floor(2 + 1));
-
-      var balloon_x = Math.floor(Math.random() * Math.floor(W - 4 + 1)) + 3;
-      var balloon_y = Math.floor(Math.random() * Math.floor(H - 3));
-      var shark = Math.floor(Math.random() * Math.floor(W - 2));
-
-      if (balloon == 1) {
-        field_matrix[balloon_y][balloon_x] = 2;
-      }
-      field_matrix[H - 1][shark + 2] = 1;
-    }
-
-    let whale_rarity = 15;
-    if (data[msg.author.id]["omistus"]["valaankasvatusohjelma"]) {
-      whale_rarity = 10;
-    }
-    var whale_rnd = Math.floor(Math.random() * Math.floor(whale_rarity + 1));
-
-    if (whale_rnd == 1) {
-      while (true) {
-        var whale_tile = Math.floor(Math.random() * Math.floor(W - 2));
-        if (field_matrix[H - 1][whale_tile + 3] != 1) {
-          field_matrix[H - 1][whale_tile + 3] = 3;
-          break;
-        } else {
-          continue;
-        }
-      }
-    }
-
-
-    // Printataan
-    field = "";
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        if (field_matrix[y][x] == 0) {
-          field += "⬛️";
-        } else if (field_matrix[y][x] == 8) {
-          field += "🌊";
-        } else if (field_matrix[y][x] == 1) {
-          field += "🦈";
-        } else if (field_matrix[y][x] == 2) {
-          field += "🎈";
-        } else if (field_matrix[y][x] == 3) {
-          field += "🐳";
-        } else if (field_matrix[y][x] == 9) {
-          field += "🚢";
-        }
-      }
-
-      field += "\n";
-    }
-
-    let wind = Math.floor(Math.random() * Math.floor(10 + 1)) - 5;
-    wind_str = "";
-
-    if (wind < 0) {
-
-      for (let i = 0; i < Math.abs(wind); i++) {
-        wind_str += "⏪";
-      }
-
-    } else if (wind == 0) {
-      wind_str = "0";
-
-    } else {
-
-      for (let i = 0; i < Math.abs(wind); i++) {
-        wind_str += "⏩";
-      }
-
-    }
-
-
-    if (multi == 5) {
-      color = 16093987;
-      icon = harpoon_e;
-    } else {
-      color = 1006999;
-      icon = "";
-    }
-
-    msg.channel.send({
-      "embed": {
-        "color": color,
-        "author": {
-          "name": "HARPOON: " + msg.author.username,
-          "icon_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
-        },
-        "fields": [{
-            "name": icon + " Tuuli: " + wind_str,
-            "value": field
-          },
-          {
-              "name": "Ammu kirjoittamalla: ",
-              "value": "!ammu <asteet> <voima> (1-90°, 1-100)."
-            }
-
-        ]
-      }
-    }).then(m => {
-
-      msg[msg.author.id] = m;
-
-    });
-
-    harpoon_collectors[msg.author.id] = msg.channel.createCollector(m => m);
-    harpoon_collectors[msg.author.id].on('collect', m => {
-      if (m.content.startsWith(tokens.prefix + 'ammu') && msg.author.id == m.author.id) {
-        ref.on('value', gotData, errData);
-
-        m.delete();
-
-        let deg = m.content.split(' ')[1];
-        let force = m.content.split(' ')[2];
-
-        if (isNaN(deg) || isNaN(force)) return msg.channel.send("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
-        if (deg < 1 || deg > 90) return msg.channel.send("Kulma tarvitsee olla välillä 0-90 astetta ja voima välillä 1-100");
-
-        shoot_harpoon(deg, force, wind, field_matrix);
-
-      } else if (m.content.startsWith(tokens.prefix + 'lopeta')) {
-        msg.channel.send('Lopetetaan harppuuna.').then(() => {
-          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50;
-          harpoon_collectors[msg.author.id].stop();
-          msg[msg.author.id];
-        });
-      }
-    });
-
-    function shoot_harpoon(_deg, _force, _wind, _field_matrix) {
-      harpoon_collectors[msg.author.id].stop();
-      let multi = 1;
-      if (data[msg.author.id]["omistus"]["kultainen_harppuuna"] == true) {
-        multi = 5;
-      } else {
-        multi = 1;
-      }
-
-      let field_matrix = _field_matrix;
-
-      let c_w = W * 10;
-      let c_h = H * 10;
-
-      let _x = 0;
-      let _y = c_w - c_h/H * (H-1) ;
-
-      let g = -0.2;
-
-      let f_x = Math.cos(_deg / 180 * Math.PI) * _force;
-      let f_y = Math.sin(_deg / 180 * Math.PI) * _force;
-
-      let i = 0;
-      let flag = true;
-
-      while (flag) {
-
-        i++;
-
-        _x = _x + _wind/5*i/2000 + f_x / 100;
-        _y = _y - (g * i / 100 + f_y / 100);
-
-        if (_x <= 0 || _x > c_w) {
-          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50 * multi;
-          break;
-        }
-        if (_y >= c_h) {
-          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50 * multi;
-          break;
-        }
-
-        _xtile = Math.floor(_x / c_w * W);
-        _ytile = Math.floor(_y / c_h * H);
-
-        if (_xtile == 0 && _ytile == H - 1) {
-          continue;
-        }
-
+        ////
 
         try {
-        // OSUMAT
-        win_text = "Ammuit ohi... -" + 50 * multi + coins;
-
-        if (field_matrix[_ytile][_xtile] == 1) {
-          win_text = "Osuit haihin! Voitit: " + 150*multi + coins;
-
-          data[msg.author.id]["pelit"]["harpoon_osumat"] += 1;
-          data[msg.author.id]["pelit"]["harpoon_yksittäiset"]["harpoon_hai"] += 1;
-          data[msg.author.id]["pelit"]["harpoon_voitetut"] += 150 * multi;
-          data[msg.author.id]["omistus"]["rahat"] += 150* multi;
-
-          field_matrix[_ytile][_xtile] = 7;
-          flag = false;
-          break;
-
-        }
-        if (field_matrix[_ytile][_xtile] == 2) {
-          win_text = "Osuit palloon! Voitit: " +  250*multi + coins;
-
-          data[msg.author.id]["pelit"]["harpoon_osumat"] += 1;
-          data[msg.author.id]["pelit"]["harpoon_yksittäiset"]["harpoon_pallo"] += 1;
-          data[msg.author.id]["pelit"]["harpoon_voitetut"] += 250* multi;
-          data[msg.author.id]["omistus"]["rahat"] += 250* multi;
-
-          field_matrix[_ytile][_xtile] = 7;
-          flag = false;
-          break;
-
-        }
-        if (field_matrix[_ytile][_xtile] == 3) {
-          win_text = "Osuit valaaseen! Voitit " + 1000*multi + coins;
-
-          data[msg.author.id]["pelit"]["harpoon_osumat"] += 1;
-          data[msg.author.id]["pelit"]["harpoon_yksittäiset"]["harpoon_valas"] += 1;
-          data[msg.author.id]["pelit"]["harpoon_voitetut"] += 1000 * multi;
-          data[msg.author.id]["omistus"]["rahat"] += 1000 * multi;
-
-          field_matrix[_ytile][_xtile] = 7;
-          flag = false;
-          break;
-
-        }
-
-        if (_ytile ==  H - 1) {
-          field_matrix[_ytile][_xtile] = 4;
-          flag = false;
-          data[msg.author.id]["pelit"]["harpoon_hävityt"] += 50 * multi;
-          break;
-        }
-
-          field_matrix[_ytile][_xtile] = 6;
+          bet = eval(bet);
         } catch (err) {
-          continue;
+          bet = bet;
         }
 
-      }
-
-      let trail = "";
-      if (multi == 5) {
-        trail = "🔸";
-      } else {
-        trail = "▫️"
-      }
-
-
-      new_field = "";
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          if (field_matrix[y][x] == 0) {
-            new_field += "⬛️";
-          } else if (field_matrix[y][x] == 8) {
-            new_field += "🌊";
-          } else if (field_matrix[y][x] == 1) {
-            new_field += "🦈";
-          } else if (field_matrix[y][x] == 2) {
-            new_field += "🎈";
-          } else if (field_matrix[y][x] == 3) {
-            new_field += "🐳";
-          } else if (field_matrix[y][x] == 9) {
-            new_field += "🚢";
-          } else if (field_matrix[y][x] == 6) {
-            new_field += trail;
-          } else if (field_matrix[y][x] == 7) {
-            new_field += "💥";
-          } else if (field_matrix[y][x] == 4) {
-            new_field += "💦";
+        if (bet == "e") {
+          bet = 272;
+        } else if (bet == "pi") {
+          bet = 314;
+        } else if ((bet + "").startsWith("log(")) {
+          try {
+            bet = Math.log(parseFloat(bet)) * 100;
+          } catch (err) {
+            return msg.channel.send("Virhe logaritmissä!");
           }
         }
 
-        new_field += "\n";
-      }
+        let min_bet = Math.floor(user["inventory"]["money"] / (BJRATE * 10)) * 10;
 
-
-      wind_str = "";
-
-      if (wind < 0) {
-
-        for (let i = 0; i < Math.abs(wind); i++) {
-          wind_str += "⏪";
+        if (min_bet < 5) {
+          min_bet = 5;
         }
 
-      } else if (wind == 0) {
-        wind_str = "0";
-
-      } else {
-
-        for (let i = 0; i < Math.abs(wind); i++) {
-          wind_str += "⏩";
+        if (bet == "min") {
+          bet = "" + min_bet;
+        }
+        if (bet == "max") {
+          bet = "" + (starting_money);
+        }
+        if (bet == "puolet") {
+          bet = "" + (starting_money / 2);
         }
 
-      }
+        if (bet == 0)
+          return msg.channel.send(
+            "Panos pitää olla vähintään " + min_bet + emojies["coin"]
+          );
+        if (bet == "" || bet === undefined) {
+          bet = "" + min_bet;
+        }
 
-      if (multi == 5) {
-        color = 16093987;
-        icon = harpoon_e;
-      } else {
-        color = 1006999;
-        icon = "";
-      }
+        bet = "" + bet;
 
-      msg[msg.author.id].edit({
-        "embed": {
-          "color": color,
-          "author": {
-            "name": "HARPOON: " + msg.author.username,
-            "icon_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
-          },
-          "fields": [
-            {
-              "name": icon + " Ammuit:",
-              "value": "Kulma: " + _deg + "°, Voima: " + _force + "."
-            },
-            {
-              "name": "Tuuli: " + wind_str,
-              "value": new_field
-            },
-            {
-              "name": "Tulos:",
-              "value": win_text
+        if (bet.slice(-1) == "k") {
+          bet = Math.floor(1000*parseFloat(bet));
+        }
+        else if (bet.slice(-1) == "m") {
+          bet = Math.floor(1000000*parseFloat(bet));
+        }
+
+        if (isNaN(bet))
+          return msg.channel.send("Panos tarvitsee olla positiivinen luku");
+        if (bet < min_bet)
+          return msg.channel.send(
+            "Panos pitää olla vähintään " + min_bet + emojies["coin"]
+          );
+
+        bet = Math.floor(bet);
+
+        ////
+
+
+        if (user["inventory"]["money"] < bet) {
+          return msg.channel.send("Liian iso panos!");
+        }
+
+        user["inventory"]["money"] -= bet;
+        user["game_blackjack"]["all_bets"] += bet;
+        user["game_blackjack"]["games"] += 1;
+
+        if (bj[user["id"]] != undefined) {
+          user["game_blackjack"]["games_lost"] += 1;
+          bj[user["id"]].stop();
+          delete bj[user["id"]];
+        }
+
+        // PELI //
+        let dealer_hand = [];
+        let player_hand = [];
+
+        let dealer_sum = 0;
+        let player_sum = 0;
+
+        for (let i = 0; i < 2; i++) {
+          dealer_hand = deal_card(user["id"], dealer_hand, user);
+        }
+
+        for (let u = 0; u < 2; u++) {
+          player_hand = deal_card(user["id"], player_hand, user);
+        }
+        dealer_sum = calculate_sum(dealer_hand, true, 21);
+        player_sum = calculate_sum(player_hand, false, 21);
+
+        var history_log = [];
+        history_log.push("" + emojies["J_"]);
+
+        if (player_sum == 21) {
+          user["game_blackjack"]["21"] += 1;
+          user["game_blackjack"]["games_won"] += 1;
+          user["game_blackjack"]["money_won"] += Math.floor(bet * 1.5);
+          user["inventory"]["money"] += Math.floor(bet * 2.5);
+          save_user(user);
+          msg.channel.send(
+            print_BJ(
+              user["id"],
+              player_hand,
+              dealer_hand,
+              Math.floor(bet),
+              true,
+              "Blackjack! Voitit " + Math.floor(bet * 1.5) + emojies["coin"],
+              5348864,
+              history_log,
+              user
+            )
+          );
+          return;
+        } else if (player_sum > 21) {
+          user["game_blackjack"]["over"] += 1;
+          user["game_blackjack"]["games_lost"] += 1;
+          user["game_blackjack"]["money_lost"] += Math.floor(bet);
+          save_user(user);
+          msg.channel.send(
+            print_BJ(
+              user["id"],
+              player_hand,
+              dealer_hand,
+              Math.floor(bet),
+              true,
+              "Jakaja voitti! Hävisit " + Math.floor(bet) + emojies["coin"],
+              9381414,
+              history_log,
+              user
+            )
+          );
+          return;
+        }
+
+        save_user(user);
+
+        let bot_message;
+        msg.channel
+          .send(
+            print_BJ(
+              user["id"],
+              player_hand,
+              dealer_hand,
+              Math.floor(bet),
+              true,
+              " ",
+              user["info"]["color"],
+              history_log,
+              user
+            )
+          )
+          .then(m => {
+            bot_message = m;
+            return bot_message;
+          })
+          .then(async m => {
+            await m.react(emojies["H_"]);
+            await m.react(emojies["S_"]);
+
+            let sum_u = calculate_sum(player_hand, false, 21);
+
+            let sum = 0;
+            for (let k = 0; k < player_hand.length; k++) {
+              if (parseInt(player_hand[k].replace(/\D/g, "")) == 1) {
+                sum += 1;
+              } else if (parseInt(player_hand[k].replace(/\D/g, "")) > 10) {
+                sum += 10;
+              } else {
+                sum += parseInt(player_hand[k].replace(/\D/g, ""));
+              }
+            }
+            if (
+              user["inventory"]["money"] > Math.floor(bet) &&
+              ((sum_u >= 9 && sum_u <= 11) || (sum >= 9 && sum <= 11)) &&
+              player_hand.length == 2 &&
+              sum_u < 21
+            ) {
+              await m.react(emojies["D_"]);
+            }
+            return m;
+          })
+          .then(m => {
+            bot_message = m;
+
+            bj[user["id"]] = m.createReactionCollector(
+              (reaction, _user) => _user.id === user["id"],
+              {
+                time: 60 * 1000
+              }
+            );
+            bj[user["id"]].on("collect", (reaction, _user) => {
+              if (reaction.emoji == emojies["S_"]) {
+                stand();
+              } else if (reaction.emoji == emojies["H_"]) {
+                reaction.remove(user["id"]);
+
+                for (let re of bot_message.reactions.array()) {
+                  if (re.emoji == emojies["D_"]) {
+                    re.remove(_user.id);
+                  }
+                }
+                hit();
+              } else if (reaction.emoji == emojies["D_"]) {
+                let sum_u = calculate_sum(player_hand, false, 21);
+
+                let sum = 0;
+                for (let k = 0; k < player_hand.length; k++) {
+                  if (parseInt(player_hand[k].replace(/\D/g, "")) == 1) {
+                    sum += 1;
+                  } else if (parseInt(player_hand[k].replace(/\D/g, "")) > 10) {
+                    sum += 10;
+                  } else {
+                    sum += parseInt(player_hand[k].replace(/\D/g, ""));
+                  }
+                }
+                if (
+                  (sum_u >= 9 && sum_u <= 11) ||
+                  (sum >= 9 &&
+                    sum <= 11 &&
+                    player_hand.length == 2 &&
+                    sum_u < 21)
+                ) {
+                  double();
+                }
+              }
+            });
+
+            bj[user["id"]].on("end", () => {
+              delete bj[user["id"]];
+
+              var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
+              var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
+
+              save_user(user);
+            });
+
+            function hit() {
+              history_log.push("" + emojies["H_"]);
+
+              // Aloittaa pelin jakamalla pelaajalle
+              player_hand = deal_card(user["id"], player_hand, user);
+              user["game_blackjack"]["hit"] += 1;
+
+              save_user(user);
+
+              // Tutkii playern summan
+              let player_sum = calculate_sum(player_hand, false, 21);
+
+              // Katsoo jos player voitti tai hävisi suoraan
+              if (player_sum == 21 && player_hand.length == 2) {
+                user["game_blackjack"]["BJ_21"] += 1;
+                user["game_blackjack"]["games_won"] += 1;
+                user["game_blackjack"]["money_won"] += Math.floor(bet * 1.5);
+                user["inventory"]["money"] += Math.floor(bet * 2.5);
+
+                save_user(user);
+                bot_message.edit(
+                  print_BJ(
+                    user["id"],
+                    player_hand,
+                    dealer_hand,
+                    Math.floor(bet),
+                    true,
+                    "Blackjack! Voitit " +
+                      Math.floor(bet * 1.5) +
+                      emojies["coin"],
+                    5348864,
+                    history_log,
+                    user
+                  )
+                );
+                bj[user["id"]].stop();
+                return;
+              } else if (player_sum == 21) {
+                stand();
+
+                return;
+              } else if (player_sum > 21) {
+                user["game_blackjack"]["over"] += 1;
+                user["game_blackjack"]["games_lost"] += 1;
+                user["game_blackjack"]["money_lost"] += Math.floor(bet);
+
+                save_user(user);
+                bot_message.clearReactions();
+                bot_message.edit(
+                  print_BJ(
+                    user["id"],
+                    player_hand,
+                    dealer_hand,
+                    Math.floor(bet),
+                    false,
+                    "Jakaja voitti! Hävisit " +
+                      Math.floor(bet) +
+                      emojies["coin"],
+                    9381414,
+                    history_log,
+                    user
+                  )
+                );
+                bj[user["id"]].stop();
+              } else {
+                bot_message.edit(
+                  print_BJ(
+                    user["id"],
+                    player_hand,
+                    dealer_hand,
+                    Math.floor(bet),
+                    true,
+                    " ",
+                    user["info"]["color"],
+                    history_log,
+                    user
+                  )
+                );
+              }
             }
 
-          ]
+            function stand() {
+              history_log.push("" + emojies["S_"]);
+              bot_message.clearReactions();
+
+              // katsoo summan -> jakaa ->
+              user["game_blackjack"]["stand"] += 1;
+
+              save_user(user);
+
+              let player_sum = calculate_sum(player_hand, false, 21);
+
+              while (true) {
+                let jakaja_sum = calculate_sum(dealer_hand, false, 21);
+
+                let sum_2 = 0;
+                for (let k = 0; k < dealer_hand.length; k++) {
+                  if (parseInt(dealer_hand[k].replace(/\D/g, "")) == 1) {
+                    sum_2 += 1;
+                  } else if (parseInt(dealer_hand[k].replace(/\D/g, "")) > 10) {
+                    sum_2 += 10;
+                  } else {
+                    sum_2 += parseInt(dealer_hand[k].replace(/\D/g, ""));
+                  }
+                }
+
+                // Katsoo jos player voitti tai hävisi suoraan
+                if (jakaja_sum == 21 && dealer_hand.length == 2) {
+                  user["game_blackjack"]["games_lost"] += 1;
+                  user["game_blackjack"]["money_lost"] += Math.floor(bet);
+
+                  save_user(user);
+
+                  bot_message.edit(
+                    print_BJ(
+                      user["id"],
+                      player_hand,
+                      dealer_hand,
+                      Math.floor(bet),
+                      false,
+                      "Jakajan Blackjack! Hävisit " +
+                        Math.floor(bet) +
+                        emojies["coin"],
+                      9381414,
+                      history_log,
+                      user
+                    )
+                  );
+                  bj[user["id"]].stop();
+                  return;
+                } else if (jakaja_sum > 21) {
+                  user["game_blackjack"]["games_won"] += 1;
+                  user["game_blackjack"]["money_won"] += Math.floor(bet);
+                  user["inventory"]["money"] += Math.floor(bet * 2);
+
+                  save_user(user);
+
+                  bot_message.edit(
+                    print_BJ(
+                      user["id"],
+                      player_hand,
+                      dealer_hand,
+                      Math.floor(bet),
+                      false,
+                      "Jakaja meni yli! Voitit " +
+                        Math.floor(bet) +
+                        emojies["coin"],
+                      5348864,
+                      history_log,
+                      user
+                    )
+                  );
+                  bj[user["id"]].stop();
+                  return;
+                } else if (jakaja_sum >= 17) {
+                  if (jakaja_sum > player_sum) {
+                    user["game_blackjack"]["games_lost"] += 1;
+                    user["game_blackjack"]["money_lost"] += Math.floor(bet);
+                    user["game_blackjack"]["less"] += 1;
+
+                    save_user(user);
+
+                    bot_message.edit(
+                      print_BJ(
+                        user["id"],
+                        player_hand,
+                        dealer_hand,
+                        Math.floor(bet),
+                        false,
+                        "Jakaja voitti! Hävisit " +
+                          Math.floor(bet) +
+                          emojies["coin"],
+                        9381414,
+                        history_log,
+                        user
+                      )
+                    );
+                    bj[user["id"]].stop();
+                    return;
+                  } else if (jakaja_sum == player_sum) {
+                    user["game_blackjack"]["games_lost"] += 1;
+                    user["game_blackjack"]["money_lost"] += Math.floor(bet);
+                    user["game_blackjack"]["tie"] += 1;
+
+                    save_user(user);
+
+                    bot_message.edit(
+                      print_BJ(
+                        user["id"],
+                        player_hand,
+                        dealer_hand,
+                        Math.floor(bet),
+                        false,
+                        "Jakaja voitti! Hävisit " +
+                          Math.floor(bet) +
+                          emojies["coin"],
+                        9381414,
+                        history_log,
+                        user
+                      )
+                    );
+                    bj[user["id"]].stop();
+                    return;
+                  } else {
+                    user["game_blackjack"]["games_won"] += 1;
+                    user["game_blackjack"]["money_won"] += Math.floor(bet);
+                    user["inventory"]["money"] += Math.floor(bet * 2);
+
+                    save_user(user);
+
+                    bot_message.edit(
+                      print_BJ(
+                        user["id"],
+                        player_hand,
+                        dealer_hand,
+                        Math.floor(bet),
+                        false,
+                        "Voitit: " + Math.floor(bet) + emojies["coin"],
+                        5348864,
+                        history_log,
+                        user
+                      )
+                    );
+                    bj[user["id"]].stop();
+                    return;
+                  }
+                } else {
+                  dealer_hand = deal_card(user["id"], dealer_hand, user);
+                }
+              }
+            }
+
+            function double() {
+              history_log.push("" + emojies["D_"]);
+              bot_message.clearReactions();
+              // katsoo summan -> jakaa ->
+
+              user["game_blackjack"]["double"] += 1;
+              user["inventory"]["money"] -= bet;
+
+              player_hand = deal_card(user["id"], player_hand, user);
+              player_sum = calculate_sum(player_hand, false, 21);
+
+              if (player_sum > 21) {
+                user["game_blackjack"]["over"] += 1;
+                user["game_blackjack"]["games_lost"] += 1;
+                user["game_blackjack"]["money_lost"] += Math.floor(bet * 2);
+
+                save_user(user);
+
+                msg.channel.send(
+                  print_BJ(
+                    user["id"],
+                    player_hand,
+                    dealer_hand,
+                    Math.floor(bet) * 2,
+                    false,
+                    "Jakaja voitti! Hävisit " +
+                      Math.floor(bet * 2) +
+                      emojies["coin"],
+                    9381414,
+                    history_log,
+                    user
+                  )
+                );
+                bj[user["id"]].stop();
+                return;
+              }
+
+              while (true) {
+                jakaja_sum = calculate_sum(dealer_hand, false, 21);
+
+                let sum_2 = 0;
+                for (let k = 0; k < dealer_hand.length; k++) {
+                  if (parseInt(dealer_hand[k].replace(/\D/g, "")) == 1) {
+                    sum_2 += 1;
+                  } else if (parseInt(dealer_hand[k].replace(/\D/g, "")) > 10) {
+                    sum_2 += 10;
+                  } else {
+                    sum_2 += parseInt(dealer_hand[k].replace(/\D/g, ""));
+                  }
+                }
+
+                // Katsoo jos player voitti tai hävisi suoraan
+                if (jakaja_sum == 21 && dealer_hand.length == 2) {
+                  user["game_blackjack"]["games_lost"] += 1;
+                  user["game_blackjack"]["money_lost"] += Math.floor(bet * 2);
+
+                  save_user(user);
+
+                  bot_message.edit(
+                    print_BJ(
+                      user["id"],
+                      player_hand,
+                      dealer_hand,
+                      Math.floor(bet) * 2,
+                      false,
+                      "Jakajan Blackjack! Hävisit " +
+                        Math.floor(bet * 2) +
+                        emojies["coin"],
+                      9381414,
+                      history_log,
+                      user
+                    )
+                  );
+                  bj[user["id"]].stop();
+                  return;
+                } else if (jakaja_sum > 21) {
+                  user["game_blackjack"]["games_won"] += 1;
+                  user["game_blackjack"]["money_won"] += Math.floor(bet * 2);
+                  user["inventory"]["money"] += Math.floor(bet * 2 * 2);
+
+                  save_user(user);
+
+                  bot_message.edit(
+                    print_BJ(
+                      user["id"],
+                      player_hand,
+                      dealer_hand,
+                      Math.floor(bet) * 2,
+                      false,
+                      "Jakaja meni yli! Voitit " +
+                        Math.floor(bet * 2) +
+                        emojies["coin"],
+                      5348864,
+                      history_log,
+                      user
+                    )
+                  );
+                  bj[user["id"]].stop();
+                  return;
+                } else if (jakaja_sum >= 17) {
+                  if (jakaja_sum >= player_sum) {
+                    user["game_blackjack"]["games_lost"] += 1;
+                    user["game_blackjack"]["money_lost"] += Math.floor(bet * 2);
+                    user["game_blackjack"]["less"] += 1;
+
+                    save_user(user);
+
+                    bot_message.edit(
+                      print_BJ(
+                        user["id"],
+                        player_hand,
+                        dealer_hand,
+                        Math.floor(bet) * 2,
+                        false,
+                        "Jakaja voitti! Hävisit " +
+                          Math.floor(bet * 2) +
+                          emojies["coin"],
+                        9381414,
+                        history_log,
+                        user
+                      )
+                    );
+                    bj[user["id"]].stop();
+                    return;
+                  } else {
+                    user["game_blackjack"]["games_won"] += 1;
+                    user["game_blackjack"]["money_won"] += Math.floor(bet * 2);
+                    user["inventory"]["money"] += Math.floor(bet * 2 * 2);
+
+                    save_user(user);
+
+                    bot_message.edit(
+                      print_BJ(
+                        user["id"],
+                        player_hand,
+                        dealer_hand,
+                        Math.floor(bet) * 2,
+                        false,
+                        "Voitit: " + Math.floor(bet * 2) + emojies["coin"],
+                        5348864,
+                        history_log,
+                        user
+                      )
+                    );
+                    bj[user["id"]].stop();
+                    return;
+                  }
+                } else {
+                  // Jaa uusi kortti
+                  dealer_hand = deal_card(user["id"], dealer_hand, user);
+                }
+              }
+            }
+          });
+
+        // Tool commands for BJ
+
+        function check_deck() {
+          var deck_ref = firebase.database().ref("global_data/deck");
+          deck_ref.on("value", function(d) {
+            deck = d.val();
+          });
+
+          if (deck == undefined) {
+            deck = [];
+            for (let m = 0; m < 3; m++) {
+              for (let p = 1; p < 14; p++) {
+                deck.push(p + "S");
+              }
+              for (let h = 1; h < 14; h++) {
+                deck.push(h + "H");
+              }
+              for (let r = 1; r < 14; r++) {
+                deck.push(r + "C");
+              }
+              for (let ru = 1; ru < 14; ru++) {
+                deck.push(ru + "D");
+              }
+            }
+          } else if (deck.length < 15) {
+            deck = [];
+            for (let m = 0; m < 3; m++) {
+              for (let p = 1; p < 14; p++) {
+                deck.push(p + "S");
+              }
+              for (let h = 1; h < 14; h++) {
+                deck.push(h + "H");
+              }
+              for (let r = 1; r < 14; r++) {
+                deck.push(r + "C");
+              }
+              for (let ru = 1; ru < 14; ru++) {
+                deck.push(ru + "D");
+              }
+            }
+          }
+
+          firebase
+            .database()
+            .ref("global_data/deck")
+            .set(deck);
+        }
+
+        function get_deck() {
+          var deck_ref = firebase.database().ref("global_data/deck");
+          var deck;
+          deck_ref.on("value", d => {
+            deck = d.val();
+          });
+          return deck;
+        }
+
+        function set_deck(deck) {
+          firebase
+            .database()
+            .ref("global_data/deck")
+            .set(deck);
+        }
+
+        function deal_card(_player, _hand, _user) {
+          // Adds new card to the hand
+          var deck = get_deck();
+          let player = _player;
+          let hand = _hand;
+          var rnd_c = Math.floor(Math.random() * Math.floor(deck.length));
+
+          hand.push(deck[rnd_c]);
+          deck.splice(rnd_c, 1);
+
+          user["game_blackjack"]["cards_played"] += 1;
+          set_deck(deck);
+          save_user(_user);
+          return hand;
+        }
+
+        function calculate_sum(_hand, _dealer_first, _threshhold) {
+          //  Calculates sum of cards for a hand
+          let hand = _hand;
+          let dealer_first = _dealer_first;
+
+          let sum = 0;
+          let threshhold = _threshhold;
+          let len;
+
+          if (dealer_first == true) {
+            len = hand.length - 1;
+          } else {
+            len = hand.length;
+          }
+
+          for (let k = 0; k < len; k++) {
+            if (parseInt(hand[k].replace(/\D/g, "")) == 1) {
+              sum += 11;
+            } else if (parseInt(hand[k].replace(/\D/g, "")) > 10) {
+              sum += 10;
+            } else {
+              sum += parseInt(hand[k].replace(/\D/g, ""));
+            }
+          }
+
+          for (let x = 0; x < hand.length; x++) {
+            if (sum > threshhold) {
+              if (parseInt(hand[x].replace(/\D/g, "")) == 1) {
+                sum -= 10;
+              }
+            }
+          }
+          return sum;
+        }
+
+        function print_BJ(
+          _user,
+          _player_hand,
+          _dealer_hand,
+          _bet,
+          _first_time,
+          _info_text,
+          _color,
+          _history_log,
+          _User
+        ) {
+          // Prints embed message that contains BJ game
+          var dealer_hand_str = "";
+          var player_hand_str = "";
+
+          var dealer_sum = 0;
+          var player_sum = 0;
+
+          var avatar = " ";
+          var username = " ";
+          var user = _user;
+          var color = _color;
+
+          var history = "";
+
+          dealer_sum = calculate_sum(_dealer_hand, _first_time, 21);
+          player_sum = calculate_sum(_player_hand, false, 21);
+
+          let count = 0;
+          for (let card of _dealer_hand) {
+            if (count == 1 && _first_time) {
+              dealer_hand_str += emojies["back"];
+            } else {
+              dealer_hand_str += "" + emojies[card];
+            }
+            count++;
+          }
+          for (let card of _player_hand) {
+            player_hand_str += "" + emojies[card];
+          }
+
+          let sum = 0;
+          for (let k = 0; k < _player_hand.length; k++) {
+            if (parseInt(_player_hand[k].replace(/\D/g, "")) == 1) {
+              sum += 1;
+            } else if (parseInt(_player_hand[k].replace(/\D/g, "")) > 10) {
+              sum += 10;
+            } else {
+              sum += parseInt(_player_hand[k].replace(/\D/g, ""));
+            }
+          }
+
+          dealer_hand_str += "\nYht: " + dealer_sum;
+          player_hand_str += "\nYht: " + player_sum;
+
+          avatar = client.users.get(user).avatarURL;
+          username = client.users.get(user).username;
+
+          for (var i of _history_log) {
+            history += i;
+          }
+          return {
+            embed: {
+              color: color,
+              author: {
+                name: "BLACKJACK",
+                icon_url: avatar
+              },
+              description:
+                "Rahat: " +
+                _User["inventory"]["money"] +
+                emojies["coin"] +
+                ", Panos: " +
+                _bet +
+                emojies["coin"],
+              fields: [
+                {
+                  name: "***Jakaja:***",
+                  value: dealer_hand_str,
+                  inline: false
+                },
+                {
+                  name: "***" + username + ":***",
+                  value: player_hand_str + "\n" + _info_text,
+                  inline: true
+                },
+
+                {
+                  name: "***Historia:***",
+                  value: history,
+                  inline: true
+                }
+              ],
+              footer: {
+                text: "Kortteja jäljellä: " + deck.length
+              }
+            }
+          };
         }
       });
-
-      draw_lootbox_weighted(msg.author.id, 14400, 1, 800);
-
-      firebase.database().ref('profiles').set(data);
-
-
-    }
-
+    });
   },
 
-  'ryhmäpeli': (msg) => {
-    if (msg.channel.id != "280272696560975872") return msg.delete();
-    var message;
-    ref.on('value', gotData, errData);
+  slot: msg => {
+    const ALLOWED_CHANNELS = ["494044533479440384", "280272696560975872"];
+    const SLOTRATE = 30;
 
-    let bet = msg.content.split(' ')[1];
-    if ((bet == '' || bet === undefined)) {
-      bet = 100;
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        if (!ALLOWED_CHANNELS.includes(msg.channel.id)) return msg.delete();
+
+        let bet = msg.content.split(" ")[1];
+        var starting_money = user["inventory"]["money"];
+
+        try {
+          bet = eval(bet);
+        } catch (err) {
+          bet = bet;
+        }
+
+        if (bet == "e") {
+          bet = 272;
+        } else if (bet == "pi") {
+          bet = 314;
+        } else if ((bet + "").startsWith("log(")) {
+          try {
+            bet = Math.log(parseFloat(bet)) * 100;
+          } catch (err) {
+            return msg.channel.send("Virhe logaritmissä!");
+          }
+        }
+
+        let min_bet = Math.floor(starting_money / (SLOTRATE * 10)) * 10;
+
+        if (min_bet < 5) {
+          min_bet = 5;
+        }
+
+        if (bet == "min") {
+          bet = "" + min_bet;
+        }
+        if (bet == "max") {
+          bet = "" + (starting_money);
+        }
+        if (bet == "puolet") {
+          bet = "" + (starting_money / 2);
+        }
+
+        if (bet == 0)
+          return msg.channel.send(
+            "Panos pitää olla vähintään " + min_bet + emojies["coin"]
+          );
+        if (bet == "" || bet === undefined) {
+          bet = "" + min_bet;
+        }
+
+        bet = "" + bet;
+        if (bet.slice(-1) == "k") {
+          bet = Math.floor(1000*parseFloat(bet));
+        }
+        else if (bet.slice(-1) == "m") {
+          bet = Math.floor(1000000*parseFloat(bet));
+        }
+
+        if (isNaN(bet))
+          return msg.channel.send("Panos tarvitsee olla positiivinen luku");
+        if (bet < min_bet)
+          return msg.channel.send(
+            "Panos pitää olla vähintään " + min_bet + emojies["coin"]
+          );
+
+        bet = Math.floor(bet);
+
+        try {
+          if (starting_money < bet)
+            return msg.channel.send(`Sulla ei oo varaa uhkapelata.`);
+          user["inventory"]["money"] -= bet;
+          user["game_slot"]["all_bets"] += bet;
+
+          const tpog = 7;
+          const tsasu = 35;
+          const tkarvis = 28;
+          const talfa = 18;
+          const tjesilmero = 12;
+
+          const pog1_v = 2;
+          const pog2_v = 35;
+          const pog3_v = 400;
+          const sasu_v = 4;
+          const karvis_v = 8;
+          const alfa_v = 32;
+          const jesilmero_v = 85;
+
+          var win_line = [];
+          for (var i = 0; i < 3; i++) {
+            var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
+            if (rnd <= tkarvis) {
+              win_line.push(emojies["karvis"]);
+            } else if (rnd <= tsasu + tkarvis) {
+              win_line.push(emojies["sasu"]);
+            } else if (rnd <= tsasu + tkarvis + talfa) {
+              win_line.push(emojies["alfa"]);
+            } else if (rnd <= tsasu + tkarvis + tjesilmero + talfa) {
+              win_line.push(emojies["jesilmero"]);
+            } else {
+              win_line.push(emojies["poggers"]);
+            }
+          }
+
+          var winnings;
+          if (
+            win_line[0] == emojies["poggers"] &&
+            win_line[1] == emojies["poggers"] &&
+            win_line[2] == emojies["poggers"]
+          ) {
+            winnings = pog3_v * bet;
+            win_line = [poggersrow, poggersrow, poggersrow];
+            user["inventory"]["money"] += winnings;
+            user["game_slot"]["wins"]["poggers3"] += 1;
+          } else if (
+            win_line[0] == emojies["poggers"] &&
+            win_line[1] == emojies["poggers"]
+          ) {
+            winnings = pog2_v * bet;
+            user["inventory"]["money"] += winnings;
+            user["game_slot"]["wins"]["poggers2"] += 1;
+            // poggers x 2
+          } else if (win_line[0] == emojies["poggers"]) {
+            winnings = pog1_v * bet;
+            user["inventory"]["money"] += winnings;
+            user["game_slot"]["wins"]["poggers1"] += 1;
+            // poggers x 1
+          } else if (
+            win_line[0] == win_line[1] &&
+            win_line[0] == win_line[2] &&
+            win_line[1] == win_line[2]
+          ) {
+            if (win_line[0] == emojies["alfa"]) {
+              winnings = alfa_v * bet;
+              user["game_slot"]["wins"]["alfa"] += 1;
+              user["inventory"]["money"] += winnings;
+            } else if (win_line[0] == emojies["karvis"]) {
+              winnings = karvis_v * bet;
+              user["game_slot"]["wins"]["karvis"] += 1;
+              user["inventory"]["money"] += winnings;
+            } else if (win_line[0] == emojies["sasu"]) {
+              winnings = sasu_v * bet;
+              user["game_slot"]["wins"]["sasu"] += 1;
+              user["inventory"]["money"] += winnings;
+            } else if (win_line[0] == emojies["jesilmero"]) {
+              winnings = jesilmero_v * bet;
+              user["game_slot"]["wins"]["jesilmero"] += 1;
+              user["inventory"]["money"] += winnings;
+            }
+          } else {
+            winnings = 0;
+          }
+
+          if (winnings > 0) {
+            user["game_slot"]["money_won"] += winnings;
+            user["game_slot"]["games_won"] += 1;
+            user["game_slot"]["games"] += 1;
+          } else {
+            user["game_slot"]["money_lost"] += bet;
+            user["game_slot"]["games_lost"] += 1;
+            user["game_slot"]["games"] += 1;
+          }
+        } catch (err) {
+          msg.channel.send(`Tapahtui virhe.`);
+          console.log(err);
+        }
+
+        if (
+          user["inventory"]["money"] > user["basic_statistics"]["peak_money"]
+        ) {
+          user["basic_statistics"]["peak_money"] = user["inventory"]["money"];
+        }
+
+        print_slot(
+          win_line[0],
+          win_line[1],
+          win_line[2],
+          winnings,
+          user,
+          msg,
+          bet
+        );
+
+        var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
+        var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
+
+        var weight = map(bet, 0, (inc+mon)/2,  25, 3);
+        if (bet < 10*user["inventory"]["income"]) {
+          weight = 100;
+        }
+        draw_lootbox(user["id"], weight, true);
+
+        firebase
+          .database()
+          .ref("users/" + user["id"])
+          .update(user);
+        msg.delete();
+
+        function print_slot(
+          _first_roll,
+          _second_roll,
+          _third_roll,
+          _win_amount,
+          user,
+          msg,
+          _bet
+        ) {
+          // Prints slot results
+          var starting_money = user["inventory"]["money"];
+          var min_bet = Math.floor(starting_money / (SLOTRATE * 10)) * 10;
+          if (min_bet < 5) {
+            min_bet = 5;
+          }
+
+          const tpog = 7;
+          const tsasu = 35;
+          const tkarvis = 28;
+          const talfa = 18;
+          const tjesilmero = 12;
+
+          var rnd = [];
+          for (var i = 0; i < 6; i++) {
+            var rnda = Math.floor(Math.random() * Math.floor(100 + 1));
+            if (rnda <= tkarvis) {
+              rnd.push(emojies["karvis"]);
+            } else if (rnda <= tsasu + tkarvis) {
+              rnd.push(emojies["sasu"]);
+            } else if (rnda <= tsasu + tkarvis + talfa) {
+              rnd.push(emojies["alfa"]);
+            } else if (rnda <= tsasu + tkarvis + tjesilmero + talfa) {
+              rnd.push(emojies["jesilmero"]);
+            } else {
+              rnd.push(emojies["poggers"]);
+            }
+          }
+
+          let color = user["info"]["color"];
+          if (_win_amount > 0) {
+            color = 5348864;
+          }
+
+          var str =
+            "Rahat: " +
+            starting_money +
+            emojies["coin"] +
+            ", Panos: " +
+            _bet +
+            emojies["coin"] +
+            "\n\n" +
+            "⬛️|        " +
+            rnd[0] +
+            "    |    " +
+            rnd[1] +
+            "    |    " +
+            rnd[2] +
+            "        |⬛️\n" +
+            "▶️|        " +
+            _first_roll +
+            "    |    " +
+            _second_roll +
+            "    |    " +
+            _third_roll +
+            "        |◀️\n" +
+            "⬛️|        " +
+            rnd[3] +
+            "    |    " +
+            rnd[4] +
+            "    |    " +
+            rnd[5] +
+            "        |⬛️\n" +
+            "\nVoitit: " +
+            _win_amount +
+            emojies["coin"] +
+            ", Min panos: " +
+            min_bet +
+            emojies["coin"];
+
+          msg.channel.send({
+            embed: {
+              color: color,
+              author: {
+                name: "SLOTTIPOTTI",
+                icon_url:
+                  "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
+              },
+              fields: [
+                {
+                  name: "***" + user["name"] + "***",
+                  value: str
+                }
+              ]
+            }
+          });
+        }
+      });
+    });
+  },
+
+  harpoon: msg => {
+    msg.delete();
+    var user;
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        let multi = 1;
+        if (user["inventory"]["golden_harpoon"]) {
+          multi = 5;
+          color = 16093987;
+          icon = emojies["harpoon"];
+        } else {
+          multi = 1;
+          color = 1006999;
+          icon = "";
+        }
+
+        if (user["inventory"]["money"] < 50 * multi) {
+          return msg.channel.send(
+            "Tarvitset vähintään " + 50 * multi + emojies["coin"] + "!"
+          );
+        }
+
+        user["inventory"]["money"] -= 50 * multi;
+        user["game_harpoon"]["games"] += 1;
+
+        if (user["id"] in harpoon_collectors) {
+          harpoon_collectors[user["id"]].stop();
+          user["game_harpoon"]["money_lost"] += 50 * multi;
+          user["game_harpoon"]["games_lost"] += 1;
+          delete harpoon_collectors[user["id"]];
+        }
+
+        const W = 18;
+        const H = 10;
+
+        var field_matrix = [];
+        for (var i = 0; i < H; i++) {
+          field_matrix[i] = [];
+          for (var j = 0; j < W; j++) {
+            if (i == H - 1) {
+              field_matrix[i][j] = 8;
+            } else {
+              field_matrix[i][j] = 0;
+            }
+          }
+        }
+
+        field_matrix[H - 1][0] = 9; // boat
+
+        //////////
+        var whale_rarity = 15;
+        var balloon_rarity = 3;
+        var shark_rarity = 1.5;
+        //////////
+
+        if (user["inventory"]["whale_breeding_program"]) {
+          whale_rarity = 10;
+        }
+
+        var shark_rnd = Math.floor(
+          Math.random() * Math.floor(shark_rarity + 1)
+        );
+        var balloon_rnd = Math.floor(
+          Math.random() * Math.floor(balloon_rarity + 1)
+        );
+        var whale_rnd = Math.floor(
+          Math.random() * Math.floor(whale_rarity + 1)
+        );
+
+        if (whale_rnd == 1) {
+          var whale_tile = Math.floor(Math.random() * Math.floor(W - 2));
+          field_matrix[H - 1][whale_tile + 3] = 3;
+        }
+        if (balloon_rnd == 1) {
+          var balloon_x = Math.floor(Math.random() * Math.floor(W - 4 + 1)) + 3;
+          var balloon_y = Math.floor(Math.random() * Math.floor(H - 3));
+          field_matrix[balloon_y][balloon_x] = 2;
+        }
+        if (shark_rnd == 1) {
+          while (true) {
+            var shark_tile = Math.floor(Math.random() * Math.floor(W - 2));
+            if (field_matrix[H - 1][shark_tile + 2] != 3) {
+              field_matrix[H - 1][shark_tile + 2] = 1;
+              break;
+            } else {
+              continue;
+            }
+          }
+        }
+        if (shark_rnd != 1 && balloon_rnd != 1 && whale_rnd != 1) {
+          var shark_tile = Math.floor(Math.random() * Math.floor(W - 2));
+          field_matrix[H - 1][shark_tile + 2] = 1;
+        }
+
+        // Print
+        field = get_field_string(field_matrix, multi);
+
+        let wind = Math.floor(Math.random() * Math.floor(10 + 1)) - 5;
+        wind_str = get_wind_string(wind);
+
+        msg.channel
+          .send({
+            embed: {
+              color: color,
+              author: {
+                name: "HARPOON: " + user["name"],
+                icon_url:
+                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
+              },
+              fields: [
+                {
+                  name: icon + " Tuuli: " + wind_str,
+                  value: field
+                },
+                {
+                  name: "Ammu kirjoittamalla: ",
+                  value: tokens.prefix + "ammu <asteet> <voima> (1-90°, 1-100)."
+                }
+              ]
+            }
+          })
+          .then(m => {
+            msg[user["id"]] = m;
+          });
+
+        save_user(user);
+
+        function get_field_string(_field_matrix, multi) {
+          let trail = "";
+          if (multi == 5) {
+            trail = "🔸";
+          } else {
+            trail = "▫️";
+          }
+
+          new_field = "";
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              if (_field_matrix[y][x] == 0) {
+                new_field += "⬛️";
+              } else if (_field_matrix[y][x] == 8) {
+                new_field += "🌊";
+              } else if (_field_matrix[y][x] == 1) {
+                new_field += "🦈";
+              } else if (_field_matrix[y][x] == 2) {
+                new_field += "🎈";
+              } else if (_field_matrix[y][x] == 3) {
+                new_field += "🐳";
+              } else if (_field_matrix[y][x] == 9) {
+                new_field += "🚢";
+              } else if (_field_matrix[y][x] == 6) {
+                new_field += trail;
+              } else if (_field_matrix[y][x] == 7) {
+                new_field += "💥";
+              } else if (_field_matrix[y][x] == 4) {
+                new_field += "💦";
+              }
+            }
+            new_field += "\n";
+          }
+          return new_field;
+        }
+
+        function get_wind_string(wind) {
+          wind_str = "";
+
+          if (wind < 0) {
+            for (let i = 0; i < Math.abs(wind); i++) {
+              wind_str += "⏪";
+            }
+          } else if (wind == 0) {
+            wind_str = "0";
+          } else {
+            for (let i = 0; i < Math.abs(wind); i++) {
+              wind_str += "⏩";
+            }
+          }
+          return wind_str;
+        }
+
+        harpoon_collectors[user["id"] + ""] = msg.channel.createCollector(
+          m => m
+        );
+        harpoon_collectors[user["id"] + ""].on("message", m => {
+          if (
+            m.content.startsWith(tokens.prefix + "ammu") &&
+            user["id"] == m.author.id
+          ) {
+            m.delete();
+
+            let deg = m.content.split(" ")[1];
+            let force = m.content.split(" ")[2];
+
+            if (isNaN(deg) || isNaN(force))
+              return msg.channel.send(
+                "Kulma tarvitsee olla välillä 1-90 astetta ja voima välillä 1-100"
+              );
+            if (deg < 1 || deg > 90)
+              return msg.channel.send(
+                "Kulma tarvitsee olla välillä 1-90 astetta ja voima välillä 1-100"
+              );
+
+            shoot_harpoon(deg, force, wind, field_matrix, user);
+            //draw_lootbox_weighted(user["id"], 14400, 1, 800);
+            harpoon_collectors[user["id"]].stop();
+            delete harpoon_collectors[user["id"]];
+            delete msg[user["id"]];
+          } else if (m.content.startsWith(tokens.prefix + "lopeta")) {
+            msg.channel.send("Lopetetaan harppuuna.").then(() => {
+              user["game_harpoon"]["money_lost"] += 50 * multi;
+              user["game_harpoon"]["games_lost"] += 1;
+              harpoon_collectors[user["id"]].stop();
+              delete harpoon_collectors[user["id"]];
+              delete msg[user["id"]];
+            });
+          }
+          save_user(user);
+        });
+
+        function shoot_harpoon(_deg, _force, _wind, _field_matrix, user) {
+          harpoon_collectors[user["id"]].stop();
+          let multi = 1;
+          if (user["inventory"]["golden_harpoon"] == true) {
+            multi = 5;
+          } else {
+            multi = 1;
+          }
+
+          let field_matrix = _field_matrix;
+
+          let c_w = W * 10;
+          let c_h = H * 10;
+
+          let _x = 0;
+          let _y = c_w - (c_h / H) * (H - 1);
+
+          let g = -0.2;
+
+          let f_x = Math.cos((_deg / 180) * Math.PI) * _force;
+          let f_y = Math.sin((_deg / 180) * Math.PI) * _force;
+
+          let i = 0;
+          let flag = true;
+
+          while (flag) {
+            i++;
+
+            _x = _x + ((_wind / 5) * i) / 2000 + f_x / 100;
+            _y = _y - ((g * i) / 100 + f_y / 100);
+
+            if (_x <= 0 || _x > c_w) {
+              user["game_harpoon"]["money_lost"] += 50 * multi;
+              user["game_harpoon"]["games_lost"] += 1;
+              break;
+            }
+            if (_y >= c_h) {
+              user["game_harpoon"]["money_lost"] += 50 * multi;
+              user["game_harpoon"]["games_lost"] += 1;
+              break;
+            }
+
+            _xtile = Math.floor((_x / c_w) * W);
+            _ytile = Math.floor((_y / c_h) * H);
+
+            if (_xtile == 0 && _ytile == H - 1) {
+              continue;
+            }
+
+            try {
+              // OSUMAT
+              win_text = "Ammuit ohi... -" + 50 * multi + emojies["coin"];
+
+              if (field_matrix[_ytile][_xtile] == 1) {
+                win_text =
+                  "Osuit haihin! Voitit: " + 150 * multi + emojies["coin"];
+
+                user["game_harpoon"]["hits"] += 1;
+                user["game_harpoon"]["targets"]["shark"] += 1;
+                user["game_harpoon"]["money_won"] += 150 * multi;
+                user["game_harpoon"]["games_won"] += 1;
+                user["inventory"]["money"] += 150 * multi;
+
+                field_matrix[_ytile][_xtile] = 7;
+                flag = false;
+                break;
+              }
+              if (field_matrix[_ytile][_xtile] == 2) {
+                win_text =
+                  "Osuit palloon! Voitit: " + 250 * multi + emojies["coin"];
+
+                user["game_harpoon"]["hits"] += 1;
+                user["game_harpoon"]["targets"]["balloon"] += 1;
+                user["game_harpoon"]["money_won"] += 250 * multi;
+                user["game_harpoon"]["games_won"] += 1;
+                user["inventory"]["money"] += 250 * multi;
+
+                field_matrix[_ytile][_xtile] = 7;
+                flag = false;
+                break;
+              }
+              if (field_matrix[_ytile][_xtile] == 3) {
+                win_text =
+                  "Osuit valaaseen! Voitit " + 1000 * multi + emojies["coin"];
+
+                user["game_harpoon"]["hits"] += 1;
+                user["game_harpoon"]["targets"]["whale"] += 1;
+                user["game_harpoon"]["money_won"] += 1000 * multi;
+                user["game_harpoon"]["games_won"] += 1;
+                user["inventory"]["money"] += 1000 * multi;
+
+                field_matrix[_ytile][_xtile] = 7;
+                flag = false;
+                break;
+              }
+
+              if (_ytile == H - 1) {
+                field_matrix[_ytile][_xtile] = 4;
+                flag = false;
+                user["game_harpoon"]["money_lost"] += 50 * multi;
+                user["game_harpoon"]["games_lost"] += 1;
+                break;
+              }
+
+              field_matrix[_ytile][_xtile] = 6;
+            } catch (err) {
+              continue;
+            }
+          }
+
+          new_field = get_field_string(field_matrix, multi);
+          wind_str = get_wind_string(wind);
+
+          if (multi == 5) {
+            color = 16093987;
+            icon = emojies["harpoon"];
+          } else {
+            color = 1006999;
+            icon = "";
+          }
+
+          draw_lootbox(user["id"], 5, true);
+
+          msg[user["id"]].edit({
+            embed: {
+              color: color,
+              author: {
+                name: "HARPOON: " + user["name"],
+                icon_url:
+                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbDL3_tJo_6dJjnVd0hUZMhIIm5NPacOTVJB1yuKU_v0B4zXNtKg"
+              },
+              fields: [
+                {
+                  name: icon + " Ammuit:",
+                  value: "Kulma: " + _deg + "°, Voima: " + _force + "."
+                },
+                {
+                  name: "Tuuli: " + wind_str,
+                  value: new_field
+                },
+                {
+                  name: "Tulos:",
+                  value: win_text
+                }
+              ]
+            }
+          });
+        }
+      });
+    });
+  },
+
+  ryhmäpeli: async msg => {
+    var message;
+    await check_user_in_database(msg.author.id);
+    var users = await get_all_users();
+
+    let bet = msg.content.split(" ")[1];
+    if (bet == "" || bet == undefined) {
+      bet = "100";
     }
+
+    if (bet.slice(-1) == "k") {
+      bet = Math.floor(1000*parseFloat(bet));
+    }
+    else if (bet.slice(-1) == "m") {
+      bet = Math.floor(1000000*parseFloat(bet));
+    }
+
     if (isNaN(bet)) return msg.channel.send("Panos tarvitsee olla luku");
-    if (bet < 100) return msg.channel.send(`Ryhmäpelin panos pitää olla vähintään 100 ` + coins);
+    if (bet < 100)
+      return msg.channel.send(
+        `Ryhmäpelin panos pitää olla vähintään 100 ` + emojies["coin"]
+      );
 
     bet = Math.floor(bet);
 
-    msg.channel.send("***" + data[msg.author.id]["nimi"] + "*** loi ryhmäpelin panoksella " + bet + coins + ". Liity mukaan painamalla ✅")
+    msg.channel
+      .send(
+        "***" +
+          users[msg.author.id]["name"] +
+          "*** loi ryhmäpelin panoksella " +
+          bet +
+          emojies["coin"] +
+          ". Liity mukaan painamalla ✅"
+      )
       .then(function(msg) {
         message = msg;
         msg.react("✅");
-      }).catch(function() {
+      })
+      .catch(function() {
         //Something
       });
 
     let co = msg.channel.createCollector(m => m);
-    co.on('collect', m => {
-      if (m.content.startsWith(tokens.prefix + 'aloita') && msg.author.id == m.author.id) {
+    co.on("collect", m => {
+      if (
+        m.content.startsWith(tokens.prefix + "aloita") &&
+        msg.author.id == m.author.id
+      ) {
         draw(message);
-      } else if (m.content.startsWith(tokens.prefix + 'keskeytä')) {
-        msg.channel.send('Keskeytetään ryhmäpeli.').then(() => {
+      } else if (m.content.startsWith(tokens.prefix + "keskeytä")) {
+        msg.channel.send("Keskeytetään ryhmäpeli.").then(() => {
           co.stop();
           message = null;
         });
       }
     });
-
 
     function draw(_message) {
       msgreact = _message.reactions.array();
@@ -1762,20 +2879,18 @@ const commands = {
       var ironman_players = [];
 
       for (var i = 0; i < participators.length; i++) {
-        if (participators[i] == "430827809418772481") {
-
-        } else if (data[participators[i]] == undefined) {
+        var usr = client.users.get(participators[i]);
+        if (usr.bot) {
+        } else if (users[participators[i]] == undefined) {
           failures.push(participators[i]);
-        } else if (data[participators[i]]["omistus"]["rahat"] < bet) {
+        } else if (users[participators[i]]["inventory"]["money"] < bet) {
           no_enough_money.push(participators[i]);
-        } else if ("ironman" in data[participators[i]]) {
+        } else if (users[participators[i]]["ironman"]) {
           ironman_players.push(participators[i]);
         } else {
           successful_players.push(participators[i]);
         }
       }
-
-      console.log(successful_players, no_enough_money, failures);
 
       var successful = "";
       for (var i of successful_players) {
@@ -1784,587 +2899,354 @@ const commands = {
 
       var unsuccessful = "";
       for (var i of failures) {
-
         unsuccessful += "<@" + i + ">\n";
       }
 
       var no_enough_moneys = "";
       for (var i of no_enough_money) {
-
         no_enough_moneys += "<@" + i + ">\n";
       }
 
       var ironman_players_t = "";
       for (var i of ironman_players) {
-
         ironman_players_t += "<@" + i + ">\n";
       }
 
       co.stop();
       var ep = "";
       var ra = "";
-      if (successful_players.length < 2) return msg.channel.send("Ei ole tarpeeksi kelvollisia osallistuja!");
+      var ir = "";
+      if (successful_players.length < 2)
+        return msg.channel.send("Ei ole tarpeeksi kelvollisia osallistuja!");
       if (failures.length > 0) {
-        ep = "\nError 404:\n" + unsuccessful;
+        ep = "Error 404:\n" + unsuccessful;
       }
       if (no_enough_money.length > 0) {
-        ra = "\nLiian köyhät:\n" + no_enough_moneys;
+        ra = "Liian köyhät:\n" + no_enough_moneys;
       }
       if (ironman_players.length > 0) {
-        ir = "\nIronmanit:\n" + ironman_players_t;
+        ir = "Ironmanit:\n" + ironman_players_t;
       }
       var all_money = bet * successful_players.length;
-      var rnd = Math.floor(Math.random() * Math.floor(successful_players.length));
+      var rnd = Math.floor(
+        Math.random() * Math.floor(successful_players.length)
+      );
       var winner = successful_players[rnd];
 
       for (var part of successful_players) {
-
-        user_check_database(part);
-        user_check_database(winner);
-
-        data[part]["omistus"]["rahat"] -= bet;
-
-        data[part]["pelit"]["ryhmäpelit"] += 1;
+        users[part]["inventory"]["money"] -= bet;
+        users[part]["game_ryhmäpeli"]["games"] += 1;
 
         if (part != winner) {
-          data[part]["pelit"]["ryhmäpelihäviöt_yht"] += bet;
+          users[part]["game_ryhmäpeli"]["money_lost"] += bet;
+          users[part]["game_ryhmäpeli"]["games_lost"] += 1;
+          save_user(users[part]);
         }
-
-        draw_lootbox_weighted(part, 14400, 1, 1200);
-
       }
 
-      data[winner]["pelit"]["ryhmäpelivoitot_yht"] += (all_money - bet);
-      data[winner]["pelit"]["ryhmäpelivoitot"] += 1;
-      data[winner]["omistus"]["rahat"] += all_money;
+      users[winner]["game_ryhmäpeli"]["money_won"] += all_money - bet;
+      users[winner]["game_ryhmäpeli"]["games_won"] += 1;
+      users[winner]["inventory"]["money"] += all_money;
 
-      if (data[winner]["omistus"]["rahat"] > data[winner]["omistus"]["maxrahat"]) {
-        data[winner]["omistus"]["maxrahat"] = data[winner]["omistus"]["rahat"]
-      }
+      check_peak(users[winner]);
+      save_user(users[winner]);
 
-      msg.channel.send("Ryhmäpelin potti: " + all_money + coins + "\nVoittaja on: <@" + winner + ">\n\nOsallistuneet pelaajat:\n" + successful + "\n" + ra + ep + ir);
-      firebase.database().ref('profiles').set(data);
+      msg.channel.send(
+        "Ryhmäpelin potti: " +
+          all_money +
+          emojies["coin"] +
+          "\nVoittaja on: <@" +
+          winner +
+          ">\n\nOsallistuneet pelaajat:\n" +
+          successful +
+          "\n" +
+          ra +
+          ep +
+          ir
+      );
     }
   },
 
-  'slot': (msg) => {
+  ktem: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        const MIN = 500;
 
-    let bet = msg.content.split(' ')[1];
-    if (msg.channel.id != "280272696560975872") return msg.delete();
-    const SLOTRATE = 30;
-    var starting_money = data[msg.author.id]["omistus"]["rahat"];
-    try {
-      bet = eval(bet);
-    } catch (err) {
-      bet = bet;
-    }
-    if (bet == "e") {
-      bet = 272;
-    } else if (bet == "pi") {
-      bet = 314;
-    } else if ((bet + "").startsWith("log(")) {
-      try {
-        bet = Math.log(bet.replace(/\D/g, '')) * 100;
-      } catch (err) {
-        return msg.channel.send("Virhe logaritmissä!");
-      }
-    }
+        let starting_money = user["inventory"]["money"];
+        let peak_money = user["basic_statistics"]["peak_money"];
 
-    let min_bet = Math.floor(data[msg.author.id]["omistus"]["rahat"] / (SLOTRATE * 10)) * 10;
+        if (user["inventory"]["money"] < MIN)
+          return msg.channel.send(
+            "Tarvitset vähintään " +
+              MIN +
+              " " +
+              emojies["coin"] +
+              " pelataksesi kaikki tai ei mitään."
+          );
 
-    if (min_bet < 5) {
-      min_bet = 5
-    }
+        var rnd = Math.floor(Math.random() * Math.floor(1000) + 1);
 
-    if (bet == "min") {
-      bet = min_bet;
-    }
-    if (bet == "max") {
-      bet = data[msg.author.id]["omistus"]["rahat"];
-    }
-    if (bet == "puolet") {
-      bet = data[msg.author.id]["omistus"]["rahat"] / 2;
-    }
-
-    if (bet == 0) return msg.channel.send(`Panos pitää olla vähintään ` + min_bet + ' coins');
-    if ((bet == '' || bet === undefined)) {
-      bet = min_bet;
-    }
-    if (isNaN(bet)) return msg.channel.send("Panos tarvitsee olla positiivinen luku");
-    if (bet < min_bet) return msg.channel.send(`Panos pitää olla vähintään ` + min_bet + ' coins');
-
-    bet = Math.floor(bet);
-
-    ref.on('value', gotData, errData);
-
-    try {
-
-      if (data[msg.author.id]["omistus"]["rahat"] < bet) return msg.channel.send(`Sulla ei oo varaa uhkapelata.`);
-      data[msg.author.id]["omistus"]["rahat"] -= bet;
-      data[msg.author.id]["pelit"]["slot_häviöt_yhteensä"] += bet;
-
-      const tpog = 7;
-      const tsasu = 35;
-      const tkarvis = 28;
-      const talfa = 18;
-      const tmeloni = 12;
-
-      const pog1_v = 2;
-      const pog2_v = 35;
-      const pog3_v = 400;
-      const sasu_v = 4;
-      const karvis_v = 8;
-      const alfa_v = 32;
-      const meloni_v = 85;
-
-      var win_line = [];
-      for (var i = 0; i < 3; i++) {
-        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-        if (rnd <= tkarvis) {
-          win_line.push(karvis);
-        } else if (rnd <= tsasu + tkarvis) {
-          win_line.push(sasu);
-        } else if (rnd <= tsasu + tkarvis + talfa) {
-          win_line.push(kys);
-        } else if (rnd <= tsasu + tkarvis + tmeloni + talfa) {
-          win_line.push(protect);
-        } else {
-          win_line.push(poggers);
-        }
-      }
-
-
-      var winnings;
-      if (win_line[0] == poggers && win_line[1] == poggers && win_line[2] == poggers) {
-        winnings = pog3_v * bet;
-        win_line = [poggersrow, poggersrow,poggersrow]
-        data[msg.author.id]["omistus"]["rahat"] += winnings;
-        data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["poggers3"] += 1;
-      } else if (win_line[0] == poggers && win_line[1] == poggers) {
-        winnings = pog2_v * bet;
-        data[msg.author.id]["omistus"]["rahat"] += winnings;
-        data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["poggers2"] += 1;
-        // poggers x 2
-      } else if (win_line[0] == poggers) {
-        winnings = pog1_v * bet;
-        data[msg.author.id]["omistus"]["rahat"] += winnings;
-        data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["poggers1"] += 1;
-        // poggers x 1
-      } else if (win_line[0] == win_line[1] && win_line[0] == win_line[2] && win_line[1] == win_line[2]) {
-
-        if (win_line[0] == kys) {
-          winnings = alfa_v * bet;
-          data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["alfa"] += 1;
-          data[msg.author.id]["omistus"]["rahat"] += winnings;
-
-        } else if (win_line[0] == karvis) {
-          winnings = karvis_v * bet;
-          data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["karvis"] += 1;
-          data[msg.author.id]["omistus"]["rahat"] += winnings;
-
-        } else if (win_line[0] == sasu) {
-          winnings = sasu_v * bet;
-          data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["sasu"] += 1;
-          data[msg.author.id]["omistus"]["rahat"] += winnings;
-
-        } else if (win_line[0] == protect) {
-          winnings = meloni_v * bet;
-          data[msg.author.id]["pelit"]["slot_yksittäisvoitot"]["meloni"] += 1;
-          data[msg.author.id]["omistus"]["rahat"] += winnings;
-        }
-      } else {
-        winnings = 0;
-      }
-
-      if (winnings > 0) {
-        data[msg.author.id]["pelit"]["slot_voitot_yhteensä"] += winnings;
-        data[msg.author.id]["pelit"]["slot_voitot"] += 1;
-        data[msg.author.id]["pelit"]["slot_pelit"] += 1;
-      } else {
-        data[msg.author.id]["pelit"]["slot_pelit"] += 1;
-      }
-    } catch (err) {
-      user_check_database(msg.author.id);
-      msg.channel.send(`Tapahtui virhe datan kanssa. Korjattu! Kokeile uudelleen.`);
-    }
-
-    if (data[msg.author.id]["omistus"]["rahat"] > data[msg.author.id]["omistus"]["maxrahat"]) {
-      data[msg.author.id]["omistus"]["maxrahat"] = data[msg.author.id]["omistus"]["rahat"]
-    }
-
-
-    firebase.database().ref('profiles').set(data);
-    print_slot(win_line[0], win_line[1], win_line[2], winnings, msg.author.id, msg, bet);
-    msg.delete();
-
-    function print_slot(_first_roll, _second_roll, _third_roll, _win_amount, target_id, msg, _bet) {
-
-      // Prints slot results
-
-      ref.on('value', gotData, errData);
-
-      var starting_money = data[target_id]["omistus"]["rahat"];
-      var min_bet = Math.floor(starting_money / (SLOTRATE * 10)) * 10
-      if (min_bet < 5) {
-        min_bet = 5;
-      }
-
-      const tpog = 7;
-      const tsasu = 35;
-      const tkarvis = 28;
-      const talfa = 18;
-      const tmeloni = 12;
-
-      var rnd = [];
-      for (var i = 0; i < 6; i++) {
-        var rnda = Math.floor(Math.random() * Math.floor(100 + 1));
-        if (rnda <= tkarvis) {
-          rnd.push(karvis);
-        } else if (rnda <= tsasu + tkarvis) {
-          rnd.push(sasu);
-        } else if (rnda <= tsasu + tkarvis + talfa) {
-          rnd.push(kys);
-        } else if (rnda <= tsasu + tkarvis + tmeloni + talfa) {
-          rnd.push(protect);
-        } else {
-          rnd.push(poggers);
-        }
-      }
-      let color = 9381414;
-      if (_win_amount > 0) {
-        color = 5348864;
-      }
-
-      var str = "Rahat: " + starting_money + coins + ", Panos: " + _bet + coins + "\n\n" +
-      "⬛️|        " + rnd[0] + "    |    " + rnd[1] + "    |    " + rnd[2] +"        |⬛️\n" +
-      "▶️|        " + _first_roll + "    |    " + _second_roll + "    |    " + _third_roll + "        |◀️\n" +
-      "⬛️|        " + rnd[3] + "    |    " + rnd[4] + "    |    " + rnd[5] +"        |⬛️\n" +
-      "\nVoitit: " + _win_amount + coins + ", Min panos: " + min_bet + coins;
-
-      msg.channel.send({
-        "embed": {
-          "color": color,
-          "author": {
-            "name": "SLOTTIPOTTI",
-            "icon_url": "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
-          },
-          "fields": [{
-            "name": "***" + data[target_id]["nimi"] + "***",
-            "value": str
-          }]
-        }
-      });
-
-      let basic_income = data[msg.author.id]["omistus"]["perustulo"];
-
-      var weight = map(bet, min_bet, (basic_income*2500 + starting_money/2.5)/2, 1, 10);
-      if (bet < 5*basic_income) {
-        weight = 0.2;
-      }
-      draw_lootbox_weighted(msg.author.id, 14400, weight, 550);
-      firebase.database().ref('profiles').set(data);
-
-    }
-
-  },
-
-  'kaikkitaieimitään': (msg) => {
-
-    if (msg.channel.id != "280272696560975872") return msg.delete();
-    var player = msg.author.id;
-    user_check_database(player);
-    const MIN = 500;
-
-    let starting_money = data[player]["omistus"]["rahat"];
-    let peak_money = data[player]["omistus"]["maxrahat"];
-
-    if (data[player]["omistus"]["rahat"] < MIN) return msg.channel.send("Tarvitset vähintään " + MIN + " " + coins + " pelataksesi kaikki tai ei mitään.");
-
-    var rnd = Math.floor(Math.random() * Math.floor(1000) + 1);
-
-    if (rnd % 2 == 0) {
-      data[player]["omistus"]["rahat"] *= 2;
-      msg.channel.send({
-        "embed": {
-          "color": 5348864,
-          "image": {
-            "url": "https://i.ytimg.com/vi/F39Y67DzHTM/hqdefault.jpg"
-          },
-          "fields": [{
-            "name": "***VOITIT: " + data[player]["omistus"]["rahat"] / 2 + coins + "***",
-            "value": "Rollasit: " + rnd + ". (Parillinen = winnings, Pariton = Häviö)"
-          }, {
-            "name": "Rahat nyt:",
-            "value": "" + data[player]["omistus"]["rahat"] + coins
-          }]
-        }
-      });
-
-      data[player]["pelit"]["KTEM_voitetut_pelit"] += 1;
-      data[player]["pelit"]["KTEM_voitot"] += data[player]["omistus"]["rahat"] / 2;
-
-    } else {
-
-      data[player]["pelit"]["KTEM_häviöt"] += data[player]["omistus"]["rahat"];
-      msg.channel.send({
-        "embed": {
-          "color": 9381414,
-          "image": {
-            "url": "https://static.naamapalmu.com/files/pp/big/v7vkeefs.jpg"
-          },
-          "fields": [{
-              "name": "***HÄVISIT: " + data[player]["omistus"]["rahat"] + coins + "***",
-              "value": "Rollasit: " + rnd + ". (Parillinen = winnings, Pariton = Häviö)"
-            },
-            {
-              "name": "Rahat nyt:",
-              "value": "0" + coins
+        if (rnd % 2 == 0) {
+          user["inventory"]["money"] *= 2;
+          msg.channel.send({
+            embed: {
+              color: 5348864,
+              image: {
+                url: "https://i.ytimg.com/vi/F39Y67DzHTM/hqdefault.jpg"
+              },
+              fields: [
+                {
+                  name:
+                    "***VOITIT: " +
+                    user["inventory"]["money"] / 2 +
+                    emojies["coin"] +
+                    "***",
+                  value:
+                    "Rollasit: " +
+                    rnd +
+                    ". (Parillinen = winnings, Pariton = Häviö)"
+                },
+                {
+                  name: "Rahat nyt:",
+                  value: "" + user["inventory"]["money"] + emojies["coin"]
+                }
+              ]
             }
-          ]
+          });
+
+          user["game_KTEM"]["games_won"] += 1;
+          user["game_KTEM"]["money_won"] += user["inventory"]["money"] / 2;
+        } else {
+          user["game_KTEM"]["money_lost"] += user["inventory"]["money"];
+          msg.channel.send({
+            embed: {
+              color: 9381414,
+              image: {
+                url: "https://static.naamapalmu.com/files/pp/big/v7vkeefs.jpg"
+              },
+              fields: [
+                {
+                  name:
+                    "***HÄVISIT: " +
+                    user["inventory"]["money"] +
+                    emojies["coin"] +
+                    "***",
+                  value:
+                    "Rollasit: " +
+                    rnd +
+                    ". (Parillinen = Voitto, Pariton = Häviö)"
+                },
+                {
+                  name: "Rahat nyt:",
+                  value: "0" + emojies["coin"]
+                }
+              ]
+            }
+          });
+          user["inventory"]["money"] = 0;
         }
+
+        if (
+          user["inventory"]["money"] > user["basic_statistics"]["peak_money"]
+        ) {
+          user["basic_statistics"]["peak_money"] = user["inventory"]["money"];
+        }
+        user["game_KTEM"]["games"] += 1;
+        user["game_KTEM"]["all_bets"] += user["inventory"]["money"];
+
+        var inc = 1000; /// TODO
+        var weight = map(starting_money, 0, inc,  9, 1);
+        if (starting_money < 10*user["inventory"]["income"]) {
+          weight = 100;
+        }
+
+        draw_lootbox(user["id"], weight, true);
+        save_user(user);
       });
-      data[player]["omistus"]["rahat"] = 0;
-    }
-
-    if (data[player]["omistus"]["rahat"] > data[player]["omistus"]["maxrahat"]) {
-      data[player]["omistus"]["maxrahat"] = data[player]["omistus"]["rahat"];
-    }
-    data[player]["pelit"]["KTEM_pelit"] += 1;
-
-    let basic_income = data[msg.author.id]["omistus"]["perustulo"];
-
-    let weight = map(starting_money, 500, basic_income*2000, 1, 10);
-    draw_lootbox_weighted(msg.author.id, 14400, weight, 4800);
-
-    firebase.database().ref('profiles').set(data);
+    });
   },
 
-  'voittotaulu': (msg) => {
-    msg.channel.send({
-      "embed": {
-        "color": 15466496,
-        "author": {
-          "name": "SLOTTIPOTTI - VOITOT:",
-          "icon_url": "https://ih1.redbubble.net/image.517537251.7910/flat,800x800,075,f.u2.jpg"
-        },
-        "fields": [{
-            "name": (sasu + " ").repeat(3) + ":",
-            "value": "4 x panos\n"
-          },
-          {
-            "name": (karvis + " ").repeat(3) + ":",
-            "value": "8 x panos\n"
-          },
-          {
-            "name": (kys + " ").repeat(3) + ":",
-            "value": "32 x panos\n"
-          },
-          {
-            "name": (protect + " ").repeat(3) + ":",
-            "value": "85 x panos\n"
-          },
-          {
-            "name": poggers + tyhjä + tyhjä + ":",
-            "value": "2 x panos\n"
-          },
-          {
-            "name": poggers + " " + poggers + tyhjä + ":",
-            "value": "35 x panos\n"
-          },
-          {
-            "name": (poggers + " ").repeat(3) + ":",
-            "value": "400 x panos\n"
-          },
-          {
-            "name": "Palautusprosentti:",
-            "value": "110,75%"
-          }
-        ]
-      }
-    });
-
-
-  },
-
-  'pelidata': (msg) => {
-
-    ref.on('value', gotData, errData);
-
-    user_check_database(msg.author.id);
-
-    var w_l = {};
-    for (var id in data) {
-      user_check_database(id);
-      if (isNaN(id)) continue;
-      key = id;
-      value = data[id]["omistus"]["rahat"];
-      w_l[key] = value;
-    }
-
-    var items = Object.keys(w_l).map(function(key) {
-      return {
-        id: key,
-        val: w_l[key]
-      };
-    });
-
-    items = items.sort(function(a, b) {
-      return ((a.val > b.val) ? -1 : ((a.val == b.val) ? 0 : 1));
-    });
-
-    let name = msg.content.split(' ')[1];
-
-    if (name == undefined || name == "") {
-      name = msg.author.id;
-    }
-    name = name.replace(/\D/g, '');
-    var target_id = name;
-    user_check_database(target_id);
-
-    if (target_id == items[0]["id"]) {
-      massikeisari = "\:moneybag:___ MASSIKEISARI___\:moneybag:\n";
+  kalasta: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
+    var rod_tier = 0;
+    // Rods
+    if (user["inventory"]["key_items"]["hyper_rod"]) {
+      rod_tier = 3;
+    } else if (user["inventory"]["key_items"]["super_rod"]) {
+      rod_tier = 2;
+    } else if (user["inventory"]["key_items"]["rod"]) {
+      rod_tier = 1;
     } else {
-      massikeisari = "";
+      return msg.channel.send("Sulla ei oo onkea! :(");
+    }
+    var date = new Date();
+    var hour = date.getHours();
+    var part_day = "";
+    var time;
+    if (hour > 6 && hour <= 10) {
+      part_day = "M";
+      time = "Aamu";
+    }
+    if (hour > 10 && hour <= 18) {
+      part_day = "A";
+      time = "Päivä";
+    }
+    if (hour > 18 && hour <= 23) {
+      part_day = "E";
+      time = "Ilta";
+    }
+    if (hour > 23 || hour <= 6) {
+      part_day = "N";
+      time = "Yö";
+    }
+    if ("fishing_timer" in user)
+      return msg.channel.send("Olet jo kalastamassa!");
+    if ("fishing_boat_timer" in user)
+      return msg.channel.send("Olet jo kalastamassa!");
+    let argument = msg.content.split(" ")[1];
+    let depth = msg.content.split(" ")[2];
+    switch (argument) {
+      case "su":
+        argument = "supersytti";
+        break;
+      case "hy":
+        argument = "hypersytti";
+        break;
+      case "me":
+        argument = "meri";
+        break;
+      case "jo":
+        argument = "joki";
+        break;
+      case "jä":
+        argument = "järvi";
+        break;
     }
 
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
-
-    var money = data[target_id]["omistus"]["rahat"];
-    var pelit = data[target_id]["pelit"]["slot_pelit"];
-    var voitot = data[target_id]["pelit"]["slot_voitot"];
-    var yht = data[target_id]["pelit"]["slot_voitot_yhteensä"];
-    var poggers3 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["poggers3"];
-    var poggers2 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["poggers2"];
-    var poggers1 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["poggers1"];
-    var karvis1 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["karvis"];
-    var sasu1 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["sasu"];
-    var kys1 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["alfa"];
-    var protect1 = data[target_id]["pelit"]["slot_yksittäisvoitot"]["meloni"];
-    var vast = data[target_id]["omistus"]["saadut_rahat"];
-    var ann = data[target_id]["omistus"]["annetut_rahat"];
-    var kaikkit = data[target_id]["pelit"]["KTEM_voitot"];
-    var kaikkitpelit = data[target_id]["pelit"]["KTEM_pelit"];
-    var kaikkithäv = data[target_id]["pelit"]["KTEM_häviöt"];
-    var kaikkitvoit = data[target_id]["pelit"]["KTEM_voitetut_pelit"];
-    var perustulo = data[target_id]["omistus"]["perustulo"];
-    var ryhmäpelit = data[target_id]["pelit"]["ryhmäpelit"];
-    var ryhmäpelivoitot = data[target_id]["pelit"]["ryhmäpelivoitot"];
-    var ryhmäpeliwinningssumma = data[target_id]["pelit"]["ryhmäpelivoitot_yht"];
-    var ryhmäpelihäviösumma = data[target_id]["pelit"]["ryhmäpelihäviöt_yht"];
-    var maxrahat = data[target_id]["omistus"]["maxrahat"];
-
-    var bjpelit = data[target_id]["pelit"]["BJ_pelit"];
-    var bjvoitot = data[target_id]["pelit"]["BJ_voitetut_pelit"];
-    var bjhäviöt = data[target_id]["pelit"]["BJ_hävityt_pelit"];
-    var bjw = (parseInt(bjvoitot)*100/parseInt(bjpelit)).toFixed(2);
-    var bjvr = data[target_id]["pelit"]["BJ_voitetut_rahat"];
-    var vjhr = data[target_id]["pelit"]["BJ_hävityt_rahat"];
-    var bjnetto = (parseInt(bjvr) - parseInt(vjhr));
-
-    var _tulokone = " ";
-    var _tuloimu = " ";
-    if ("tulokoneajastin" in data[target_id]) {
-
-      if (data[target_id]["tulokoneajastin"]["tulokonetier"] == 1) {
-        var _tulokone_icon = tulokone;
-        var tulokone_name = "Tulokone"
-      }
-      else if (data[target_id]["tulokoneajastin"]["tulokonetier"] == 2) {
-        var _tulokone_icon = tulokone_x;
-        var tulokone_name = "Tulokone-X"
-      }
-      else if (data[target_id]["tulokoneajastin"]["tulokonetier"] == 4) {
-        var _tulokone_icon = tulokiihdytin;
-        var tulokone_name = "Tulokiihdytin"
-      }
-
-      _tulokone = "\n" + _tulokone_icon + " " + tulokone_name + " päällä (" + data[target_id]["tulokoneajastin"]["tulokoneaika"] + "mins jäljellä): " + data[target_id]["tulokoneajastin"]["tulokonetier"]*10 + " x perustulo. Saatu: " + data[target_id]["tulokoneajastin"]["summa"] + coins;
-    }
-    if ("tuloimuajastin" in data[target_id]) {
-      _tuloimu = "\n" + tuloimu + " Tuloimu päällä (" + data[target_id]["tuloimuajastin"]["tuloimuaika"] + "mins jäljellä): Kohde: <@" + data[target_id]["tuloimuajastin"]["kohde"] + ">. Imetty: " + data[target_id]["tuloimuajastin"]["summa"] + coins;
+    switch (depth) {
+      case "pi":
+        depth = "pinta";
+        break;
+      case "ke":
+        depth = "keski";
+        break;
+      case "po":
+        depth = "pohja";
+        break;
+      case "syvä":
+        depth = "pohja";
+        break;
+      case "sy":
+        depth = "pohja";
+        break;
+      case "matala":
+        depth = "pinta";
+        break;
+      case "ma":
+        depth = "pinta";
+        break;
     }
 
-    msg.channel.send({
-      "embed": {
-        "title": "***PELIDATA: " + data[target_id]["nimi"] + "***",
-        "color": 15466496,
-        "fields": [{
-            "name": "***___Tiedot:___***",
-            "value": massikeisari + "Rahat: " + money + coins + " (\:moneybag: " + data[target_id]["omistus"]["rahapussi"] + ")\nPeak rahat: " + maxrahat + coins + "\nPerustulo: " + perustulo + coins + _tulokone + _tuloimu
-          },
-          {
-            "name": "***___Slotit:___***",
-            "value": "Pelit: " + pelit + "\nVoitetut pelit: " + voitot +
-              "\nVoitetut rahat: " + yht + " coins\n\n" +
-              ("" + poggers).repeat(3) + ": " + poggers3 + "\n" +
-              ("" + protect).repeat(3) + ": " + protect1 + "\n" +
-              ("" + kys).repeat(3) + ": " + kys1 + "\n" +
-              ("" + poggers).repeat(2) + tyhjä + ": " + poggers2 + "\n" +
-              ("" + karvis).repeat(3) + ": " + karvis1 + "\n" +
-              ("" + sasu).repeat(3) + ": " + sasu1 + "\n" +
-              poggers + ("" + tyhjä).repeat(2) + ": " + poggers1 + "\n"
+    var arguments = ["joki", "meri", "järvi", "supersytti", "hypersytti"];
+    var depths = ["pinta", "keski", "pohja"];
 
-          },
-          {
-            "name": "***___Kaikki tai ei mitään:___***",
-            "value": "Pelit: " + kaikkitpelit + "\nVoittojen määrä: " + kaikkitvoit + "\nVoitetut rahat: " + kaikkit + coins + "\nHävityt rahat: " + kaikkithäv + coins
-          },
-          {
-            "name": "***___Ryhmäpelit:___***",
-            "value": "Pelit: " + ryhmäpelit + "\nVoitot: " + ryhmäpelivoitot + "\nVoitetut rahat: " + ryhmäpeliwinningssumma + coins + "\nHävityt rahat: " + ryhmäpelihäviösumma + coins
-          },
-          {
-            "name": "***___Harpoon:___***",
-            "value": "Pelit: " + data[target_id]["pelit"]["harpoon_pelit"] + "\nOsumat: " + data[target_id]["pelit"]["harpoon_osumat"] + "\nVoitetut rahat: " + data[target_id]["pelit"]["harpoon_voitetut"] + coins
-            + "\nHävityt rahat: " + data[target_id]["pelit"]["harpoon_hävityt"] + coins + "\nAccuracy: "
-            + (parseInt(data[target_id]["pelit"]["harpoon_osumat"])/parseInt(data[target_id]["pelit"]["harpoon_pelit"])*100).toFixed(2) + "% \n🦈: "
-            + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_hai"] + "\n🎈: " + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_pallo"]
-            + "\n🐳: " + data[target_id]["pelit"]["harpoon_yksittäiset"]["harpoon_valas"]
-          },
-          {
-            "name": "***___BJ:___***",
-            "value":
-            "Pelit: " + bjpelit +
-            "\nVoitot: " + bjvoitot +
-            "\nHäviöt: " + bjhäviöt +
-            "\nW%: " + bjw + "%" +
-            "\nVoitetut rahat: " + bjvr + coins +
-            "\nHävityt rahat: " + vjhr + coins +
-            "\nNetto: " + bjnetto + coins
-          },
-          {
-            "name": "***___Siirrot:___***",
-            "value": "Annetut rahat: " + ann + coins + "\nVastaanotetut rahat: " + vast + coins
-          }
-        ]
-      }
+    if (argument == "" || argument == undefined)
+      return msg.channel.send("Kirjoita paikka tai sytti!");
+    if (!arguments.includes(argument))
+      return msg.channel.send(
+        "Virheellinen paikka tai syötti! Kirjoita joko joki, meri, järvi tai erikoisyötti."
+      );
 
-    });
+    if (depth == "" || depth == undefined)
+      return msg.channel.send("Kirjoita syvyys! (pinta, keski tai pohja)");
+    if (!depths.includes(depth))
+      return msg.channel.send(
+        "Virheellinen syvyys! Kirjoita joko pinta, keski tai pohja."
+      );
 
+    var bait;
+    var place;
+    if (argument == "supersytti") {
+      bait = 2;
+      if (user["inventory"]["items"]["super_bait"] < 1)
+        return msg.channel.send("Sulla ei ole supersyttiä!");
+      user["inventory"]["items"]["super_bait"] -= 1;
+      user["game_kalastus"]["super_bait_consumed"] += 1;
+    } else if (argument == "hypersytti") {
+      bait = 3;
+      if (user["inventory"]["items"]["hyper_bait"] < 1)
+        return msg.channel.send("Sulla ei ole hypersyttiä!");
+      user["inventory"]["items"]["hyper_bait"] -= 1;
+      user["game_kalastus"]["hyper_bait_consumed"] += 1;
+    } else {
+      bait = 1;
+      if (user["inventory"]["items"]["bait"] < 1)
+        return msg.channel.send("Sulla ei ole syttiä!");
+      user["inventory"]["items"]["bait"] -= 1;
+      user["game_kalastus"]["bait_consumed"] += 1;
+    }
 
+    if (argument == "joki") {
+      place = "joki";
+      user["game_kalastus"]["in_river"] += 1;
+    } else if (argument == "järvi") {
+      place = "järvi";
+      user["game_kalastus"]["in_lake"] += 1;
+    } else {
+      place = "meri";
+      user["game_kalastus"]["in_sea"] += 1;
+    }
+    if (depth == "pohja") {
+      user["game_kalastus"]["bot"] += 1;
+    }
+    if (depth == "keski") {
+      user["game_kalastus"]["mid"] += 1;
+    }
+    if (depth == "pinta") {
+      user["game_kalastus"]["top"] += 1;
+    }
 
-    firebase.database().ref('profiles').set(data);
+    if (rod_tier == 1) {
+      user["game_kalastus"]["rod_used"] += 1;
+    }
+    if (rod_tier == 2) {
+      user["game_kalastus"]["super_rod_used"] += 1;
+    }
+    if (rod_tier == 3) {
+      user["game_kalastus"]["hyper_rod_used"] += 1;
+    }
 
+    user["fishing_timer"] = start_fishing(
+      user,
+      part_day,
+      bait,
+      place,
+      depth,
+      rod_tier
+    );
+    msg.channel.send("Kalastetaan!");
+    save_user(user);
   },
 
-  'kalasta' : (msg) => {
+  kalastusvene: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
 
-    ref.on('value', gotData, errData);
-    var has_rod = data[msg.author.id]["omistus"]["onki"];
-    var has_rod2 = data[msg.author.id]["omistus"]["lasikuituonki"];
-
-    if (has_rod == true || has_rod2 == true) {
+    var rod_tier = 0;
+    // Rods
+    if (user["inventory"]["key_items"]["hyper_rod"]) {
+      rod_tier = 3;
+    } else if (user["inventory"]["key_items"]["super_rod"]) {
+      rod_tier = 2;
+    } else if (user["inventory"]["key_items"]["rod"]) {
+      rod_tier = 1;
     } else {
-      return msg.channel.send("Sulla ei ole vielä onkea...");
+      return msg.channel.send("Sulla ei oo onkea! :(");
     }
+
+    if (!user["inventory"]["key_items"]["fishing_boat"])
+      return msg.channel.send("Sulla ei ole kalastusvenettä!");
 
     var date = new Date();
     var hour = date.getHours();
@@ -2372,1210 +3254,2070 @@ const commands = {
     var time;
 
     if (hour > 6 && hour <= 10) {
-      part_day = "A";
+      part_day = "M";
       time = "Aamu";
     }
     if (hour > 10 && hour <= 18) {
-      part_day = "P";
+      part_day = "A";
       time = "Päivä";
     }
     if (hour > 18 && hour <= 23) {
-      part_day = "I";
+      part_day = "E";
       time = "Ilta";
     }
     if (hour > 23 || hour <= 6) {
-      part_day = "Y";
+      part_day = "N";
       time = "Yö";
     }
-    if ("kalastusajastin" in data[msg.author.id]) return msg.channel.send("Olet jo kalastamassa!");
 
-    let depth = msg.content.split(' ')[1];
-    let distance = msg.content.split(' ')[2];
-    let extra = msg.content.split(' ')[3];
+    if ("fishing_timer" in user)
+      return msg.channel.send("Olet jo kalastamassa!");
+    if ("fishing_boat_timer" in user)
+      return msg.channel.send("Olet jo kalastamassa!");
 
-    var extras = ["joki", "meri", "järvi", "supersytti", "hypersytti"];
-    if (isNaN(depth) || isNaN(distance)) return msg.channel.send("Syvyys tarvitsee olla välillä 1-10 ja matka välillä 1-100m (joki 10m)");
-    if (depth < 1 || depth > 10) return msg.channel.send("Syvyys tarvitsee olla välillä 1-10 ja matka välillä 1-100m (joki 10m)");
-    if (distance < 1 || distance > 100) return msg.channel.send("Syvyys tarvitsee olla välillä 1-10 ja matka välillä 1-100m (joki 10m)");
-    if (extra == "" || extra == undefined) return msg.channel.send("Kirjoita paikka tai sytti!");
-    if (!extras.includes(extra)) return msg.channel.send("Virheellinen paikka tai syötti! Kirjoita joko joki, meri, järvi tai erikoisyötti.");
+    let argument = msg.content.split(" ")[1];
+    var amount = msg.content.split(" ")[2];
 
-    var fishes;
-    var place;
+    switch (argument) {
+      case "su":
+        argument = "supersytti";
+        break;
+      case "hy":
+        argument = "hypersytti";
+        break;
+      case "me":
+        argument = "meri";
+        break;
+      case "jo":
+        argument = "joki";
+        break;
+      case "jä":
+        argument = "järvi";
+        break;
+    }
+
+    var arguments = ["joki", "meri", "järvi", "supersytti", "hypersytti"];
+
+    if (argument == "" || argument == undefined)
+      return msg.channel.send("Kirjoita paikka tai sytti!");
+    if (!arguments.includes(argument))
+      return msg.channel.send(
+        "Virheellinen paikka tai syötti! Kirjoita joko joki, meri, järvi tai erikoisyötti."
+      );
+
+    if (amount == "" || amount === undefined) {
+      amount = 10;
+      if (argument == "supersytti") {
+        if (user["inventory"]["items"]["super_bait"] < amount) {
+          amount = user["inventory"]["items"]["super_bait"];
+        }
+      } else if (argument == "hypersytti") {
+        if (user["inventory"]["items"]["hyper_bait"] < amount) {
+          amount = user["inventory"]["items"]["hyper_bait"];
+        }
+      } else {
+        if (user["inventory"]["items"]["bait"] < amount) {
+          amount = user["inventory"]["items"]["bait"];
+        }
+      }
+    }
+
+    if (isNaN(amount)) return msg.channel.send("Syttien määrä tarvitsee olla positiivinen luku");
+    amount = Math.floor(amount);
+    if (amount == 0) return msg.channel.send("Tarvitset ainakin yhden syötin!");
+    if (amount < 1 || amount > 10) {
+      return msg.channel.send("Syöttien määrä tulee olla 1-10!");
+    }
+    if (amount == "min") {
+      amount = 1;
+    }
+    if (amount == "max") {
+      amount = 10;
+    }
+    if (amount == "puolet") {
+      amount = 10 / 2;
+    }
+
     var bait;
-    if (extra == "järvi") {
-      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole syttiä!");
-      if (!("sytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole syttiä!");
-      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] <= 0) return msg.channel.send("Sinulla ei ole syttiä!");
-
-      data[msg.author.id]["omistus"]["inventory"]["sytti"] -= 1;
-      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] == 0) {
-        delete data[msg.author.id]["omistus"]["inventory"]["sytti"];
-      }
-
-      place = "Järvi";
-      bait = sytti;
-      fishes = {
-        "Katkaravut" : {
-          "syvyys": 10,
-          "matka": 5,
-          "emoji": shrimps,
-          "paino_min": 0.01,
-          "paino_max" : 0.06,
-          "hinta" : 1900,
-          "hajonta": 3,
-          "aika" : "PAIY"
-        },
-        "Ahven" : {
-          "syvyys": 4,
-          "matka": 50,
-          "emoji": bass,
-          "paino_min": 0.1,
-          "paino_max" : 1.5,
-          "hinta" : 450,
-          "hajonta": 6,
-          "aika" : "PAI"
-        },
-        "Hummeri" : {
-          "syvyys": 10,
-          "matka": 60,
-          "emoji": lobster,
-          "paino_min": 0.2,
-          "paino_max" : 0.5,
-          "hinta" : 2000,
-          "hajonta": 1,
-          "aika" : "IY"
-        },
-        "Lohi" : {
-          "syvyys": 7,
-          "matka": 40,
-          "emoji": salmon,
-          "paino_min": 0.5,
-          "paino_max" : 5,
-          "hinta" : 200,
-          "hajonta": 5,
-          "aika" : "AI"
-        },
-        "Taimen" : {
-          "syvyys": 5,
-          "matka": 35,
-          "emoji": trout,
-          "paino_min": 0.4,
-          "paino_max" : 3,
-          "hinta" : 320,
-          "hajonta": 7,
-          "aika" : "AI"
-        },
-        "Hauki" : {
-          "syvyys": 7,
-          "matka": 80,
-          "emoji": pike,
-          "paino_min": 0.5,
-          "paino_max" : 4,
-          "hinta" : 80,
-          "hajonta": 7,
-          "aika" : "PAI"
-        },
-        "Kuha" : {
-          "syvyys": 6,
-          "matka": 30,
-          "emoji": cod,
-          "paino_min": 0.5,
-          "paino_max" : 1.5,
-          "hinta" : 150,
-          "hajonta": 4,
-          "aika" : "PAIY"
-        },
-        "Ankerias" : {
-          "syvyys": 9,
-          "matka": 80,
-          "emoji": eel,
-          "paino_min": 0.2,
-          "paino_max" : 1,
-          "hinta" : 1500,
-          "hajonta": 1,
-          "aika" : "YA"
-        }
-      }
-    }
-    else if (extra == "joki") {
-      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole syttiä!");
-      if (!("sytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole syttiä!");
-      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] <= 0) return msg.channel.send("Sinulla ei ole syttiä!");
-
-      data[msg.author.id]["omistus"]["inventory"]["sytti"] -= 1;
-      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] == 0) {
-        delete data[msg.author.id]["omistus"]["inventory"]["sytti"];
-      }
-
-      place = "Joki";
-      bait = sytti;
-      if (distance < 1 || distance > 10) return msg.channel.send("Joessa syvyys 1-10m ja matka 1-10m...");
-      fishes = {
-        "Katkaravut" : {
-          "syvyys": 10,
-          "matka": 1,
-          "emoji": shrimps,
-          "paino_min": 0.01,
-          "paino_max" : 0.06,
-          "hinta" : 750,
-          "aika" : "PAIY",
-          "hajonta" : 6
-        },
-        "Sardellit" : {
-          "syvyys": 2,
-          "matka": 3,
-          "emoji": anchovies,
-          "paino_min": 0.01,
-          "paino_max" : 0.06,
-          "hinta" : 3000,
-          "aika" : "PA",
-          "hajonta" : 4
-        },
-        "Hummeri" : {
-          "syvyys": 10,
-          "matka": 3,
-          "emoji": lobster,
-          "paino_min": 0.2,
-          "paino_max" : 0.5,
-          "hinta" : 2000,
-          "aika" : "Y",
-          "hajonta" : 1
-        },
-        "Lohi" : {
-          "syvyys": 4,
-          "matka": 9,
-          "emoji": salmon,
-          "paino_min": 0.5,
-          "paino_max" : 5,
-          "hinta" : 150,
-          "aika" : "AI",
-          "hajonta" : 2
-        },
-        "Taimen" : {
-          "syvyys": 5,
-          "matka": 4,
-          "emoji": trout,
-          "paino_min": 0.4,
-          "paino_max" : 3,
-          "hinta" : 150,
-          "aika" : "AI",
-          "hajonta" : 4
-        },
-        "Jokitaimen" : {
-          "syvyys": 7,
-          "matka": 8,
-          "emoji": leaping_trout,
-          "paino_min": 0.4,
-          "paino_max" : 3,
-          "hinta" : 290,
-          "aika" : "AIP",
-          "hajonta" : 3
-        },
-        "Jokilohi" : {
-          "syvyys": 5,
-          "matka": 7,
-          "emoji": leaping_salmon,
-          "paino_min": 0.4,
-          "paino_max" : 2.5,
-          "hinta" : 220,
-          "aika" : "AIY",
-          "hajonta" : 4
-        },
-        "Jokisampi" : {
-          "syvyys": 8,
-          "matka": 9,
-          "emoji": leaping_sturgeon,
-          "paino_min": 0.6,
-          "paino_max" : 4,
-          "hinta" : 210,
-          "aika" : "AYP",
-          "hajonta" : 2
-        }
-      }
-    }
-    else if (extra == "meri") {
-      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole syttiä!");
-      if (!("sytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole syttiä!");
-      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] <= 0) return msg.channel.send("Sinulla ei ole syttiä!");
-
-      data[msg.author.id]["omistus"]["inventory"]["sytti"] -= 1;
-      if (data[msg.author.id]["omistus"]["inventory"]["sytti"] == 0) {
-        delete data[msg.author.id]["omistus"]["inventory"]["sytti"];
-      }
-
-      place = "Meri";
-      bait = sytti;
-      fishes = {
-        "Sardellit" : {
-          "syvyys": 2,
-          "matka": 60,
-          "emoji": anchovies,
-          "paino_min": 0.01,
-          "paino_max" : 0.06,
-          "hinta" : 1200,
-          "hajonta": 7,
-          "aika" : "P"
-        },
-        "Ahven" : {
-          "syvyys": 3,
-          "matka": 62,
-          "emoji": bass,
-          "paino_min": 0.1,
-          "paino_max" : 0.7,
-          "hinta" : 650,
-          "hajonta": 4,
-          "aika" : "PAIY"
-        },
-        "Hummeri" : {
-          "syvyys": 10,
-          "matka": 65,
-          "emoji": lobster,
-          "paino_min": 0.2,
-          "paino_max" : 0.5,
-          "hinta" : 1500,
-          "hajonta": 1,
-          "aika" : "YA"
-        },
-        "Lohi" : {
-          "syvyys": 7,
-          "matka": 22,
-          "emoji": salmon,
-          "paino_min": 0.5,
-          "paino_max" : 5,
-          "hinta" : 150,
-          "hajonta": 3,
-          "aika" : "AI"
-        },
-        "Hauki" : {
-          "syvyys": 6.5,
-          "matka": 52,
-          "emoji": pike,
-          "paino_min": 0.5,
-          "paino_max" : 3,
-          "hinta" : 80,
-          "hajonta": 5,
-          "aika" : "PAI"
-        },
-        "Sardiini" : {
-          "syvyys": 2,
-          "matka": 20,
-          "emoji": sardine,
-          "paino_min": 0.05,
-          "paino_max" : 0.1,
-          "hinta" : 250,
-          "hajonta": 3,
-          "aika" : "PAIY"
-        },
-        "Silakka" : {
-          "syvyys": 3,
-          "matka": 70,
-          "emoji": herring,
-          "paino_min": 0.08,
-          "paino_max" : 0.15,
-          "hinta" : 1500,
-          "hajonta": 6,
-          "aika" : "PAIY"
-        },
-        "Kuha" : {
-          "syvyys": 6,
-          "matka": 30,
-          "emoji": cod,
-          "paino_min": 0.5,
-          "paino_max" : 3,
-          "hinta" : 80,
-          "hajonta": 6,
-          "aika" : "PAIY"
-        },
-        "Merikrotti" : {
-          "syvyys": 9,
-          "matka": 83,
-          "emoji": monkfish,
-          "paino_min": 1,
-          "paino_max" : 8,
-          "hinta" : 100,
-          "hajonta": 1,
-          "aika" : "P"
-        },
-        "Makrilli" : {
-          "syvyys": 8,
-          "matka": 70,
-          "emoji": mackerel,
-          "paino_min": 0.1,
-          "paino_max" : 0.2,
-          "hinta" : 1000,
-          "hajonta": 5,
-          "aika" : "PAY"
-        },
-        "Tonnikala" : {
-          "syvyys": 5,
-          "matka": 90,
-          "emoji": tuna,
-          "paino_min": 70,
-          "paino_max" : 333,
-          "hinta" : 2.5,
-          "hajonta": 2,
-          "aika" : "P"
-        },
-        "Merilevää" : {
-          "syvyys": 1,
-          "matka": 25,
-          "emoji": seaweed,
-          "paino_min": 0.02,
-          "paino_max" : 0.05,
-          "hinta" : 0,
-          "hajonta": 3,
-          "aika" : "P"
-        }
-      }
-    }
-    else if (extra == "supersytti") {
-      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole supersyttiä!");
-      if (!("supersytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole supersyttiä!");
-      if (data[msg.author.id]["omistus"]["inventory"]["supersytti"] <= 0) return msg.channel.send("Sinulla ei ole supersyttiä!");
-
-      data[msg.author.id]["omistus"]["inventory"]["supersytti"] -= 1;
-      if (data[msg.author.id]["omistus"]["inventory"]["supersytti"] == 0) {
-        delete data[msg.author.id]["omistus"]["inventory"]["supersytti"];
-      }
-
-      place = "Meri";
-      bait = supersytti;
-      fishes = {
-        "Hai" : {
-          "syvyys": 7,
-          "matka": 75,
-          "emoji": shark,
-          "paino_min": 500,
-          "paino_max" : 1000,
-          "hinta" : 3,
-          "hajonta": 1,
-          "aika" : "PAIY"
-        },
-        "Merikilpikonna" : {
-          "syvyys": 2,
-          "matka": 60,
-          "emoji": sea_turtle,
-          "paino_min": 30,
-          "paino_max" : 70,
-          "hinta" : 40,
-          "hajonta": 2,
-          "aika" : "PA"
-        },
-        "Miekkakala" : {
-          "syvyys": 4,
-          "matka": 50,
-          "emoji": swordfish,
-          "paino_min": 200,
-          "paino_max" : 600,
-          "hinta" : 4,
-          "hajonta": 5,
-          "aika" : "PAI"
-        },
-        "Pallokala" : {
-          "syvyys": 8,
-          "matka": 20,
-          "emoji": pufferfish,
-          "paino_min": 2,
-          "paino_max" : 22,
-          "hinta" : 125,
-          "hajonta": 7,
-          "aika" : "PAIY"
-        },
-        "Piikkirausku" : {
-          "syvyys": 9,
-          "matka": 50,
-          "emoji": manta_ray,
-          "paino_min": 1600,
-          "paino_max" : 2600,
-          "hinta" : 1,
-          "hajonta": 4,
-          "aika" : "PA"
-        },
-        "Luola-ankerias" : {
-          "syvyys": 8,
-          "matka": 80,
-          "emoji": cave_eel,
-          "paino_min": 0.2,
-          "paino_max" : 1,
-          "hinta" : 3000,
-          "hajonta": 3,
-          "aika" : "IY"
-        },
-        "Karambwan" : {
-          "syvyys": 10,
-          "matka": 5,
-          "emoji": karambwan,
-          "paino_min": 0.2,
-          "paino_max" : 2,
-          "hinta" : 1500,
-          "hajonta": 3,
-          "aika" : "PIY"
-        },
-        "Merikrotti" : {
-          "syvyys": 8,
-          "matka": 64,
-          "emoji": monkfish,
-          "paino_min": 7,
-          "paino_max" : 45,
-          "hinta" : 50,
-          "hajonta": 6,
-          "aika" : "IY"
-        },
-        "Hummeri" : {
-          "syvyys": 10,
-          "matka": 40,
-          "emoji": lobster,
-          "paino_min": 0.3,
-          "paino_max" : 1,
-          "hinta" : 1000,
-          "hajonta": 3,
-          "aika" : "Y"
-        }
-
-      }
-    }
-    else if (extra == "hypersytti") {
-      if (!("inventory" in data[msg.author.id]["omistus"])) return msg.channel.send("Sinulla ei ole hypersyttiä!");
-      if (!("hypersytti" in data[msg.author.id]["omistus"]["inventory"])) return msg.channel.send("Sinulla ei ole hypersyttiä!");
-      if (data[msg.author.id]["omistus"]["inventory"]["hypersytti"] <= 0) return msg.channel.send("Sinulla ei ole hypersyttiä!");
-
-      data[msg.author.id]["omistus"]["inventory"]["hypersytti"] -= 1;
-      if (data[msg.author.id]["omistus"]["inventory"]["hypersytti"] == 0) {
-        delete data[msg.author.id]["omistus"]["inventory"]["hypersytti"];
-      }
-
-      place = "Meri";
-      bait = hypersytti;
-      fishes = {
-        "Megahai" : {
-          "syvyys": 8,
-          "matka": 90,
-          "emoji": big_shark,
-          "paino_min": 3200,
-          "paino_max" : 5600,
-          "hinta" : 3,
-          "hajonta": 2,
-          "aika" : "PI"
-        },
-        "Sateenkaarikala" : {
-          "syvyys": 2,
-          "matka": 60,
-          "emoji": rainbow_fish,
-          "paino_min": 0.2,
-          "paino_max" : 0.9,
-          "hinta" : 20250,
-          "hajonta": 2,
-          "aika" : "AP"
-        },
-        "Suphi" : {
-          "syvyys": 4,
-          "matka": 70,
-          "emoji": suphi_fish,
-          "paino_min": 4,
-          "paino_max" : 10.5,
-          "hinta" : 1625,
-          "hajonta": 2,
-          "aika" : "IY"
-        },
-        "Infernaalinen ankerias" : {
-          "syvyys": 8,
-          "matka": 20,
-          "emoji": infernal_eel,
-          "paino_min": 1.8,
-          "paino_max" : 7.2,
-          "hinta" : 2321,
-          "hajonta": 4,
-          "aika" : "YA"
-        },
-        "Antennikrotti" : {
-          "syvyys": 10,
-          "matka": 95,
-          "emoji": anglerfish,
-          "paino_min": 12,
-          "paino_max" : 25,
-          "hinta" : 488,
-          "hajonta": 3,
-          "aika" : "Y"
-        },
-        "Merikilpikonna" : {
-          "syvyys": 3.5,
-          "matka": 65,
-          "emoji": sea_turtle,
-          "paino_min": 40,
-          "paino_max" : 100,
-          "hinta" : 120,
-          "hajonta": 3,
-          "aika" : "P"
-        },
-        "Luola-ankerias" : {
-          "syvyys": 8,
-          "matka": 30,
-          "emoji": cave_eel,
-          "paino_min": 3,
-          "paino_max" : 7,
-          "hinta" : 1900,
-          "hajonta": 3,
-          "aika" : "PY"
-        },
-        "Tummarapu" : {
-          "syvyys": 10,
-          "matka": 50,
-          "emoji": dark_crab,
-          "paino_min": 0.5,
-          "paino_max" : 2,
-          "hinta" : 5200,
-          "hajonta": 4,
-          "aika" : "IY"
-        },
-        "Pyhäankerias" : {
-          "syvyys": 7,
-          "matka": 40,
-          "emoji": sacred_eel,
-          "paino_min": 2,
-          "paino_max" : 3,
-          "hinta" : 4000,
-          "hajonta": 4,
-          "aika" : "PAIY"
-        }
-
-      }
-    }
-
-    var rod;
-    if (data[msg.author.id]["omistus"]["hiilikuituonki"]) {
-      weight_multi = 1.4;
-      rod = hiilikuituonki;
+    var place;
+    if (argument == "supersytti") {
+      bait = 2;
+      if (user["inventory"]["items"]["super_bait"] < amount)
+        return msg.channel.send("Sulla ei ole tarpeeksi supersyttiä!");
+      user["inventory"]["items"]["super_bait"] -= amount;
+      user["game_kalastus"]["super_bait_consumed"] += amount;
+    } else if (argument == "hypersytti") {
+      bait = 3;
+      if (user["inventory"]["items"]["hyper_bait"] < amount)
+        return msg.channel.send("Sulla ei ole tarpeeksi hypersyttiä!");
+      user["inventory"]["items"]["hyper_bait"] -= amount;
+      user["game_kalastus"]["hyper_bait_consumed"] += amount;
     } else {
-      weight_multi = 1;
-      rod = onki;
-    }
-    var bucket = [];
-
-    for (var fish in fishes) {
-      var de = fishes[fish]["syvyys"];
-      var di = fishes[fish]["matka"];
-      var ti = fishes[fish]["aika"];
-      var variance = fishes[fish]["hajonta"];
-
-      if (fish == "Merilevää" && Math.random() > 0.3) {
-        continue;
-      }
-
-      var difference_x;
-      if (extra == "joki") {
-        difference_x = Math.abs(distance - di);
-      } else {
-        difference_x = Math.abs(distance - di)/10;
-      }
-      var difference_y = Math.abs(depth - de);
-
-      if (difference_x == 0) {
-        difference_x = 0.1;
-      }
-      if (difference_y == 0) {
-        difference_y = 0.1;
-
-      }
-
-      var prop_x = 1*Math.exp(-(difference_x)^2/(2*(variance/1.5)^2))*1000;
-      var prop_y = 1*Math.exp(-(difference_y)^2/(2*(variance/1.5)^2))*1000;
-
-      var multi_prob = Math.sqrt(prop_x*prop_y);
-
-      if (ti.includes(part_day)) {
-        multi_prob = multi_prob*1;
-      } else {
-        multi_prob = multi_prob*0.05;
-      }
-
-      var multi_prob = multi_prob * (1+(-0.5+Math.random()));
-
-
-      for (var x = 0; x < Math.floor(multi_prob); x++) {
-        bucket.push(fish);
-      }
+      bait = 1;
+      if (user["inventory"]["items"]["bait"] < amount)
+        return msg.channel.send("Sulla ei ole tarpeeksi syttiä!");
+      user["inventory"]["items"]["bait"] -= amount;
+      user["game_kalastus"]["bait_consumed"] += amount;
     }
 
-    if (depth > 8 && place == "Meri" && distance < 25 && Math.random() > 0.5 && bucket.length > 50) {
-      var aarre;
-      if (bait == sytti) {
-        aarre = {
-            "syvyys": 0,
-            "matka": 0,
-            "emoji": casket,
-            "paino_min": 12,
-            "paino_max" : 12,
-            "hinta" : 1000,
-            "hajonta": 0,
-            "aika" : "PAIY"
+    if (argument == "joki") {
+      place = "joki";
+      user["game_kalastus"]["in_river"] += amount;
+    } else if (argument == "järvi") {
+      place = "järvi";
+      user["game_kalastus"]["in_lake"] += amount;
+    } else {
+      place = "meri";
+      user["game_kalastus"]["in_sea"] += amount;
+    }
+
+
+    if (rod_tier == 1) {
+      user["game_kalastus"]["rod_used"] += amount;
+    }
+    if (rod_tier == 2) {
+      user["game_kalastus"]["super_rod_used"] += amount;
+    }
+    if (rod_tier == 3) {
+      user["game_kalastus"]["hyper_rod_used"] += amount;
+    }
+    var list = [];
+    for (var i = 0; i < amount; i++) {
+      var rnd = Math.floor(Math.random() * Math.floor(3 + 1));
+      switch (rnd) {
+        case 1:
+          var depth = "pohja";
+          break;
+        case 2:
+          var depth = "pinta";
+          break;
+        case 3:
+          var depth = "keski";
+          break;
+      }
+
+
+      if (depth == "pohja") {
+        user["game_kalastus"]["bot"] += 1;
+      }
+      if (depth == "keski") {
+        user["game_kalastus"]["mid"] += 1;
+      }
+      if (depth == "pinta") {
+        user["game_kalastus"]["top"] += 1;
+      }
+
+      list.push(start_fishing(user, part_day, bait, place, depth, rod_tier));
+    }
+
+    msg.channel.send("Kalastusreissulla " + amount + " syötillä!");
+    user["game_kalastus"]["fishing_boat_used"] += 1;
+    user["fishing_boat_timer"] = list;
+    save_user(user);
+  },
+
+  ///
+
+  avaa: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        let type = msg.content.split(" ")[1];
+
+        if (type == "" || type === undefined) {
+          if (user["inventory"]["lootboxes"]["common"] > 0) {
+            type = "common";
+          } else if (user["inventory"]["lootboxes"]["uncommon"] > 0) {
+            type = "uncommon";
+          } else if (user["inventory"]["lootboxes"]["rare"] > 0) {
+            type = "rare";
+          } else if (user["inventory"]["lootboxes"]["epic"] > 0) {
+            type = "epic";
+          } else if (user["inventory"]["lootboxes"]["legendary"] > 0) {
+            type = "legendary";
+          } else {
+            return msg.channel.send(`Sinulla ei ole LootBoxeja...`);
           }
-      }
-      if (bait == supersytti) {
-        aarre = {
-          "syvyys": 0,
-          "matka": 0,
-          "emoji": casket,
-          "paino_min": 12,
-          "paino_max" : 12,
-          "hinta" : 1500,
-          "hajonta": 0,
-          "aika" : "PAIY"
         }
-      }
-      if (bait == hypersytti) {
 
-        aarre =  {
-          "syvyys": 0,
-          "matka": 0,
-          "emoji": casket,
-          "paino_min": 12,
-          "paino_max" : 12,
-          "hinta" : 2000,
-          "hajonta": 0,
-          "aika" : "PAIY"
+        switch (type) {
+          case "c":
+            type = "common";
+            break;
+          case "u":
+            type = "uncommon";
+            break;
+          case "r":
+            type = "rare";
+            break;
+          case "e":
+            type = "epic";
+            break;
+          case "l":
+            type = "legendary";
+            break;
         }
-    }
 
-      bucket.push[aarre];
-    }
+        var boxtypes = ["uncommon", "common", "rare", "epic", "legendary"];
+        if (!boxtypes.includes(type))
+          return msg.channel.send(`Ei ole olemassa tuollaista LootBoxia.`);
 
-    var _rnd = Math.floor(Math.random() * Math.floor(bucket.length));
+        if (user["inventory"]["lootboxes"][type] > 0) {
+          user["inventory"]["lootboxes"][type] -= 1;
+          user["basic_statistics"]["opened_lootboxes"][type] += 1;
+          open_lootbox(type, user);
+          save_user(user);
+        } else {
+          var type_text = type.charAt(0).toUpperCase() + type.slice(1);
+          msg.channel.send(`Sulla ei ole ${type_text} LootBoxia...`);
+        }
 
-    var caught_fish = bucket[_rnd];
-
-    var weight_var = Math.random();
-
-
-    var weight = map(weight_var, 0, 1, fishes[caught_fish]["paino_min"], fishes[caught_fish]["paino_max"]*weight_multi).toFixed(2);
-    if (extra == "hypersytti"){
-      var price = Math.floor(weight * fishes[caught_fish]["hinta"]);
-    }
-    if (extra == "megasytti"){
-      var price = Math.floor(weight * fishes[caught_fish]["hinta"]);
-    }
-    else {
-      var price = Math.floor(weight * fishes[caught_fish]["hinta"]);
-    }
-
-    var timer;
-
-    if (extra == "hypersytti") {
-      var lure_time = map(bucket.length, 0, 1000, 8, 0);
-      if (lure_time < 0) {
-        lure_time = 1;
-      }
-      if (lure_time > 8) {
-        lure_time = 8;
-      }
-      timer = Math.floor(Math.random() * Math.floor(lure_time)) + 1;
-    }
-    else if (extra == "supersytti") {
-      var lure_time = map(bucket.length, 0, 1000, 6, 0);
-      if (lure_time < 0) {
-        lure_time = 1;
-      }
-      if (lure_time > 6) {
-        lure_time = 6;
-      }
-      timer = Math.floor(Math.random() * Math.floor(lure_time)) + 1;
-    }
-    else {
-      var lure_time = map(bucket.length, 0, 1000, 4, 0);
-      if (lure_time < 0) {
-        lure_time = 1;
-      }
-      if (lure_time > 4) {
-        lure_time = 4;
-      }
-      timer = Math.floor(Math.random() * Math.floor(lure_time)) + 1;
-    }
-
-    data[msg.author.id]["kalastusajastin"] = {
-      "kala" : caught_fish,
-      "paino" : weight,
-      "hinta" : price,
-      "päiväaika" : time,
-      "sytti" : bait.name,
-      "emoji" : fishes[caught_fish]["emoji"].name,
-      "timer" : timer,
-      "onki" : rod.name,
-      "paikka" : place
-    };
-
-    msg.channel.send("Kalastetaan!");
-    firebase.database().ref('profiles').set(data);
-
-  },
-
-  // Money commands
-
-  'rahat': (msg) => {
-
-    let name = msg.content.split(' ')[1];
-
-    ref.on('value', gotData, errData);
-    var sender_id = msg.author.id;
-
-    user_check_database(sender_id);
-
-
-    firebase.database().ref('profiles').set(data);
-
-    var rahapussit = "";
-    if (data[sender_id]["omistus"]["rahapussi"] > 0) {
-      rahapussit = " (\:moneybag: " + data[sender_id]["omistus"]["rahapussi"]+ ")";
-    }
-
-    if ((name == '' || name === undefined)) return msg.channel.send(`Sulla on ` + data[sender_id]["omistus"]["rahat"] + coins + rahapussit);
-
-    name = name.replace(/\D/g, '');
-
-    var target_id = name;
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
-
-    user_check_database(target_id);
-    var rahapussit = "";
-    if (data[target_id]["omistus"]["rahapussi"] > 0) {
-      rahapussit = " (\:moneybag: " + data[target_id]["omistus"]["rahapussi"]+ ")";
-    }
-
-    msg.channel.send("Hänellä on " + data[target_id]["omistus"]["rahat"] + coins + rahapussit);
-  },
-
-  'anna': (msg) => {
-    let name = msg.content.split(' ')[1];
-    let amount = msg.content.split(' ')[2];
-    let product = msg.content.split(' ')[3];
-
-    const products = ["rahat", "ES", "sytti", "hypersytti", "supersytti", "tulokone", "tulokone-x", "tulokiihdytin", "maski", "keppi", "es"];
-
-    if (product == undefined || product == null) {
-      product = "rahat";
-    }
-
-    if (!products.includes(product)) return msg.channel.send("Tuotetta ei ole olemassakaan...");
-
-    user_check_database(msg.author.id);
-
-
-    if ((name == '' || name === undefined)) return msg.channel.send(`Kirjoita !anna ja summa`);
-    if (isNaN(amount)) return msg.channel.send(amount + ` ei voida antaa :D`);
-    if (amount == undefined || amount == "") return msg.channel.send(`Laita summa!!!`);
-
-    if (parseInt(amount) < 0) {
-      return msg.channel.send("Älä saatana yritä viedä toisilta kädestä");
-    } else if (parseInt(amount) == 0) {
-      return msg.channel.send("Et voi siirtää et mitään...");
-    }
-
-    name = name.replace(/\D/g, '');
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
-
-    ref.on('value', gotData, errData);
-
-    var target_id = name;
-    var sender_id = msg.author.id;
-
-    user_check_database(sender_id)
-    user_check_database(target_id)
-
-    if ("ironman" in data[sender_id]) return msg.channel.send(`Olet Ironman... et voi antaa mitään...`);
-    if ("ironman" in data[target_id]) return msg.channel.send(`Kohde on Ironman... Hän ei huoli lahjustasi`);
-
-    if (BOT_IDs.includes(target_id)) {
-      delete data[target_id];
-      return msg.channel.send("Botille ei voi antaa :/");
-    }
-
-    if (target_id == sender_id) return msg.channel.send(`Turhaa siirrät ittelles mitää...`);
-    amount = Math.floor(parseInt(amount));
-
-
-    if (product == "rahat") {
-      if (data[sender_id]["omistus"]["rahat"] < parseInt(amount)) return msg.channel.send(`Sulla ei oo tarpeeks rahea...`);
-      data[target_id]["omistus"]["rahat"] += parseInt(amount);
-      data[sender_id]["omistus"]["rahat"] -= parseInt(amount);
-      data[target_id]["omistus"]["saadut_rahat"] += parseInt(amount);
-      data[sender_id]["omistus"]["annetut_rahat"] += parseInt(amount);
-
-      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
-        data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
-      }
-      firebase.database().ref('profiles').set(data);
-      return msg.channel.send(`Rahat siirretty!`);
-
-    }
-    else if (product == "sytti") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["sytti"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["sytti"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
+        function open_lootbox(rarity, user) {
+          var drop_table = {};
+          if (rarity == "common") {
+            color = 10197915;
+            drop_table = {
+              Coins: {
+                path: "user['inventory']['money']",
+                amount: [600, 800, 1000],
+                name: emojies["coin"],
+                rate: 20
+              },
+              Sytti: {
+                path: "user['inventory']['items']['bait']",
+                amount: [2, 3],
+                name: emojies["sytti"],
+                rate: 10
+              },
+              Keppi: {
+                path: "user['inventory']['items']['stick']",
+                amount: [2],
+                name: emojies["keppi"],
+                rate: 9
+              },
+              Pronssitulo: {
+                path: "user['inventory']['items']['bronze_income']",
+                amount: [1],
+                name: emojies["perustulo1"],
+                rate: 1
+              }
+            };
           }
-          if (!("sytti" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["sytti"] = 0;
+          if (rarity == "uncommon") {
+            color = 1276418;
+            drop_table = {
+              Coins: {
+                path: "user['inventory']['money']",
+                amount: [1000, 1500, 2000],
+                name: emojies["coin"],
+                rate: 10
+              },
+              Sytti: {
+                path: "user['inventory']['items']['bait']",
+                amount: [4, 5, 6],
+                name: emojies["sytti"],
+                rate: 5
+              },
+              Keppi: {
+                path: "user['inventory']['items']['stick']",
+                amount: [5],
+                name: emojies["keppi"],
+                rate: 5
+              },
+              Onki: {
+                path: "user['inventory']['key_items']['rod']",
+                amount: true,
+                key: true,
+                name: emojies["onki"],
+                rate: 1
+              },
+              Supersytti: {
+                path: "user['inventory']['items']['super_bait']",
+                amount: [1],
+                name: emojies["supersytti"],
+                rate: 4
+              },
+              Pommi: {
+                path: "user['inventory']['items']['bomb']",
+                amount: [1],
+                name: emojies["pommi"],
+                rate: 1
+              },
+              Kilpi: {
+                path: "user['inventory']['items']['shield']",
+                amount: [1],
+                name: emojies["kilpi"],
+                rate: 1
+              }
+            };
           }
-
-          data[target_id]["omistus"]["inventory"]["sytti"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["sytti"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["sytti"];
+          if (rarity == "rare") {
+            color = 1146367;
+            drop_table = {
+              Coins: {
+                path: "user['inventory']['money']",
+                amount: [10000, 12000, 14000],
+                name: emojies["coin"],
+                rate: 7
+              },
+              Tulokone: {
+                path: "user['inventory']['items']['income_machine']",
+                amount: [1],
+                name: emojies["tulokone"],
+                rate: 5
+              },
+              Valvontakamera: {
+                path: "user['inventory']['items']['security_cam']",
+                amount: [1],
+                name: emojies["valvontakamera"],
+                rate: 5
+              },
+              Onki: {
+                path: "user['inventory']['key_items']['rod']",
+                amount: true,
+                key: true,
+                name: emojies["onki"],
+                rate: 2
+              },
+              Supersytti: {
+                path: "user['inventory']['items']['super_bait']",
+                amount: [6],
+                name: emojies["supersytti"],
+                rate: 3
+              },
+              Hopeatulo: {
+                path: "user['inventory']['items']['silver_income']",
+                amount: [1],
+                name: emojies["perustulo2"],
+                rate: 1
+              },
+              Hypersytti: {
+                path: "user['inventory']['items']['hyper_bait']",
+                amount: [1],
+                name: emojies["hypersytti"],
+                rate: 2
+              }
+            };
           }
-
-      } catch(err) {
-
-      }
-    }
-    else if (product == "keppi") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["kepit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["kepit"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
+          if (rarity == "epic") {
+            color = 12390624;
+            drop_table = {
+              Coins: {
+                path: "user['inventory']['money']",
+                amount: [40000],
+                name: emojies["coin"],
+                rate: 8
+              },
+              "Tulokone-X": {
+                path: "user['inventory']['items']['income_machine_X']",
+                amount: [1],
+                name: emojies["tulokonex"],
+                rate: 5
+              },
+              Tuloimu: {
+                path: "user['inventory']['items']['income_absorber']",
+                amount: [1],
+                name: emojies["tuloimu"],
+                rate: 3
+              },
+              Kultatulo: {
+                path: "user['inventory']['items']['gold_income']",
+                amount: [1],
+                name: emojies["perustulo3"],
+                rate: 2
+              },
+              Hypersytti: {
+                path: "user['inventory']['items']['hyper_bait']",
+                amount: [5, 6, 7],
+                name: emojies["hypersytti"],
+                rate: 5
+              },
+              Maski: {
+                path: "user['inventory']['items']['mask']",
+                amount: [5],
+                name: emojies["maski"],
+                rate: 5
+              }
+            };
           }
-          if (!("kepit" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["kepit"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["kepit"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["kepit"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["kepit"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "maski") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["maskit"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["maskit"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("maskit" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["maskit"] = 0;
+          if (rarity == "legendary") {
+            color = 16098851;
+            drop_table = {
+              Gem: {
+                path: "user['inventory']['items']['gem']",
+                amount: [1],
+                name: emojies["gem"],
+                rate: 4
+              },
+              "Kultainen harpuuna": {
+                path: "user['inventory']['key_items']['golden_harpoon']",
+                amount: true,
+                key: true,
+                name: emojies["harpuuna"],
+                rate: 4
+              },
+              Tallelokero: {
+                path: "user['inventory']['key_items']['safe']['own']",
+                amount: true,
+                key: true,
+                name: emojies["tallelokero"],
+                rate: 2
+              },
+              Tulokiihdytin: {
+                path: "user['inventory']['items']['income_accelerator']",
+                amount: [1],
+                name: emojies["tulokiihdytin"],
+                rate: 4
+              },
+              Glitch: {
+                path: "user['inventory']['items']['glitch']",
+                amount: [1],
+                name: emojies["glitch"],
+                rate: 1
+              },
+              Puska: {
+                path: "user['inventory']['key_items']['bush']['own']",
+                amount: true,
+                key: true,
+                name: emojies["puska"],
+                rate: 3
+              },
+              Hypersytti: {
+                path: "user['inventory']['items']['hyper_bait']",
+                amount: [100],
+                name: emojies["hypersytti"],
+                rate: 4
+              }
+            };
           }
 
-          data[target_id]["omistus"]["inventory"]["maskit"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["maskit"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["maskit"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "supersytti") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["supersytti"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["supersytti"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("supersytti" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["supersytti"] = 0;
+          var bucket = [];
+          for (let item in drop_table) {
+            for (let x = 0; x < drop_table[item]["rate"]; x++) {
+              bucket.push(item);
+            }
           }
 
-          data[target_id]["omistus"]["inventory"]["supersytti"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["supersytti"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["supersytti"];
+          var rnd = Math.floor(Math.random() * Math.floor(bucket.length));
+          var item_got = bucket[rnd];
+
+          if ("key" in drop_table[item_got]) {
+            if (eval(drop_table[item_got]["path"]) == true) {
+              return open_lootbox(rarity, user);
+            } else {
+              eval(drop_table[item_got]["path"] + " = true;");
+              var emoji = emojies["chest_" + rarity];
+              var user_name = user["name"];
+              var item_emoji = drop_table[item_got]["name"];
+              save_user(user);
+              return msg.channel.send({
+                embed: {
+                  title: "***" + user_name + ", Avasit: " + emoji + "***",
+                  color: color,
+                  fields: [
+                    {
+                      name: "***___Loot:___***",
+                      value:
+                        "- Avaintavara: " +
+                        item_emoji +
+                        " " +
+                        item_got +
+                        " (Saatavilla vain kerran!)"
+                    }
+                  ]
+                }
+              });
+            }
+          } else {
+            var _x = Math.floor(
+              Math.random() * Math.floor(drop_table[item_got]["amount"].length)
+            );
+            eval(
+              drop_table[item_got]["path"] +
+                "+= drop_table[item_got]['amount'][_x];"
+            );
+            var emoji = emojies["chest_" + rarity];
+            var user_name = user["name"];
+            var item_emoji = drop_table[item_got]["name"];
+            var item_amount = drop_table[item_got]["amount"][_x];
+            if (item_got == "Coins") {
+              user["basic_statistics"]["money_from_opening_lootboxes"] +=
+                drop_table[item_got]["amount"][_x];
+            }
+            var rest = "";
+            if (item_amount > 1) {
+              rest = " x " + item_amount;
+            }
+            save_user(user);
+            return msg.channel.send({
+              embed: {
+                title: "***" + user_name + ", Avasit: " + emoji + "***",
+                color: color,
+                fields: [
+                  {
+                    name: "***___Loot:___***",
+                    value: "- " + item_emoji + " " + item_got + rest
+                  }
+                ]
+              }
+            });
           }
-
-      } catch(err) {
-
-      }
-    }
-    else if (product == "hypersytti") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["hypersytti"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["hypersytti"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("hypersytti" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["hypersytti"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["hypersytti"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["hypersytti"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["hypersytti"];
-          }
-
-      } catch(err) {
-
-      }
-    }
-    else if (product == "dupepyssy") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["dupepyssyt"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["dupepyssyt"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("dupepyssyt" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["dupepyssyt"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["dupepyssyt"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["dupepyssyt"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["dupepyssyt"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "tulokone") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["tulokone"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["tulokone"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tulokone" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["tulokone"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["tulokone"] += amount;
-
-          if (data[target_id]["omistus"]["inventory"]["tulokone"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["tulokone"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "tulokone-x") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["tulokone-x"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["tulokone-x"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tulokone-x" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["tulokone-x"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["tulokone-x"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["tulokone-x"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["tulokone-x"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "tulokiihdytin") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tulokiihdytin" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["tulokiihdytin"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["tulokiihdytin"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["tulokiihdytin"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["tulokone-x"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "tuloimu") {
-      try {
-        if (data[sender_id]["omistus"]["inventory"]["tuloimu"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["inventory"]["tuloimu"] -= amount;
-
-          if (!("inventory" in data[target_id]["omistus"])) {
-            data[target_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tuloimu" in data[target_id]["omistus"]["inventory"])) {
-            data[target_id]["omistus"]["inventory"]["tuloimu"] = 0;
-          }
-
-          data[target_id]["omistus"]["inventory"]["tuloimu"] += amount;
-          if (data[target_id]["omistus"]["inventory"]["tuloimu"] == 0) {
-            delete data[target_id]["omistus"]["inventory"]["tuloimu"];
-          }
-      } catch(err) {
-
-      }
-    }
-    else if (product == "es") {
-      try {
-        if (data[sender_id]["omistus"]["ES"] < amount) return msg.channel.send(`Sulla ei ole tarpeeksi siirrettävää asiaa!`);
-          data[sender_id]["omistus"]["ES"] -= amount;
-          data[target_id]["omistus"]["ES"] += amount;
-
-      } catch(err) {
-
-      }
-    }
-
-    firebase.database().ref('profiles').set(data);
-    msg.channel.send(product.charAt(0).toUpperCase() + product.slice(1) + " siirretty! (" + amount + " kpl)");
-
-  },
-
-  'kauppa': (msg) => {
-
-    var user = msg.author.id;
-
-    user_check_database(user);
-
-    firebase.database().ref('profiles').set(data);
-
-    var basic_income = Math.floor(data[user]["omistus"]["perustulo"]);
-    var cost_next_basic_income = 100 * Math.pow(basic_income, 2);
-
-    msg.channel.send({
-      "embed": {
-        "title": "***KAUPPA*** (" + data[user]["nimi"] + ")",
-        "color": 15466496,
-        "thumbnail": {
-          "url": "https://upload.wikimedia.org/wikipedia/fi/thumb/3/3a/Lidlin_logo.svg/1024px-Lidlin_logo.svg.png"
-        },
-        "fields": [{
-          "name": "***___"+ _perustulo + " Perustulo +5:___***",
-          "value": "___Hinta:___ " + cost_next_basic_income + coins + ". Se olisi sun " + (((basic_income - 10) / 5) + 1) + ". perustulon korotus."
-        }, {
-          "name": "***___" + es + "ES:___***",
-          "value": "___Hinta:___ 1" + coins
-        },
-        {
-         "name": "***___" + harpoon_e + "Kultainen harppuuna:___***",
-         "value": "___Hinta:___ 150000" + coins +". Viisinkertaistaa Harpoon -pelissä liikkuvat massit!"
-       },
-       {
-        "name": "***___" + "🐳 Valaankasvatusohjelma:___***",
-        "value": "___Hinta:___ 240000" + coins +". Nostaa valaiden määrää 50%!"
-      },
-      {
-       "name": "***___" + "\:moneybag: Rahapussi:___***",
-       "value": "___Hinta:___ 1000000" + coins +". Saat rahapussin!"
-     }]
-      }
+        }
+      });
     });
   },
 
-  'osta': (msg) => {
-    let purchase = msg.content.split(' ')[1].toLowerCase();
-    let amount = msg.content.split(' ')[2];
-    var customer = msg.author.id;
+  käytä: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        let item = msg.content.split(" ")[1];
+        let name = msg.content.split(" ")[2];
+        let second = msg.content.split(" ")[2];
 
-    if ((amount == '' || amount === undefined)) {
-      amount = 1;
-    }
+        if (item != "tallelokero") {
+          if (name == "" || name === undefined) {
+            name = user["id"];
+          }
 
-    if (isNaN(amount)) return msg.channel.send(amount + ` määrää ei voida ostaa :D`);
-    amount = Math.floor(parseInt(amount));
-    if (amount < 1) return msg.channel.send("Et voi antaa tuotetta pois :(");
+          if (item == "" || item === undefined) {
+            return msg.channel.send(
+              `Valitse aktivoitava tavara ja mahdollinen kohde!`
+            );
+          }
 
-    user_check_database(customer);
+          name = name.replace(/\D/g, "");
 
-    if ((purchase == '' || purchase === undefined)) return msg.channel.send(`Kirjoita !osta ja tuotteen nimi`);
+          var flag = false;
+          for (var u in client.users.array()) {
+            var _user = client.users.array()[u];
+            if (_user.id == name) {
+              flag = true;
+            }
+          }
 
-    var money = data[customer]["omistus"]["rahat"];
+          if (!flag) return;
 
-    // PERUSTULO
-    if (purchase == "perustulo") {
-      var basic_income = data[customer]["omistus"]["perustulo"];
-      var basic_income_price = 100 * Math.pow(basic_income, 2);
-      if (money < basic_income_price) return msg.channel.send("Ei ole varaa ostaa... nyt keräämään, tarvitset: " + basic_income_price + coins + ".");
+          var target_id = name;
+          var sender_id = user["id"];
+        } else {
+          target_id = msg.author.id;
+        }
 
-      data[customer]["omistus"]["perustulo"] += 5;
-      data[customer]["omistus"]["rahat"] -= basic_income_price;
+        check_user_in_database(target_id).then(() => {
+          get_user(target_id).then(target_user => {
+            if (item == "tulokone") {
+              if (user["inventory"]["items"]["income_machine"] < 1)
+                return msg.channel.send(`Sulla ei ole Tulokonetta`);
+              if ("income_machine" in user)
+                return msg.channel.send(`Sulla on jo Tulokone päällä!`);
+              user["income_machine"] = {
+                multi: 10,
+                timer: 60,
+                sum: 0
+              };
 
-      msg.channel.send("Onnittelut, perustuloa ostettu! Maksoi: " + basic_income_price + coins + ". Seuraava perustulon korotus maksaa: " + 100 * Math.pow(basic_income + 5, 2) + coins + ".");
+              user["inventory"]["items"]["income_machine"] -= 1;
+              msg.channel.send(`Hurraa! Tulokone hurraa!`);
+              save_user(user);
+              return;
+            }
+            else if (item == "tulokone-x") {
+              if (!("income_machine_X" in user["inventory"]["items"]))
+                return msg.channel.send(`Sulla ei ole Tulokone-X:ää`);
+              if ("income_machine" in user)
+                return msg.channel.send("Sulla on jo Tulokone päällä!");
+              user["income_machine"] = {
+                multi: 20,
+                timer: 60,
+                sum: 0
+              };
 
-    } else if (purchase.toLowerCase() == "es") {
+              user["inventory"]["items"]["income_machine_X"] -= 1;
 
-      if (money < amount) return msg.channel.send("Lol, köyhä " + jaa);
+              save_user(user);
+              return msg.channel.send(`Hurraa! Tulokone-X hurraa!`);
+            }
+            else if (item == "tulokiihdytin") {
+              if (!("income_accelerator" in user["inventory"]["items"]))
+                return msg.channel.send(`Sulla ei ole Tulokiihdytintä`);
+              if ("income_machine" in user)
+                return msg.channel.send(`Sulla on jo Tulokone päällä!`);
+              user["income_machine"] = {
+                multi: 40,
+                timer: 60,
+                sum: 0
+              };
 
-      data[customer]["omistus"]["ES"] += amount;
-      data[customer]["omistus"]["rahat"] -= amount;
+              user["inventory"]["items"]["income_accelerator"] -= 1;
 
-      msg.channel.send("Ostit " + amount + es);
+              save_user(user);
+              return msg.channel.send(`Hurraa! Tulokiihdytin hurraa!`);
+            }
+            else if (item == "gem") {
+              if (user["inventory"]["items"]["gem"] < 1)
+                return msg.channel.send(`Sulla ei ole gemiä...`);
 
-    }
-     else if (purchase.toLowerCase() == "rahapussi") {
+              user["inventory"]["money"] = user["inventory"]["money"] * 2;
+              user["inventory"]["items"]["gem"] -= 1;
+              save_user(user);
+              return msg.channel.send(
+                `Hehkuva kivi imeytyy aikaavaruuteen, tunnet taskujesi täyttyvän!`
+              );
+            }
+            else if (item == "kultatulo") {
+              if (user["inventory"]["items"]["gold_income"] < 1)
+                return msg.channel.send(`Sulla ei ole perustuloa...`);
+              user["inventory"]["income"] += 5;
+              msg.channel.send(
+                `Uiui, käytit ${emojies["perustulo3"]} ja sait perustuloa +5!`
+              );
 
-      if (money < amount * 1000000) return msg.channel.send("Lol, köyhä " + jaa);
+              user["inventory"]["items"]["gold_income"] -= 1;
+              save_user(user);
+              return;
+            }
+            else if (item == "hopeatulo") {
+              if (user["inventory"]["items"]["silver_income"] < 1)
+                return msg.channel.send(`Sulla ei ole perustuloa...`);
 
-      data[customer]["omistus"]["rahapussi"] += amount;
-      data[customer]["omistus"]["rahat"] -= 1000000 * amount;
+              user["inventory"]["income"] += 3;
+              msg.channel.send(
+                `Uiui, käytit ${emojies["perustulo2"]} ja sait perustuloa +3!`
+              );
 
-      msg.channel.send("Ostit " + amount + " \:moneybag:");
+              user["inventory"]["items"]["silver_income"] -= 1;
+              save_user(user);
+              return;
+            }
+            else if (item == "pronssitulo") {
+              if (user["inventory"]["items"]["bronze_income"] < 1)
+                return msg.channel.send(`Sulla ei ole perustuloa...`);
 
-    } else if (purchase.toLowerCase() == "harpuuna") {
+              user["inventory"]["income"] += 1;
+              msg.channel.send(
+                `Uiui, käytit ${emojies["perustulo1"]} ja sait perustuloa +1!`
+              );
 
-      if (data[customer]["omistus"]["kultainen_harppuuna"] == true) return msg.channel.send("Älä osta toista harpuunaa, menee hukkaan!");
-      if (money < 150000) return msg.channel.send("Lol, köyhä " + jaa);
+              user["inventory"]["items"]["bronze_income"] -= 1;
+              save_user(user);
+              return;
+            }
+            else if (item == "glitch") {
+              if (user["inventory"]["items"]["glitch"] < 1)
+                return msg.channel.send(`Sulla ei ole gemiä...`);
+              var start_money = user["inventory"]["money"];
+              var end_money = user["inventory"]["money"];
+              while (start_money == end_money) {
+                var money_str = start_money.toString();
+                money_str = money_str
+                  .split("")
+                  .sort(function() {
+                    return 0.5 - Math.random();
+                  })
+                  .join("");
 
+                end_money = parseInt(money_str);
+              }
 
-      data[customer]["omistus"]["kultainen_harppuuna"] = true;
-      data[customer]["omistus"]["rahat"] -= 150000;
+              user["inventory"]["items"]["glitch"] -= 1;
+              user["inventory"]["money"] = end_money;
+              save_user(user);
+              return msg.channel.send(
+                `There was a glitch ${
+                  emojies["glitch"]
+                } in the system. Seems like you had ${start_money} ${
+                  emojies["coin"]
+                } before.\nNow you have ${end_money} ${emojies["coin"]}.`
+              );
+            }
+            else if (item == "valvontakamera") {
+              if (user["inventory"]["items"]["security_cam"] < 1)
+                return msg.channel.send(`Sulla ei ole Valvontakameraa!`);
+              if ("security_cam" in user)
+                return msg.channel.send(`Sulla on jo valvonta päällä!`);
+              user["security_cam"] = {
+                timer: 1440,
+                protected: 0
+              };
 
-      msg.channel.send("Onnittelut! Sulla on nyt kultainen harppuuna!");
+              user["inventory"]["items"]["security_cam"] -= 1;
+              msg.channel.send(`Valvonta päällä!`);
+              save_user(user);
+              return;
+            }
+            else if (item == "tallelokero") {
+              if (user["inventory"]["key_items"]["safe"]["own"] == false)
+                return msg.channel.send(`Sulla ei ole tallelokeroa!`);
+              if (second == "" || second == undefined)
+                return msg.channel.send(`Laita summa!`);
 
-    } else if (purchase.toLowerCase() == "valaankasvatusohjelma") {
+              if (second.slice(-1) == "k") {
+                var price = Math.floor(1000*parseFloat(second));
+              }
+              else if (second.slice(-1) == "m") {
+                var price = Math.floor(1000000*parseFloat(second));
+              }
 
-      if (data[customer]["omistus"]["valaankasvatusohjelma"] == true) return msg.channel.send("Älä osta toista harpuunaa, menee hukkaan!");
-      if (money < 240000) return msg.channel.send("Lol, köyhä " + jaa);
+              if (price == "" || price == undefined)
+                return msg.channel.send(`Laita summa!`);
 
+              if (second.startsWith("-")) {
+                price = price*-1;
+                if (user["inventory"]["key_items"]["safe"]["money"] < price) {
+                  price = user["inventory"]["key_items"]["safe"]["money"];
+                  user["inventory"]["key_items"]["safe"]["money"] = 0;
+                  user["inventory"]["money"] += price;
+                } else {
+                  user["inventory"]["key_items"]["safe"]["money"] -= price;
+                  user["inventory"]["money"] += price;
+                }
+              } else {
+                if (price > user["inventory"]["money"]) {
+                  price = user["inventory"]["money"];
+                }
+                if (
+                  user["inventory"]["key_items"]["safe"]["capasity"] -
+                    user["inventory"]["key_items"]["safe"]["money"] >=
+                  price
+                ) {
+                  user["inventory"]["key_items"]["safe"]["money"] += price;
+                  user["inventory"]["money"] -= price;
+                } else {
+                  price =
+                    user["inventory"]["key_items"]["safe"]["capasity"] -
+                    user["inventory"]["key_items"]["safe"]["money"];
+                  user["inventory"]["key_items"]["safe"]["money"] += price;
+                  user["inventory"]["money"] += price;
+                }
+              }
 
-      data[customer]["omistus"]["kultainen_harppuuna"] = true;
-      data[customer]["omistus"]["rahat"] -= 240000;
+              msg.channel.send(`Rahoja siirretty ${price}${emojies["coin"]}`);
+              save_user(user);
+              return;
+            }
 
-      msg.channel.send("Onnittelut! Sulla on nyt kultainen harppuuna!");
+            if (user["ironman"]) return msg.channel.send(`Olet Ironman...`);
+            if (target_user["ironman"])
+              return msg.channel.send(`Kohde on Ironman...`);
 
-    } else {
-      msg.channel.send("Et voi ostaa mitään ihme " + purchase + " -juttua...");
-    }
-    firebase.database().ref('profiles').set(data);
+            if (item == "keppi") {
+              if (user["inventory"]["items"]["stick"] < 1)
+                return msg.channel.send(`Sulla ei ole keppejä`);
+              if (name == sender_id)
+                return msg.channel.send(`Älä lyö ittees vitun idiotti!`);
 
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                save_user(target_user);
+                return msg.channel.send(
+                  `Hän huomasi sinut ennalta, et päässyt käsiksi häneen...`
+                );
+              }
+
+              if (target_user["inventory"]["items"]["shield"] > 0) {
+                msg.channel.send(
+                  `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
+                );
+                target_user["inventory"]["items"]["shield"] -= 1;
+                user["basic_statistics"]["stick_used"] += 1;
+                user["inventory"]["items"]["stick"] -= 1;
+                save_user(user);
+                save_user(target_user);
+                return;
+              }
+              var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+              var amount = Math.floor(Math.random() * Math.floor(300 + 1));
+              if (rnd > 3 && user["inventory"]["money"] > amount) {
+                msg.channel.send(
+                  "Löit jäbää <@" +
+                    name +
+                    ">! Hän pudotti " +
+                    amount +
+                    emojies["coin"] +
+                    " maahan..."
+                );
+                target_user["inventory"]["money"] -= amount;
+              } else {
+                msg.channel.send(
+                  "Löit jäbää <@" + name + ">! Et hyötyny mitään."
+                );
+              }
+              user["inventory"]["items"]["stick"] -= 1;
+              user["basic_statistics"]["stick_used"] += 1;
+              target_user["basic_statistics"]["hit"] += 1;
+              save_user(user);
+              save_user(target_user);
+            }
+            if (item == "maski") {
+              if (name == sender_id)
+                return msg.channel.send(`Et voi varastaa omaa rahaa, lol!`);
+              if (user["inventory"]["items"]["mask"] < 1)
+                return msg.channel.send(`Sulla ei ole maskeja`);
+              if (user["inventory"]["money"] <= 0)
+                return msg.channel.send(`Kohteella ei ole oikein rahaa...`);
+              var multi = (48978*target_user["inventory"]["money"]**(-0.67)) / 100;
+              if (multi > 1) {
+                multi = 1;
+              } else if (multi < 0.01) {
+                multi = 0.01;
+              }
+              // 10m jälkeen prosentti saavuttaa 0.01 -> siitä eteenpäin saa vitusti
+              // ennen 10k voi varastaa kaikki rahat.
+
+              var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+              var sum = Math.floor(Math.random() * Math.floor(multi*target_user["inventory"]["money"] + 1));
+
+              if ("security_cam" in target_user) {
+                msg.channel.send("Valvontakamera osoittaa sinuun!");
+                rnd = 1;
+                target_user["security_cam"]["protected"] += 1;
+
+              }
+
+              if (rnd > 4) {
+                msg.channel.send(
+                  "Varastit jäbältä <@" +
+                    name +
+                    ">! Sait: " +
+                    sum +
+                    emojies["coin"]
+                );
+                user["inventory"]["money"] += sum;
+                user["basic_statistics"]["money_stolen"] += sum;
+                target_user["inventory"]["money"] -= sum;
+                target_user["basic_statistics"]["money_stolen_from_you"] += sum;
+              } else {
+                msg.channel.send(
+                  "Jäit kiinni varastaessasi jäbältä <@" +
+                    name +
+                    ">! Sait sakkoa " +
+                    sum +
+                    emojies["coin"] +
+                    ". Kohdehenkilö saa korvausta: " +
+                    Math.floor(sum / 4) +
+                    emojies["coin"]
+                );
+                user["inventory"]["money"] -= sum;
+                user["basic_statistics"]["sakot"] += sum;
+                target_user["inventory"]["money"] += Math.floor(sum / 4);
+                target_user["basic_statistics"]["compensations"] += Math.floor(
+                  sum / 4
+                );
+              }
+              user["inventory"]["items"]["mask"] -= 1;
+              save_user(target_user);
+            }
+            if (item == "tuloimu") {
+              if (!("income_absorber" in user["inventory"]["items"]))
+                return msg.channel.send(`Sulla ei ole Tuloimua`);
+              if ("income_absorb" in user)
+                return msg.channel.send(`Sulla on jo imuri päällä!`);
+              if ("income_absorb" in target_user) {
+                if (target_user["income_absorb"]["target"] == user.id)
+                  return msg.channel.send(
+                    `Et voi imeä häneltä koska hän imee jo sinulta ;)`
+                  );
+              }
+
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                save_user(target_user);
+                return msg.channel.send(
+                  `Hän näki sinut ennelta...Et päässyt käsiksi häneen!`
+                );
+              }
+              user["income_absorb"] = {
+                target: target_id,
+                timer: 480,
+                sum: 0
+              };
+              target_user["absorb_target"] = {
+                absorber: user["id"],
+                timer: 480,
+                sum: 0
+              };
+
+              user["inventory"]["items"]["income_absorber"] -= 1;
+              msg.channel.send(`Imet tuloa!`);
+              save_user(target_user);
+              save_user(user);
+            }
+            if (item == "pommi") {
+              if (user["inventory"]["items"]["bomb"] < 1)
+                return msg.channel.send(`Sulla ei ole pommia`);
+              if (name == sender_id)
+                return msg.channel.send(`Älä pommita ittees vitun idiotti!`);
+              var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+              var amount = Math.floor(
+                Math.random() * Math.floor(2000 + 1) + 500
+              );
+
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                save_user(target_user);
+                return msg.channel.send(
+                  `Hän näki sinut ennelta...Et päässyt käsiksi häneen!`
+                );
+              }
+
+              if (target_user["inventory"]["items"]["shield"] > 0) {
+                msg.channel.send(
+                  `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
+                );
+                target_user["inventory"]["items"]["shield"] -= 1;
+                user["basic_statistics"]["bomb_used"] += 1;
+                user["inventory"]["items"]["bomb"] -= 1;
+                save_user(user);
+                save_user(target_user);
+                return;
+              }
+              msg.channel.send(
+                "Pommitit jäbää <@" +
+                  name +
+                  ">! Korjauksiin ja lääkäriin meni: " +
+                  amount +
+                  emojies["coin"]
+              );
+              target_user["inventory"]["money"] -= amount;
+
+              user["inventory"]["items"]["bomb"] -= 1;
+              user["basic_statistics"]["bomb_used"] += 1;
+              target_user["basic_statistics"]["bombed"] += 1;
+              save_user(user);
+              save_user(target_user);
+            }
+          });
+        });
+      });
+    });
   },
 
-  'inv' : (msg) => {
-    let name = msg.content.split(' ')[1];
+  inv: msg => {
+    let name = msg.content.split(" ")[1];
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        if (name == "" || name === undefined)
+          return print_inventory(user["id"]);
 
-    ref.on('value', gotData, errData);
+        name = name.replace(/\D/g, "");
+
+        var target_id = name;
+
+        var u;
+        var flag = false;
+        for (u in client.users.array()) {
+          var User = client.users.array()[u];
+          if (User.id == name) {
+            flag = true;
+          }
+        }
+
+        if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+        check_user_in_database(name).then(() => {
+          get_user(name).then(_user => {
+            user = _user;
+            print_inventory(user["id"]);
+          });
+        });
+
+        function print_inventory(_id) {
+          var avatar;
+
+          client.fetchUser(_id).then(myUser => {
+            avatar = myUser.avatarURL;
+            cont(avatar);
+          });
+
+          function cont(avatar) {
+            var key_items = "";
+            var ke = user["inventory"]["key_items"];
+
+            if (ke["rod"]) {
+              key_items += `${emojies["onki"]}`;
+            }
+            if (ke["super_rod"]) {
+              key_items += `${emojies["superonki"]}`;
+            }
+            if (ke["hyper_rod"]) {
+              key_items += `${emojies["hyperonki"]}`;
+            }
+            if (ke["golden_harpoon"]) {
+              key_items += `${emojies["harpuuna"]}`;
+            }
+            if (ke["whale_breeding_program"]) {
+              key_items += `\:whale:`;
+            }
+            if (ke["fishing_boat"]) {
+              key_items += `${emojies["kalastusvene"]}`;
+            }
+            if (ke["bush"]["own"]) {
+              key_items += `${emojies["puska"]}`;
+            }
+            var safe_t = "";
+            if (ke["safe"]["own"]) {
+              key_items += `${emojies["tallelokero"]}[${user["inventory"]["key_items"]["safe"]["capasity"]/1000000}m]`;
+              safe_t = `\n${emojies["tallelokero"]} ${user["inventory"]["key_items"]["safe"]["money"]}${emojies["coin"]}`
+            }
+
+            if (key_items == "") {
+              key_items = "Ei mitään";
+            }
+
+            var lootboxes = "";
+            lootboxes += `${emojies["chest_common"]} Common: ${
+              user["inventory"]["lootboxes"]["common"]
+            } (${user["inventory"]["lootboxes"]["common"] +
+              user["basic_statistics"]["opened_lootboxes"]["common"]})\n`;
+            lootboxes += `${emojies["chest_uncommon"]} Uncommon: ${
+              user["inventory"]["lootboxes"]["uncommon"]
+            } (${user["inventory"]["lootboxes"]["uncommon"] +
+              user["basic_statistics"]["opened_lootboxes"]["uncommon"]})\n`;
+            lootboxes += `${emojies["chest_rare"]} Rare: ${
+              user["inventory"]["lootboxes"]["rare"]
+            } (${user["inventory"]["lootboxes"]["rare"] +
+              user["basic_statistics"]["opened_lootboxes"]["rare"]})\n`;
+            lootboxes += `${emojies["chest_epic"]} Epic: ${
+              user["inventory"]["lootboxes"]["epic"]
+            } (${user["inventory"]["lootboxes"]["epic"] +
+              user["basic_statistics"]["opened_lootboxes"]["epic"]})\n`;
+            lootboxes += `${emojies["chest_legendary"]} Legendary: ${
+              user["inventory"]["lootboxes"]["legendary"]
+            } (${user["inventory"]["lootboxes"]["legendary"] +
+              user["basic_statistics"]["opened_lootboxes"]["legendary"]})\n`;
+
+            var items = "";
+            var ite = user["inventory"]["items"];
+            if (ite["ES"] > 0) {
+              items += `${emojies["ES"]} ES: ${ite["ES"]} (Juotu: ${
+                ite["ES_can"]
+              })\n`;
+            }
+            if (ite["stick"] > 0) {
+              items += `${emojies["keppi"]} Keppi: ${ite["stick"]}\n`;
+            }
+            if (ite["bait"] > 0) {
+              items += `${emojies["sytti"]} Sytti: ${ite["bait"]}\n`;
+            }
+            if (ite["super_bait"] > 0) {
+              items += `${emojies["supersytti"]} Supersytti: ${
+                ite["super_bait"]
+              }\n`;
+            }
+            if (ite["hyper_bait"] > 0) {
+              items += `${emojies["hypersytti"]} Hypersytti: ${
+                ite["hyper_bait"]
+              }\n`;
+            }
+            if (ite["shield"] > 0) {
+              items += `${emojies["kilpi"]} Kilpi: ${ite["shield"]}\n`;
+            }
+            if (ite["bomb"] > 0) {
+              items += `${emojies["pommi"]} Pommi: ${ite["bomb"]}\n`;
+            }
+            if (ite["security_cam"] > 0) {
+              items += `${emojies["valvontakamera"]} Valvontakamera: ${
+                ite["security_cam"]
+              }\n`;
+            }
+            if (ite["income_machine"] > 0) {
+              items += `${emojies["tulokone"]} Tulokone: ${
+                ite["income_machine"]
+              }\n`;
+            }
+            if (ite["income_machine_X"] > 0) {
+              items += `${emojies["tulokonex"]} Tulokone-X: ${
+                ite["income_machine_X"]
+              }\n`;
+            }
+            if (ite["income_accelerator"] > 0) {
+              items += `${emojies["tulokiihdytin"]} Tulokiihdytin: ${
+                ite["income_accelerator"]
+              }\n`;
+            }
+            if (ite["income_absorber"] > 0) {
+              items += `${emojies["tuloimu"]} Tuloimu: ${
+                ite["income_absorber"]
+              }\n`;
+            }
+            if (ite["mask"] > 0) {
+              items += `${emojies["maski"]} Maski: ${ite["mask"]}\n`;
+            }
+            if (ite["copygun"] > 0) {
+              items += `${emojies["dupepyssy"]} Dupepyssy: ${ite["copygun"]}\n`;
+            }
+            if (ite["gem"] > 0) {
+              items += `${emojies["gem"]} Gem: ${ite["gem"]}\n`;
+            }
+            if (ite["glitch"] > 0) {
+              items += `${emojies["glitch"]} Glitch: ${ite["glitch"]}\n`;
+            }
+            if (ite["bronze_income"] > 0) {
+              items += `${emojies["perustulo1"]} Pronssitulo: ${
+                ite["bronze_income"]
+              }\n`;
+            }
+            if (ite["silver_income"] > 0) {
+              items += `${emojies["perustulo2"]} Hopeatulo: ${
+                ite["silver_income"]
+              }\n`;
+            }
+            if (ite["gold_income"] > 0) {
+              items += `${emojies["perustulo3"]} Kultatulo: ${
+                ite["gold_income"]
+              }\n`;
+            }
+
+            if (items == "") {
+              items = "Ei mitään";
+            }
+
+            msg.channel.send({
+              embed: {
+                title: `***INVENTORY (${user["name"]})***`,
+                color: user["info"]["color"],
+                thumbnail: {
+                  url: avatar
+                },
+                description: `***Rahat:*** ${user["inventory"]["money"]}${
+                  emojies["coin"]
+                }, ***Perustulo:*** ${user["inventory"]["income"]}${
+                  emojies["coin"]
+                }${safe_t}`,
+                fields: [
+                  {
+                    name: "***___Tavarat:___***",
+                    value: items
+                  },
+                  {
+                    name: "***___Avaintavarat:___***",
+                    value: key_items
+                  },
+                  {
+                    name: "***___LootBoxit:___***",
+                    value: lootboxes
+                  }
+                ]
+              }
+            });
+          }
+        }
+      });
+    });
+  },
+
+  ironman: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        if (user["ironman"])
+          return msg.channel.send(`Olet jo Ironman, etkä muuksi muutu...`);
+        user["ironman"] = true;
+        msg.channel.send(`Olet nyt Ironman! Etenet tästä eteenpäin yksin...`);
+        save_user(user);
+      });
+    });
+  },
+
+  kauppa: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        var basic_income = Math.floor(user["inventory"]["income"]);
+        var cost_next_basic_income =
+          Math.floor(
+            (1000 *
+              Math.pow(1.08, user["basic_statistics"]["income_bought"]) *
+              (10 + 5 * user["basic_statistics"]["income_bought"])) /
+              100
+          ) * 100;
+
+        msg.channel.send({
+          embed: {
+            title: "***KAUPPA*** (" + user["name"] + ")",
+            color: user["info"]["color"],
+            description: "___Hakasulkeissa oleva teksti on ostokomento:___\n" + tokens.prefix + "osta [tuote] [määrä]",
+            thumbnail: {
+              url:
+                "https://upload.wikimedia.org/wikipedia/fi/thumb/3/3a/Lidlin_logo.svg/1024px-Lidlin_logo.svg.png"
+            },
+            fields: [
+              {
+                name: "***___" + emojies["perustulo3"] + " +5 Perustulo:___*** [perustulo]",
+                value:
+                  "___Hinta:___ " +
+                  cost_next_basic_income +
+                  emojies["coin"] +
+                  "\n(Olet aikaisemmin ostanut " +
+                  user["basic_statistics"]["income_bought"] +
+                  ")"
+              },
+              {
+                name: "***___" + emojies["ES"] + "ES:___*** [es]",
+                value: "___Hinta:___ 1" + emojies["coin"]
+              },
+              {
+                name:
+                  "***___" + emojies["harpuuna"] + "Kultainen harppuuna:___*** [harpuuna]",
+                value:
+                  "___Hinta:___ 150k" +
+                  emojies["coin"] +
+                  "\nViisinkertaistaa Harpoon -pelissä liikkuvat massit!"
+              },
+              {
+                name: "***___" + "🐳 Valaankasvatusohjelma:___*** [vko]",
+                value:
+                  "___Hinta:___ 250k" +
+                  emojies["coin"] +
+                  "\nNostaa valaiden määrää 50%!"
+              },
+
+              {
+                name: "***___" + emojies["tallelokero"] + " Tallelokero upgrade:___*** [tallelokero]",
+                value:
+                  "___Hinta:___ 100k" + emojies["coin"] + "\nNostaa tallelokeron tilavuutta yhdellä miljoonalla."
+              },
+              {
+                name: "***___" + emojies["onki"] + " Onki:___*** [onki]",
+                value:
+                  "___Hinta:___ 10k" + emojies["coin"]
+              },
+              {
+                name: "***___" + emojies["supersytti"] + " Supersytti:___*** [supersytti]",
+                value:
+                  "___Hinta:___ 10 Syttiä"
+              },
+              {
+                name: "***___" + emojies["hypersytti"] + " Hypersytti:___*** [hypersytti]",
+                value:
+                  "___Hinta:___ 10 Supersyttiä"
+              }
+
+            ]
+          }
+        });
+      });
+    });
+  },
+
+  osta: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        let purchase = msg.content.split(" ")[1].toLowerCase();
+        let amount = msg.content.split(" ")[2];
+        var customer = msg.author.id;
+
+        if (amount == "" || amount === undefined) {
+          amount = "1";
+        }
+
+        if (amount.slice(-1) == "k") {
+          amount = Math.floor(1000*parseFloat(amount));
+        }
+        else if (amount.slice(-1) == "m") {
+          amount = Math.floor(1000000*parseFloat(amount));
+        }
+
+        if (isNaN(amount))
+          return msg.channel.send(amount + ` määrää ei voida ostaa :D`);
+        amount = Math.floor(parseInt(amount));
+        if (amount < 0)
+          return msg.channel.send("Et voi myydä tuotetta pois :(");
+        if (amount == 0)
+          return msg.channel.send("Ai, etkö aiokkaan ostaan mitään?");
+
+        if (purchase == "" || purchase === undefined)
+          return msg.channel.send(`Kirjoita !osta ja tuotteen nimi`);
+
+        var money = user["inventory"]["money"];
+
+        // PERUSTULO
+        if (purchase == "perustulo") {
+          var basic_income = user["inventory"]["income"];
+          var basic_income_price =
+            Math.floor(
+              (1000 *
+                Math.pow(1.08, user["basic_statistics"]["income_bought"]) *
+                (10 + 5 * user["basic_statistics"]["income_bought"])) /
+                100
+            ) * 100;
+          if (money < basic_income_price)
+            return msg.channel.send(
+              "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
+                basic_income_price +
+                emojies["coin"] +
+                "."
+            );
+
+          user["inventory"]["income"] += 5;
+          user["basic_statistics"]["income_bought"] += 1;
+          user["inventory"]["money"] -= basic_income_price;
+
+          msg.channel.send(
+            "Onnittelut, perustuloa ostettu! Maksoi: " +
+              basic_income_price +
+              emojies["coin"]
+          );
+        } else if (purchase == "es") {
+          if (money < amount)
+            return msg.channel.send(
+              "Lol, köyhä ei oo ees 1 kolee XDDDD t. bOtter.."
+            );
+
+          user["inventory"]["items"]["ES"] += amount;
+          user["inventory"]["money"] -= amount;
+
+          msg.channel.send("Ostit " + amount + emojies["ES"]);
+        } else if (purchase == "harpuuna") {
+          if (money < 150000) return msg.channel.send("Lol, köyhä.");
+          if (user["inventory"]["key_items"]["golden_harpoon"])
+            return msg.channel.send(
+              "Älä osta toista harpuunaa, menee hukkaan!"
+            );
+
+          user["inventory"]["key_items"]["golden_harpoon"] = true;
+          user["inventory"]["money"] -= 150000;
+
+          msg.channel.send("Onnittelut! Sulla on nyt kultainen harppuuna!");
+        }
+        else if (purchase == "vko") {
+          if (money < 250000) return msg.channel.send("Lol, köyhä.");
+          if (user["inventory"]["key_items"]["whale_breeding_program"])
+            return msg.channel.send(
+              "Älä osta toista kasvatusohjelmaa, menee hukkaan!"
+            );
+
+          user["inventory"]["key_items"]["whale_breeding_program"] = true;
+          user["inventory"]["money"] -= 250000;
+
+          msg.channel.send("Onnittelut! Sulla on nyt valaankasvatusohjelma!");
+        }
+        else if (purchase == "onki") {
+          if (money < 10000) return msg.channel.send("Lol, köyhä.");
+          if (user["inventory"]["key_items"]["rod"])
+            return msg.channel.send(
+              "Älä osta toista onkea, menee hukkaan!"
+            );
+
+          user["inventory"]["key_items"]["rod"] = true;
+          user["inventory"]["money"] -= 10000;
+
+          msg.channel.send("Onnittelut! Sulla on nyt onki!");
+        }
+      else if (purchase == "supersytti") {
+        if (user["inventory"]["items"]["bait"] < 10*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
+
+        user["inventory"]["items"]["super_bait"] += amount;
+        user["inventory"]["items"]["bait"] -= amount*10;
+
+        msg.channel.send(`Ostit ${amount} supersyttiä!`);
+      }
+      else if (purchase == "hypersytti") {
+        if (user["inventory"]["items"]["super_bait"] < 10*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
+
+        user["inventory"]["items"]["hyper_bait"] += amount;
+        user["inventory"]["items"]["super_bait"] -= amount*10;
+
+        msg.channel.send(`Ostit ${amount} Hypersyttiä!`);
+      }
+      else if (purchase == "tallelokero") {
+        if (user["inventory"]["money"] < 100000*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi rahaa.");
+
+        user["inventory"]["key_items"]["safe"]["capasity"] += amount*1000000;
+        user["inventory"]["money"] -= amount*100000;
+
+        msg.channel.send(`Ostit ${amount} Tallelokero Upgradea!`);
+      }
+      else {
+          msg.channel.send(
+            "Et voi ostaa mitään ihme " + purchase + " -juttua..."
+          );
+        }
+        save_user(user);
+      });
+    });
+  },
+
+  vaihda: async msg => {
+    var user;
+    var target_user;
+
+    let name = msg.content.split(" ")[1];
+    if (name == "" || name === undefined)
+      return msg.channel.send(`Kirjoita kohdehenkilö!`);
+
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+    var target_id = name;
+    await check_user_in_database(msg.author.id);
+    user = await get_user(msg.author.id);
+
+    await check_user_in_database(target_id);
+    target_user = await get_user(target_id);
+
+    if (target_id == msg.author.id)
+      return msg.channel.send(`Et voi vaihtaa itsesi kanssa!`);
+
+    if (user["ironman"])
+      return msg.channel.send(`Oot Ironman, et voi vaihtaa...`);
+    if (target_user["ironman"])
+      return msg.channel.send(
+        `Hän ei halua vaihdella.. hän on katsos Ironman btw..`
+      );
+
+    var items = {
+      bait: "sytti",
+      super_bait: "supersytti",
+      hyper_bait: "hypersytti",
+      stick: "keppi",
+      mask: "maski",
+      ES: "es",
+      income_machine: "tulokone",
+      income_machine_X: "tulokone-x",
+      income_accelerator: "tulokiihdytin",
+      income_absorber: "tuloimu",
+      gem: "gem",
+      glitch: "glitch",
+      bomb: "pommi",
+      shield: "kilpi",
+      copygun: "dupepyssy",
+      security_cam: "valvontakamera",
+      bronze_income: "pronssitulo",
+      silver_income: "hopeatulo",
+      gold_income: "kultatulo"
+    };
+
+    var emo = {
+      bait: emojies["sytti"],
+      super_bait: emojies["supersytti"],
+      hyper_bait: emojies["hypersytti"],
+      stick: emojies["keppi"],
+      mask: emojies["maski"],
+      ES: emojies["ES"],
+      income_machine: emojies["tulokone"],
+      income_machine_X: emojies["tulokonex"],
+      income_accelerator: emojies["tulokiihdytin"],
+      income_absorber: emojies["tuloimu"],
+      gem: emojies["gem"],
+      glitch: emojies["glitch"],
+      bomb: emojies["pommi"],
+      shield: emojies["kilpi"],
+      copygun: emojies["dupepyssy"],
+      security_cam: emojies["valvontakamera"],
+      bronze_income: emojies["perustulo1"],
+      silver_income: emojies["perustulo2"],
+      gold_income: emojies["perustulo3"]
+    };
+
+    var trade_message;
+    await msg.channel.send(print_trade_window(items, emo)).then(async m => {
+      trade_message = m;
+      await trade_message.react("✅");
+      await trade_message.react("❎");
+    });
+
+    var user_trades = {};
+    var target_user_trades = {};
+    var accepted = [];
+
+    let co = msg.channel.createCollector(m => m);
+    co.on("collect", async m => {
+      if (
+        m.content.startsWith(tokens.prefix + "laita") &&
+        (m.author.id == target_id || m.author.id == msg.author.id)
+      ) {
+        m.delete();
+        await trade_message.clearReactions();
+        await trade_message.react("✅");
+        await trade_message.react("❎");
+        accepted = [];
+        let item = m.content.split(" ")[1];
+        var amount = m.content.split(" ")[2];
+        if (amount == "" || amount == undefined) {
+          amount = "1";
+        }
+        if (amount.slice(-1) == "k") {
+          amount = Math.floor(1000*parseFloat(amount));
+        }
+
+        else if (amount.slice(-1) == "m") {
+          amount = Math.floor(1000000*parseFloat(amount));
+        }
+
+        var current_user;
+        var current_trades;
+        if (m.author.id == target_id) {
+          current_user = target_user;
+          current_trades = target_user_trades;
+        }
+        if (m.author.id == msg.author.id) {
+          current_user = user;
+          current_trades = user_trades;
+        }
+
+        if (item != "rahat") {
+          var ret = {};
+          for (var key in items) {
+            ret[items[key]] = key;
+          }
+          console.log(current_trades[item]);
+          if (!(item in ret)) return trade_message.edit(
+            print_trade_window(items, emo, "Virheellinen tavara!")
+          );
+
+          if (amount == "max") {
+            amount = Math.floor(current_user["inventory"]["items"][ret[item]] - current_trades[item]);
+          }
+
+          else if (amount == "puolet") {
+            amount = Math.floor(current_user["inventory"]["items"][ret[item]]/2 - current_trades[item]);
+          }
+
+          else if (amount == "min") {
+            amount = 1;
+          }
+        } else {
+          if (amount == "max") {
+            amount = Math.floor(current_user["inventory"]["money"] - current_trades["money"]);
+          }
+
+          else if (amount == "puolet") {
+            amount = Math.floor(current_user["inventory"]["money"]/2 - current_trades["money"]);
+          }
+
+          else if (amount == "min") {
+            amount = 1;
+          }
+        }
+
+
+        if (isNaN(amount))
+          return trade_message.edit(
+            print_trade_window(items, emo, "Virheellinen määrä!")
+          );
+
+        if (parseInt(amount) < 0) {
+          return trade_message.edit(
+            print_trade_window(
+              items,
+              emo,
+              "Sun tarvii laittaa + määrä tavaraa!"
+            )
+          );
+        } else if (parseInt(amount) == 0) {
+          return trade_message.edit(
+            print_trade_window(items, emo, "Et voi laittaa 'ei mitään'.")
+          );
+        }
+        amount = parseInt(amount);
+
+        var u = user;
+        var t = user_trades;
+        if (m.author.id == target_id) {
+          u = target_user;
+          t = target_user_trades;
+          target_user_trades = add_item(item, amount, u, t);
+        } else {
+          user_trades = add_item(item, amount, u, t);
+        }
+        trade_message.edit(print_trade_window(items, emo));
+      } else if (
+        m.content.startsWith(tokens.prefix + "poista") &&
+        (m.author.id == target_id || m.author.id == msg.author.id)
+      ) {
+        m.delete();
+        await trade_message.clearReactions();
+        await trade_message.react("✅");
+        await trade_message.react("❎");
+        let item = m.content.split(" ")[1];
+        var amount = m.content.split(" ")[2];
+
+        if (amount.slice(-1) == "k") {
+          amount = Math.floor(1000*parseFloat(amount));
+        }
+
+        else if (amount.slice(-1) == "m") {
+          amount = Math.floor(1000000*parseFloat(amount));
+        }
+
+        if (amount == undefined || amount == "") {
+          amount = 1;
+        }
+
+        var current_user;
+        var current_trades;
+        if (m.author.id == target_id) {
+          current_user = target_user;
+          current_trades = target_user_trades;
+        }
+        if (m.author.id == msg.author.id) {
+          current_user = user;
+          current_trades = user_trades;
+        }
+
+        if (item != "rahat") {
+          var ret = {};
+          for (var key in items) {
+            ret[items[key]] = key;
+          }
+          console.log(current_trades[item]);
+          if (!(item in ret)) return trade_message.edit(
+            print_trade_window(items, emo, "Virheellinen tavara!")
+          );
+
+          if (amount == "max") {
+            amount = Math.floor(current_trades[item]);
+          }
+
+          else if (amount == "puolet") {
+            amount = Math.floor(current_trades[item]/2);
+          }
+
+          else if (amount == "min") {
+            amount = 1;
+          }
+        } else {
+          if (amount == "max") {
+            amount = Math.floor(current_trades["money"]);
+          }
+
+          else if (amount == "puolet") {
+            amount = Math.floor(current_trades["money"]/2);
+          }
+
+          else if (amount == "min") {
+            amount = 1;
+          }
+        }
+
+
+
+        if (isNaN(amount))
+          return trade_message.edit(
+            print_trade_window(items, emo, "Virheellinen määrä!")
+          );
+
+        if (parseInt(amount) < 0) {
+          return trade_message.edit(
+            print_trade_window(
+              items,
+              emo,
+              "Sun tarvii laittaa + määrä tavaraa!"
+            )
+          );
+        } else if (parseInt(amount) == 0) {
+          return trade_message.edit(
+            print_trade_window(items, emo, "Et voi laittaa 'ei mitään'.")
+          );
+        }
+        amount = parseInt(amount);
+
+        var u = user;
+        var t = user_trades;
+        if (m.author.id == target_id) {
+          u = target_user;
+          t = target_user_trades;
+          target_user_trades = remove_item(item, amount, u, t);
+        } else {
+          user_trades = remove_item(item, amount, u, t);
+        }
+        trade_message.edit(print_trade_window(items, emo));
+      }
+    });
+
+    let em = trade_message.createReactionCollector(
+      (reaction, _user) => _user.id === msg.author.id || _user.id === target_id,
+      {
+        time: 10 * 60 * 1000
+      }
+    );
+    em.on("collect", (reaction, _user) => {
+      if (reaction.emoji == "✅") {
+        accepted.push(_user.id);
+        if (accepted.length == 2) {
+          trade_items(
+            user,
+            target_user,
+            user_trades,
+            target_user_trades,
+            items
+          );
+          em.stop();
+          return msg.channel.send(
+            print_trade_window(items, emo, "Vaihto suoritettu!")
+          );
+        }
+      } else if (reaction.emoji == "❎") {
+        em.stop();
+        msg.channel.send("Vaihtoa ei suoritettu...");
+      }
+    });
+
+    em.on("end", () => {
+      trade_message.delete();
+      co.stop();
+    });
+
+    function add_item(_item, _amount, _user, _trades) {
+      if (_item == "rahat") {
+        if ("money" in _trades) {
+          if (_user["inventory"]["money"] - _trades["money"] < _amount) {
+            msg.channel.send("Sulla on liian vähän rahaa!");
+            return _trades;
+          }
+        } else {
+          if (_user["inventory"]["money"] < _amount) {
+            msg.channel.send("Sulla on liian vähän rahaa!");
+            return _trades;
+          }
+        }
+
+        if (!("money" in _trades)) {
+          _trades["money"] = _amount;
+        } else {
+          _trades["money"] += _amount;
+        }
+        return _trades;
+      } else {
+        if (!Object.values(items).includes(_item)) {
+          msg.channel.send("Virheellinen tavara!");
+          return _trades;
+        }
+        var ret = {};
+        for (var key in items) {
+          ret[items[key]] = key;
+        }
+
+        if (_item in _trades) {
+          if (
+            _user["inventory"]["items"][ret[_item]] - _trades[_item] <
+            _amount
+          ) {
+            msg.channel.send("Sulla on liian vähän kyseistä tavaraa!");
+            return _trades;
+          }
+        } else {
+          if (_user["inventory"]["items"][ret[_item]] < _amount) {
+            msg.channel.send("Sulla on liian vähän kyseistä tavaraa!");
+            return _trades;
+          }
+        }
+
+        if (!(_item in _trades)) {
+          _trades[_item] = _amount;
+        } else {
+          _trades[_item] += _amount;
+        }
+        return _trades;
+      }
+    }
+
+    function remove_item(_item, _amount, _user, _trades) {
+      if (_item == "rahat") {
+        if (!("money" in _trades)) return _trades;
+
+        _trades["money"] -= _amount;
+        if (_trades["money"] < 1) {
+          delete _trades["money"];
+        }
+        return _trades;
+      } else {
+        if (!Object.values(items).includes(_item)) {
+          msg.channel.send("Virheellinen tavara!");
+          return _trades;
+        }
+
+        if (!(_item in _trades)) return _trades;
+
+        _trades[_item] -= _amount;
+        if (_trades[_item] < 1) {
+          delete _trades[_item];
+        }
+        return _trades;
+      }
+    }
+
+    function print_trade_window(itemsx, emox, add = "") {
+      var items1 = "";
+      var items2 = "";
+      var ret = {};
+      for (var key in itemsx) {
+        ret[itemsx[key]] = key;
+      }
+
+      for (var i in user_trades) {
+        if (i == "money") {
+          items1 += emojies["coin"] + " Coins: " + user_trades["money"] + "\n";
+        } else {
+          items1 +=
+            emox[ret[i]] +
+            " " +
+            itemsx[ret[i]].charAt(0).toUpperCase() +
+            itemsx[ret[i]].slice(1) +
+            ": " +
+            user_trades[i] +
+            "\n";
+        }
+      }
+
+      for (var i in target_user_trades) {
+        if (i == "money") {
+          items2 +=
+            emojies["coin"] + " Coins: " + target_user_trades["money"] + "\n";
+        } else {
+          items2 +=
+            emox[ret[i]] +
+            " " +
+            itemsx[ret[i]].charAt(0).toUpperCase() +
+            itemsx[ret[i]].slice(1) +
+            ": " +
+            target_user_trades[i] +
+            "\n";
+        }
+      }
+
+      if (items1 == "") {
+        items1 = "Absolutely nothing";
+      }
+      if (items2 == "") {
+        items2 = "Absolutely nothing";
+      }
+      var color = 10197915;
+      if (add == "Vaihto suoritettu!") {
+        color = 5348864;
+      }
+      if (add == "") {
+        return {
+          embed: {
+            title: "***Vaihtoikkuna***",
+            color: 10197915,
+            fields: [
+              {
+                name: `***___${user["name"]}___*** `,
+                value: items1,
+                inline: true
+              },
+              {
+                name: `***___${target_user["name"]}___*** `,
+                value: items2,
+                inline: true
+              }
+            ]
+          }
+        };
+      } else {
+        return {
+          embed: {
+            title: "***Vaihtoikkuna***",
+            color: color,
+            fields: [
+              {
+                name: `***___${user["name"]}___*** `,
+                value: items1,
+                inline: true
+              },
+              {
+                name: `***___${target_user["name"]}___*** `,
+                value: items2,
+                inline: true
+              }
+            ],
+            description: add
+          }
+        };
+      }
+    }
+
+    function trade_items(
+      _user,
+      _target_user,
+      _user_trades,
+      _target_user_trades,
+      itemsx
+    ) {
+      var ret = {};
+      for (var key in itemsx) {
+        ret[itemsx[key]] = key;
+      }
+
+      for (item in _user_trades) {
+        if (item == "money") {
+          _target_user["inventory"]["money"] += _user_trades["money"];
+          _user["inventory"]["money"] -= _user_trades["money"];
+        } else {
+          _target_user["inventory"]["items"][ret[item]] += _user_trades[item];
+          _user["inventory"]["items"][ret[item]] -= _user_trades[item];
+        }
+      }
+
+      for (item in _target_user_trades) {
+        if (item == "money") {
+          _user["inventory"]["money"] += _target_user_trades["money"];
+          _target_user["inventory"]["money"] -= _target_user_trades["money"];
+        } else {
+          _user["inventory"]["items"][ret[item]] += _target_user_trades[item];
+          _target_user["inventory"]["items"][ret[item]] -=
+            _target_user_trades[item];
+        }
+      }
+
+      save_user(_user);
+      save_user(_target_user);
+    }
+  },
+
+  rahat: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
+
+    let name = msg.content.split(" ")[1];
     var sender_id = msg.author.id;
 
-    user_check_database(sender_id);
+    if (name == "" || name === undefined) {
+      var safe_txt = "";
+      if (user["inventory"]["key_items"]["safe"]["own"]) {
+        safe_txt =
+          " (" +
+          emojies["tallelokero"] +
+          " " +
+          user["inventory"]["key_items"]["safe"]["money"] +
+          emojies["coin"] +
+          ")";
+      }
+      return msg.channel.send(
+        "Sulla on " + user["inventory"]["money"] + emojies["coin"] + safe_txt
+      );
+    } else {
+      name = name.replace(/\D/g, "");
 
-    if ((name == '' || name === undefined)) return print_inventory(sender_id);
+      var target_id = name;
 
-    name = name.replace(/\D/g, '');
+      var u;
+      var flag = false;
+      for (u in client.users.array()) {
+        var User = client.users.array()[u];
+        if (User.id == name) {
+          flag = true;
+        }
+      }
+
+      if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+      await check_user_in_database(target_id);
+      var target_user = await get_user(target_id);
+
+      var safe_txt = "";
+      if (target_user["inventory"]["key_items"]["safe"]["own"]) {
+        safe_txt =
+          " (" +
+          emojies["tallelokero"] +
+          " " +
+          target_user["inventory"]["key_items"]["safe"]["money"] +
+          emojies["coin"] +
+          ")";
+      }
+      return msg.channel.send(
+        "Hänellä on " +
+          target_user["inventory"]["money"] +
+          emojies["coin"] +
+          safe_txt
+      );
+    }
+  },
+
+  profiili: async msg => {
+    let name = msg.content.split(" ")[1];
+    let category = msg.content.split(" ")[2];
+    let thrd = msg.content.split(" ")[3];
+    let all = msg.content.split(" ");
+    let edit = "";
+    if (name == "väri") {
+      all = "- - - " + category;
+      category = name;
+      name = msg.author.id;
+    }
+
+    for (var i = 3; i < all.length; i++) {
+      edit += all[i] + " ";
+    }
+
+    if (name == "" || name === undefined) {
+      name = msg.author.id;
+    }
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+    var target_id = name;
+    await check_user_in_database(target_id);
+    var user = await get_user(target_id);
+
+    if (category == "" || category === undefined) {
+      print_profile(user, msg);
+    } else {
+      if (category == "nimi") {
+        if (user["id"] == msg.author.id)
+          return msg.channel.send(`Et pysty vaihtamaan omaaprofiilinimeä!`);
+        user["name"] = edit;
+        msg.channel.send("Nimi vaihdettu!");
+      } else if (category == "motto") {
+        if (user["id"] == msg.author.id)
+          return msg.channel.send(`Muut määrää sun moton!`);
+        user["info"]["motto"] = edit;
+        msg.channel.send("Motto vaihdettu!");
+      } else if (category == "kuvaus") {
+        if (user["id"] == msg.author.id)
+          return msg.channel.send(`Muut määrää kuvauksen susta!`);
+        user["info"]["description"] = edit;
+        msg.channel.send("Kuvaus vaihdettu!");
+      } else if (category == "kuva") {
+        if (user["id"] == msg.author.id)
+          return msg.channel.send(`Muut määrää sun profiilin kuvan!`);
+        user["info"]["pictures"] = edit;
+        msg.channel.send("Kuva vaihdettu!");
+      } else if (category == "väri") {
+        edit = edit.replace(/\D/g, "");
+        console.log();
+        if (edit.length != 9) return msg.channel.send("Virheellinen väri...");
+        var rgb = edit.match(/.{1,3}/g);
+        var discord_color =
+          parseInt(rgb[0]) * 65536 + parseInt(rgb[1]) * 256 + parseInt(rgb[2]);
+
+        user["info"]["color"] = parseInt(discord_color);
+        msg.channel.send("Väri vaihdettu!");
+      } else {
+        msg.channel.send("Vialliset komennot...");
+        return;
+      }
+
+      save_user(user);
+    }
+  },
+
+  kaladex: async msg => {
+    let name = msg.content.split(" ")[1];
+    var sender_id = msg.author.id;
+
+    if (name == "" || name === undefined) {
+      name = msg.author.id;
+    }
+    name = name.replace(/\D/g, "");
 
     var target_id = name;
 
@@ -3590,469 +5332,1337 @@ const commands = {
 
     if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
-    user_check_database(name);
-    print_inventory(name);
+    await check_user_in_database(target_id);
+    var user = await get_user(target_id);
 
-    function print_inventory(_id) {
-      var avatar;
+    var _all_users = await get_all_users();
 
-      client.fetchUser(_id).then(myUser => {
-        avatar = myUser.avatarURL;
-        jatka(avatar);
-      });
+    await msg.channel.send(await lake(user, _all_users)).then(async m => {
+      message = m;
+      await message.react(emojies["ahven"]);
+      await message.react(emojies["lohi"]);
+      await message.react(emojies["taskurapu"]);
+      await message.react("2⃣");
+      await message.react("3⃣");
+    });
 
-      function jatka(avatar) {
-        var lootboxes = "";
-        var keyitems = "";
-        var items = "";
-        if ("inventory" in data[_id]["omistus"]){
-          var items1 = "";
-          var items2 = "";
-          var items3 = "";
-          var items4 = "";
-          var items5 = "";
-          var items6 = "";
-          var items7 = "";
-          var items8 = "";
-          var items9 = "";
-          var items10 = "";
-          var items11 = "";
-          var items12 = "";
-          for (let item in data[_id]["omistus"]["inventory"]) {
-            if (item == "kepit") {
-              items1 = keppi + " Kepit: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "sytti") {
-              items2 = sytti + " Sytit: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "supersytti") {
-              items3 = supersytti + " Supersytit: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "hypersytti") {
-              items4 = hypersytti + " Hypersytit: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "maskit") {
-              items5 = maski + " Maskit: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "tulokone") {
-              items6 = tulokone + " Tulokoneet: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "tulokone-x") {
-              items7 = tulokone_x + " Tulokone-X: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "tulokiihdytin") {
-              items8 = tulokiihdytin + " Tulokiihdyttimet: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "tuloimu") {
-              items9 = tuloimu + " Tuloimut: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "gem") {
-              items10 = gem + " Gemit: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "dupepyssyt") {
-              items11 = dupepyssy + " Dupepyssyt: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-            if (item == "perustulo") {
-              items12 = _perustulo + " Perustulot: " + data[_id]["omistus"]["inventory"][item] + "\n";
-            }
-          }
-          items = items1+items2+items3+items4+items5+items6+items7+items8+items9+items10+items11+items12;
-        } else {
-          if (items == "" || items == undefined) {
-            items = "Ei mitään";
-          }
+    let co = message.createReactionCollector((reaction, _user) => !_user.bot, {
+      time: 10 * 60 * 1000
+    });
+
+    co.on("collect", async (reaction, _user) => {
+      var all_users = await reaction.fetchUsers();
+      var _all_users = await get_all_users();
+      for (var _u of all_users) {
+        if (!_u[1].bot) {
+          reaction.remove(_u[1].id);
         }
-
-        lootboxes += chest_common + " Common: " + data[_id]["omistus"]["lootboxit"]["common"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["common"]+data[_id]["omistus"]["lootboxit"]["common"]) + ")\n";
-        lootboxes += chest_uncommon + " Uncommon : " + data[_id]["omistus"]["lootboxit"]["uncommon"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["uncommon"]+data[_id]["omistus"]["lootboxit"]["uncommon"]) + ")\n";
-        lootboxes += chest_rare + " Rare: " + data[_id]["omistus"]["lootboxit"]["rare"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["rare"]+data[_id]["omistus"]["lootboxit"]["rare"]) + ")\n";
-        lootboxes += chest_epic + " Epic: " + data[_id]["omistus"]["lootboxit"]["epic"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["epic"]+data[_id]["omistus"]["lootboxit"]["epic"]) + ")\n";
-        lootboxes += chest_legendary + " Legendary: " + data[_id]["omistus"]["lootboxit"]["legendary"] + " (" + (data[_id]["omistus"]["avatut_lootboxit"]["legendary"]+data[_id]["omistus"]["lootboxit"]["legendary"]) + ")\n";
-
-
-        if (data[_id]["omistus"]["kultainen_harppuuna"]) {
-          keyitems += harpoon_e + "\n";
-        }
-        if (data[_id]["omistus"]["onki"]) {
-          keyitems += onki + "\n";
-        }
-        if (data[_id]["omistus"]["hiilikuituonki"]) {
-          keyitems += hiilikuituonki + "\n";
-        }
-
-        if (keyitems == "") {
-          keyitems = "Ei mitään";
-        }
-
-
-        msg.channel.send({
-          "embed": {
-            "title": "***INVENTORY***",
-            "color": 15466496,
-            "thumbnail": {
-              "url": avatar
-            },
-            "fields": [{
-                "name": "***___Tavarat:___***",
-                "value": items
-              },
-              {
-                "name": "***___Avaintavarat:___***",
-                "value": keyitems
-              },
-              {
-                "name": "***___LootBoxit:___***",
-                "value": lootboxes
-              }
-            ]
-          }
-        })
       }
+      if (reaction.emoji == emojies["ahven"]) {
+        message.edit(await lake(user, _all_users));
+      } else if (reaction.emoji == emojies["lohi"]) {
+        message.edit(await river(user, _all_users));
+      }
+      else if (reaction.emoji == emojies["taskurapu"]) {
+        message.edit(await sea(user, _all_users));
+      }else if (reaction.emoji == "2⃣") {
+        message.edit(await tier2(user, _all_users));
+      } else if (reaction.emoji == "3⃣") {
+        message.edit(await tier3(user, _all_users));
+      }
+    });
+
+    co.on("end", () => {
+      message.delete();
+      co.stop();
+    });
+
+
+    function lake(user, _all_users) {
+      var uz = client.users.get(user["id"]);
+      var avatar = uz.avatarURL;
+
+      var tier1 = "";
+      var all_fish_count = 0;
+      var caught_fish_count = 0;
+      for (var fish in fishes) {
+        if (fishes[fish]["tier"] == 1) {
+          all_fish_count += 1;
+          if (fishes[fish]["place"] == "L") {
+            var mark = ":x: ";
+            var more = "";
+            var trophy = ":trophy:";
+            for (var u in _all_users) {
+              if (
+                _all_users[u]["game_kalastus"]["KalaDex"][fish]["heaviest"] >
+                user["game_kalastus"]["KalaDex"][fish]["heaviest"]
+              ) {
+                trophy = "";
+              }
+            }
+            if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+              caught_fish_count += 1;
+              mark = ":white_check_mark: ";
+              more =
+                " (" +
+                user["game_kalastus"]["KalaDex"][fish]["caught"] +
+                " kpl, " +
+                user["game_kalastus"]["KalaDex"][fish]["heaviest"] +
+                "kg " +
+                trophy +
+                ")";
+            }
+
+            tier1 +=
+              mark +
+              (fishes[fish]["index"] + 1) +
+              ". " +
+              emojies[fishes[fish]["emoji"]] +
+              " " +
+              fish +
+              more +
+              "\n";
+          } else {
+            if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+              caught_fish_count += 1;
+            }
+
+          }
+        }
+      }
+
+      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var progress_bar = "";
+      if (caught_fish_count/all_fish_count >= 0.1) {
+        progress_bar += emojies["start2"];
+      } else {
+        progress_bar += emojies["start1"];
+      }
+      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+
+      for (var i = 0; i < complete_count-1; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid2"];
+        }
+      }
+
+      for (var i = 0; i < 9-complete_count; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid1"];
+        }
+      }
+      if (caught_fish_count/all_fish_count == 1) {
+        progress_bar += emojies["end2"];
+      } else {
+        progress_bar += emojies["end1"];
+      }
+
+      return {
+        embed: {
+          color: user["info"]["color"],
+          author: {
+            name: user["name"] + " KalaDex:",
+            icon_url: avatar
+          },
+          description: "***Tier 1, Järvi:***\n " + tier1 + "\n" + progress_bar + " " + percent + " (" + caught_fish_count + "/" + all_fish_count + ")"
+        }
+      };
+    }
+
+    function river(user, _all_users) {
+      var uz = client.users.get(user["id"]);
+      var avatar = uz.avatarURL;
+
+      var tier1 = "";
+      var all_fish_count = 0;
+      var caught_fish_count = 0;
+      for (var fish in fishes) {
+        if (fishes[fish]["tier"] == 1) {
+          all_fish_count += 1;
+          if (fishes[fish]["place"] == "R") {
+            var mark = ":x: ";
+            var more = "";
+            var trophy = ":trophy:";
+            for (var u in _all_users) {
+              if (
+                _all_users[u]["game_kalastus"]["KalaDex"][fish]["heaviest"] >
+                user["game_kalastus"]["KalaDex"][fish]["heaviest"]
+              ) {
+                trophy = "";
+              }
+            }
+            if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+              caught_fish_count += 1;
+              mark = ":white_check_mark: ";
+              more =
+                " (" +
+                user["game_kalastus"]["KalaDex"][fish]["caught"] +
+                " kpl, " +
+                user["game_kalastus"]["KalaDex"][fish]["heaviest"] +
+                "kg " +
+                trophy +
+                ")";
+            }
+
+            tier1 +=
+              mark +
+              (fishes[fish]["index"] + 1) +
+              ". " +
+              emojies[fishes[fish]["emoji"]] +
+              " " +
+              fish +
+              more +
+              "\n";
+          } else {
+            if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+              caught_fish_count += 1;
+            }
+
+          }
+        }
+      }
+
+      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var progress_bar = "";
+      if (caught_fish_count/all_fish_count >= 0.1) {
+        progress_bar += emojies["start2"];
+      } else {
+        progress_bar += emojies["start1"];
+      }
+      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+
+      for (var i = 0; i < complete_count-1; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid2"];
+        }
+      }
+
+      for (var i = 0; i < 9-complete_count; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid1"];
+        }
+      }
+      if (caught_fish_count/all_fish_count == 1) {
+        progress_bar += emojies["end2"];
+      } else {
+        progress_bar += emojies["end1"];
+      }
+
+      return {
+        embed: {
+          color: user["info"]["color"],
+          author: {
+            name: user["name"] + " KalaDex:",
+            icon_url: avatar
+          },
+          description: "***Tier 1, Joki:***\n " + tier1 + "\n" + progress_bar + " " + percent + " (" + caught_fish_count + "/" + all_fish_count + ")"
+        }
+      };
+    }
+
+    function sea(user, _all_users) {
+      var uz = client.users.get(user["id"]);
+      var avatar = uz.avatarURL;
+
+      var tier1 = "";
+      var all_fish_count = 0;
+      var caught_fish_count = 0;
+      for (var fish in fishes) {
+        if (fishes[fish]["tier"] == 1) {
+          all_fish_count += 1;
+          if (fishes[fish]["place"] == "S") {
+            var mark = ":x: ";
+            var more = "";
+            var trophy = ":trophy:";
+            for (var u in _all_users) {
+              if (
+                _all_users[u]["game_kalastus"]["KalaDex"][fish]["heaviest"] >
+                user["game_kalastus"]["KalaDex"][fish]["heaviest"]
+              ) {
+                trophy = "";
+              }
+            }
+            if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+              caught_fish_count += 1;
+              mark = ":white_check_mark: ";
+              more =
+                " (" +
+                user["game_kalastus"]["KalaDex"][fish]["caught"] +
+                " kpl, " +
+                user["game_kalastus"]["KalaDex"][fish]["heaviest"] +
+                "kg " +
+                trophy +
+                ")";
+            }
+
+            tier1 +=
+              mark +
+              (fishes[fish]["index"] + 1) +
+              ". " +
+              emojies[fishes[fish]["emoji"]] +
+              " " +
+              fish +
+              more +
+              "\n";
+          }else {
+            if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+              caught_fish_count += 1;
+            }
+
+          }
+        }
+      }
+
+      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var progress_bar = "";
+      if (caught_fish_count/all_fish_count >= 0.1) {
+        progress_bar += emojies["start2"];
+      } else {
+        progress_bar += emojies["start1"];
+      }
+      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+
+      for (var i = 0; i < complete_count-1; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid2"];
+        }
+      }
+
+      for (var i = 0; i < 9-complete_count; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid1"];
+        }
+      }
+      if (caught_fish_count/all_fish_count == 1) {
+        progress_bar += emojies["end2"];
+      } else {
+        progress_bar += emojies["end1"];
+      }
+
+      return {
+        embed: {
+          color: user["info"]["color"],
+          author: {
+            name: user["name"] + " KalaDex:",
+            icon_url: avatar
+          },
+          description: "***Tier 1, Meri:***\n " + tier1 + "\n" + progress_bar + " " + percent + " (" + caught_fish_count + "/" + all_fish_count + ")"
+        }
+      };
+    }
+
+    function tier2(user, _all_users) {
+      var uz = client.users.get(user["id"]);
+      var avatar = uz.avatarURL;
+
+      var tier2 = "";
+      var all_fish_count = 0;
+      var caught_fish_count = 0;
+      for (var fish in fishes) {
+        if (fishes[fish]["tier"] == 2) {
+          all_fish_count += 1;
+          var mark = ":x: ";
+          var more = "";
+          var trophy = ":trophy:";
+          for (var u in _all_users) {
+            if (
+              _all_users[u]["game_kalastus"]["KalaDex"][fish]["heaviest"] >
+              user["game_kalastus"]["KalaDex"][fish]["heaviest"]
+            ) {
+              trophy = "";
+            }
+          }
+          if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+            caught_fish_count += 1;
+            mark = ":white_check_mark: ";
+            more =
+              " (" +
+              user["game_kalastus"]["KalaDex"][fish]["caught"] +
+              " kpl, " +
+              user["game_kalastus"]["KalaDex"][fish]["heaviest"] +
+              "kg " +
+              trophy +
+              ")";
+          }
+
+          tier2 +=
+            mark +
+            (fishes[fish]["index"] + 1) +
+            ". " +
+            emojies[fishes[fish]["emoji"]] +
+            " " +
+            fish +
+            more +
+            "\n";
+
+        }
+      }
+
+      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var progress_bar = "";
+      if (caught_fish_count/all_fish_count >= 0.1) {
+        progress_bar += emojies["start2"];
+      } else {
+        progress_bar += emojies["start1"];
+      }
+      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+
+      for (var i = 0; i < complete_count-1; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid2"];
+        }
+      }
+
+      for (var i = 0; i < 9-complete_count; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid1"];
+        }
+      }
+      if (caught_fish_count/all_fish_count == 1) {
+        progress_bar += emojies["end2"];
+      } else {
+        progress_bar += emojies["end1"];
+      }
+
+      return {
+        embed: {
+          color: user["info"]["color"],
+          author: {
+            name: user["name"] + " KalaDex:",
+            icon_url: avatar
+          },
+          description: "***Tier 2:***\n " + tier2 + "\n" + progress_bar + " " + percent + " (" + caught_fish_count + "/" + all_fish_count + ")"
+        }
+      };
+    }
+
+    function tier3(user, _all_users) {
+      var uz = client.users.get(user["id"]);
+      var avatar = uz.avatarURL;
+
+      var tier3 = "";
+      var caught_fish_count = 0;
+      var all_fish_count = 0;
+      for (var fish in fishes) {
+        if (fishes[fish]["tier"] == 3) {
+          all_fish_count += 1;
+          var mark = ":x: ";
+          var more = "";
+          var trophy = ":trophy:";
+          for (var u in _all_users) {
+            if (
+              _all_users[u]["game_kalastus"]["KalaDex"][fish]["heaviest"] >
+              user["game_kalastus"]["KalaDex"][fish]["heaviest"]
+            ) {
+              trophy = "";
+            }
+          }
+          if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
+            caught_fish_count += 1;
+            mark = ":white_check_mark: ";
+            more =
+              " (" +
+              user["game_kalastus"]["KalaDex"][fish]["caught"] +
+              " kpl, " +
+              user["game_kalastus"]["KalaDex"][fish]["heaviest"] +
+              "kg " +
+              trophy +
+              ")";
+          }
+          tier3 +=
+            mark +
+            (fishes[fish]["index"] + 1) +
+            ". " +
+            emojies[fishes[fish]["emoji"]] +
+            " " +
+            fish +
+            more +
+            "\n";
+        }
+      }
+
+      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var progress_bar = "";
+      if (caught_fish_count/all_fish_count >= 0.1) {
+        progress_bar += emojies["start2"];
+      } else {
+        progress_bar += emojies["start1"];
+      }
+      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+
+      for (var i = 0; i < complete_count-1; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid2"];
+        }
+      }
+
+      for (var i = 0; i < 9-complete_count; i++) {
+        if (i < 8) {
+          progress_bar += emojies["mid1"];
+        }
+      }
+      if (caught_fish_count/all_fish_count == 1) {
+        progress_bar += emojies["end2"];
+      } else {
+        progress_bar += emojies["end1"];
+      }
+
+      return {
+        embed: {
+          color: user["info"]["color"],
+          author: {
+            name: user["name"] + " KalaDex:",
+            icon_url: avatar
+          },
+          description: "***Tier 3:***\n " + tier3 + "\n" + progress_bar + " " + percent + " (" + caught_fish_count + "/" + all_fish_count + ")"
+        }
+      };
     }
   },
 
-  'avaa' : (msg) => {
-    ref.on('value', gotData, errData);
-    let type = msg.content.split(' ')[1];
+  pelidata: async msg => {
+    let name = msg.content.split(" ")[1];
+    let category = msg.content.split(" ")[2];
+    let thrd = msg.content.split(" ")[3];
+    let all = msg.content.split(" ");
+    let edit = "";
 
-    if ((type == '' || type === undefined)) {
-      if ( data[msg.author.id]["omistus"]["lootboxit"]["common"] > 0) {
-        type = "common";
-      }
-      else if ( data[msg.author.id]["omistus"]["lootboxit"]["uncommon"] > 0) {
-        type = "uncommon";
-      }
-      else if (data[msg.author.id]["omistus"]["lootboxit"]["rare"] > 0) {
-        type = "rare";
-      }
-      else if (data[msg.author.id]["omistus"]["lootboxit"]["epic"] > 0) {
-        type = "epic";
-      }
-      else if (data[msg.author.id]["omistus"]["lootboxit"]["legendary"] > 0) {
-        type = "legendary";
-      } else {
-        return msg.channel.send(`Sinulla ei ole LootBoxeja...`);
+    for (var i = 3; i < all.length; i++) {
+      edit += all[i] + " ";
+    }
+
+    if (name == "" || name === undefined) {
+      name = msg.author.id;
+    }
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
       }
     }
 
-    var boxtypes = ["uncommon", "common", "rare", "epic", "legendary", "rahapussi"];
-    if (!(boxtypes.includes(type))) return msg.channel.send(`Ei ole olemassa tuollaista LootBoxia.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
-    if (type == "rahapussi" && data[msg.author.id]["omistus"]["rahapussi"] > 0) {
-      data[msg.author.id]["omistus"]["rahapussi"] -= 1;
-      data[msg.author.id]["omistus"]["rahat"] += 1000000;
-      firebase.database().ref('profiles').set(data);
-      return msg.channel.send(`Rahapussi vaihdettu rahaksi!`);
+    var target_id = name;
+    await check_user_in_database(target_id);
+    var user = await get_user(target_id);
+    var avatar = client.users.get(user.id).avatarURL;
+
+    var message;
+    await msg.channel.send(await general(user)).then(async m => {
+      message = m;
+      await message.react("📊");
+      await message.react(emojies["poggers"]);
+      await message.react(emojies["1S"]);
+      await message.react("🐳");
+      await message.react("🐟");
+      await message.react("🎭");
+      await message.react("🎲");
+    });
+
+    let co = message.createReactionCollector((reaction, _user) => !_user.bot, {
+      time: 10 * 60 * 1000
+    });
+
+    await co.on("collect", async (reaction, _user2) => {
+      var all_users = await reaction.fetchUsers();
+      for (var _u of all_users) {
+        if (!_u[1].bot) {
+          reaction.remove(_u[1].id);
+        }
+      }
+
+      if (reaction.emoji == "📊") {
+        message.edit(await general(user));
+      } else if (reaction.emoji == emojies["poggers"]) {
+        message.edit(await slot(user));
+      } else if (reaction.emoji == emojies["1S"]) {
+        message.edit(await bj(user));
+      } else if (reaction.emoji == "🐳") {
+        message.edit(await harpoon(user));
+      } else if (reaction.emoji == "🐟") {
+        message.edit(await fish(user));
+      } else if (reaction.emoji == "🎭") {
+        message.edit(await ryhmäpeli(user));
+      } else if (reaction.emoji == "🎲") {
+        message.edit(await ktem(user));
+      }
+    });
+
+    co.on("end", () => {
+      message.delete();
+      co.stop();
+    });
+
+    function general(user) {
+      // YLEISTÄ
+
+      // KAIKKI Pelit
+      var games =
+        user["game_KTEM"]["games"] +
+        user["game_slot"]["games"] +
+        user["game_harpoon"]["games"] +
+        user["game_kalastus"]["fish_caught"] +
+        user["game_ryhmäpeli"]["games"] +
+        user["game_blackjack"]["games"];
+      // KAIKKI pelit VOITETTU
+      var games_won =
+        user["game_KTEM"]["games_won"] +
+        user["game_slot"]["games_won"] +
+        user["game_harpoon"]["games_won"] +
+        user["game_ryhmäpeli"]["games_won"] +
+        user["game_blackjack"]["games_won"];
+      // KAIKKI Pelit HÄVITTY
+      var games_lost =
+        user["game_KTEM"]["games_lost"] +
+        user["game_slot"]["games_lost"] +
+        user["game_harpoon"]["games_lost"] +
+        user["game_ryhmäpeli"]["games_lost"] +
+        user["game_blackjack"]["games_lost"];
+      // KAIKKI RAHAT VOITETTU
+      var money_won =
+        user["game_KTEM"]["money_won"] +
+        user["game_slot"]["money_won"] +
+        user["game_harpoon"]["money_won"] +
+        user["game_kalastus"]["money_got"] +
+        user["game_ryhmäpeli"]["money_won"] +
+        user["game_blackjack"]["money_won"];
+      // KAIKKI RAHAT HÄVITTY
+      var money_lost =
+        user["game_KTEM"]["money_lost"] +
+        user["game_slot"]["money_lost"] +
+        user["game_harpoon"]["money_lost"] +
+        user["game_ryhmäpeli"]["money_lost"] +
+        user["game_blackjack"]["money_lost"];
+      // netto
+      var netto = money_won - money_lost;
+
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___YLEISTÄ:___***",
+              value: `Kaikki pelit: ${games}\nVoitetut pelit: ${games_won}\nHävityt pelit: ${games_lost}\nVoitetut rahat: ${money_won}${
+                emojies["coin"]
+              }\nHävityt rahat: ${money_lost}${
+                emojies["coin"]
+              }\nNetto: ${netto}${emojies["coin"]}`
+            }
+          ]
+        }
+      };
     }
 
-    if (data[msg.author.id]["omistus"]["lootboxit"][type] > 0) {
+    function slot(user) {
+      // SLOT
+      var games = "Pelit: " + user["game_slot"]["games"] + "\n";
 
-      data[msg.author.id]["omistus"]["lootboxit"][type] -= 1;
-      firebase.database().ref('profiles').set(data);
-      open_lootbox(msg, msg.author.id, type);
+      var games_won =
+        "Voitetut pelit: " + user["game_slot"]["games_won"] + "\n";
 
-    } else {
-      msg.channel.send(`Sulla ei ole LootBoxia...`);
+      var games_lost =
+        "Hävityt pelit: " + user["game_slot"]["games_lost"] + "\n";
+
+      var wp =
+        "W%: " +
+        (
+          (user["game_slot"]["games_won"] * 100) /
+          user["game_slot"]["games"]
+        ).toFixed(2) +
+        "%\n";
+
+      var money_won =
+        "Voitetut rahat: " +
+        user["game_slot"]["money_won"] +
+        emojies["coin"] +
+        "\n";
+
+      var money_lost =
+        "Hävityt rahat: " +
+        user["game_slot"]["money_lost"] +
+        emojies["coin"] +
+        "\n";
+
+      var netto =
+        "Netto: " +
+        (user["game_slot"]["money_won"] - user["game_slot"]["money_lost"]) +
+        emojies["coin"] +
+        "\n";
+
+      var all_bets =
+        "Kaikki panokset: " +
+        user["game_slot"]["all_bets"] +
+        emojies["coin"] +
+        "\n";
+
+      var bet_average =
+        "Panoksen keskiarvo: " +
+        (user["game_slot"]["all_bets"] / user["game_slot"]["games"]).toFixed(
+          2
+        ) +
+        emojies["coin"] +
+        "\n";
+
+      var title1 = "***Yksittäisvoitot:***\n";
+
+      var poggers1 =
+        emojies["poggers"] +
+        "❌❌: " +
+        user["game_slot"]["wins"]["poggers1"] +
+        "\n";
+
+      var sasu =
+        emojies["sasu"] +
+        emojies["sasu"] +
+        emojies["sasu"] +
+        ": " +
+        user["game_slot"]["wins"]["sasu"] +
+        "\n";
+
+      var karvis =
+        emojies["karvis"] +
+        emojies["karvis"] +
+        emojies["karvis"] +
+        ": " +
+        user["game_slot"]["wins"]["karvis"] +
+        "\n";
+
+      var poggers2 =
+        emojies["poggers"] +
+        emojies["poggers"] +
+        "❌: " +
+        user["game_slot"]["wins"]["poggers2"] +
+        "\n";
+
+      var alfa =
+        emojies["alfa"] +
+        emojies["alfa"] +
+        emojies["alfa"] +
+        ": " +
+        user["game_slot"]["wins"]["alfa"] +
+        "\n";
+
+      var jesilmero =
+        emojies["jesilmero"] +
+        emojies["jesilmero"] +
+        emojies["jesilmero"] +
+        ": " +
+        user["game_slot"]["wins"]["jesilmero"] +
+        "\n";
+
+      var poggers3 =
+        emojies["poggers"] +
+        emojies["poggers"] +
+        emojies["poggers"] +
+        ": " +
+        user["game_slot"]["wins"]["poggers3"] +
+        "\n";
+
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___SLOT:___***",
+              value:
+                games +
+                games_won +
+                games_lost +
+                wp +
+                money_won +
+                money_lost +
+                netto +
+                all_bets +
+                bet_average +
+                title1 +
+                poggers1 +
+                sasu +
+                karvis +
+                poggers2 +
+                alfa +
+                jesilmero +
+                poggers3
+            }
+          ]
+        }
+      };
     }
 
-    function open_lootbox(_msg, _id, _rarity) {
-      ref.on('value', gotData, errData);
-      var color;
-      if (_rarity == "common") {
-        msg1 = chest_common + " Common LootBox" ;
-        msg2 = "";
-        color = 10197915;
-        data[_id]["omistus"]["avatut_lootboxit"]["common"] += 1;
-        for (var x = 0; x < 2; x++) {
-          var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
-          if (rnd > 9) {
-            msg2 += "- Paska (ei mitään)\n";
-          }
-          else if (rnd > 5) {
-            msg2 += "- 500" + coins + "\n";
-            data[_id]["omistus"]["rahat"] += 500;
-          }
-          else if (rnd > 2) {
-            msg2 += "- 500" + es + "\n";
-            data[_id]["omistus"]["ES"] += 500;
-          }
-          else if (rnd >= 0) {
-            msg2 += "- 2 x "+ sytti + "\n";
-            if (!("inventory" in data[_id]["omistus"])) {
-              data[_id]["omistus"]["inventory"] = {};
+    function bj(user) {
+
+      var games = "Pelit: " + user["game_blackjack"]["games"] + "\n";
+
+      var games_won =
+        "Voitetut pelit: " + user["game_blackjack"]["games_won"] + "\n";
+
+      var games_lost =
+        "Hävityt pelit: " + user["game_blackjack"]["games_lost"] + "\n";
+
+      var wp =
+        "W%: " +
+        (
+          (user["game_blackjack"]["games_won"] * 100) /
+          user["game_blackjack"]["games"]
+        ).toFixed(2) +
+        "%\n";
+
+      var money_won =
+        "Voitetut rahat: " +
+        user["game_blackjack"]["money_won"] +
+        emojies["coin"] +
+        "\n";
+
+      var money_lost =
+        "Hävityt rahat: " +
+        user["game_blackjack"]["money_lost"] +
+        emojies["coin"] +
+        "\n";
+
+      var netto =
+        "Netto: " +
+        (user["game_blackjack"]["money_won"] -
+          user["game_blackjack"]["money_lost"]) +
+        emojies["coin"] +
+        "\n";
+
+      var all_bets =
+        "Kaikki panokset: " +
+        user["game_blackjack"]["all_bets"] +
+        emojies["coin"] +
+        "\n";
+
+      var bet_average =
+        "Panoksen keskiarvo: " +
+        (
+          user["game_blackjack"]["all_bets"] / user["game_blackjack"]["games"]
+        ).toFixed(2) +
+        emojies["coin"] +
+        "\n";
+
+      var cards_played =
+        "Pelatut kortit: " + user["game_blackjack"]["cards_played"] + "\n";
+
+      var title1 = "***Yksittäistiedot:*** \n";
+
+      var _bj = "Blackjackit: " + user["game_blackjack"]["21"] + "\n";
+      var over = "Yli 21: " + user["game_blackjack"]["over"] + "\n";
+      var less = "Vähemmän kun 21: " + user["game_blackjack"]["less"] + "\n";
+      var tie = "Tasapeli: " + user["game_blackjack"]["tie"] + "\n";
+      var hit = "Hit: " + user["game_blackjack"]["hit"] + "\n";
+      var stand = "Stand: " + user["game_blackjack"]["stand"] + "\n";
+      var double = "Double: " + user["game_blackjack"]["double"] + "\n";
+
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___BLACKJACK:___***",
+              value:
+                games +
+                games_won +
+                games_lost +
+                wp +
+                money_won +
+                money_lost +
+                netto +
+                all_bets +
+                bet_average +
+                cards_played +
+                title1 +
+                _bj +
+                over +
+                less +
+                tie +
+                hit +
+                stand +
+                double
             }
-            if (!("sytti" in data[_id]["omistus"]["inventory"])) {
-              data[_id]["omistus"]["inventory"]["sytti"] = 0;
-            }
-            data[_id]["omistus"]["inventory"]["sytti"] += 2;
-          }
+          ]
         }
+      };
+    }
+
+    function harpoon(user) {
+      /// Harpoon
+      // pelit
+      var games = user["game_harpoon"]["games"];
+      // Voitetut Pelit
+      var games_won = user["game_harpoon"]["games_won"];
+      // hävityt Pelit
+      var games_lost = user["game_harpoon"]["games_lost"];
+      // voitetut Rahat
+      var money_won = user["game_harpoon"]["money_won"];
+      // hävityt Rahat
+      var money_lost = user["game_harpoon"]["money_lost"];
+      // NEtto
+      var netto = user["game_harpoon"]["money_won"] - user["game_harpoon"]["money_lost"];
+      // OSUMAT
+      var hits = user["game_harpoon"]["hits"];
+      var hits_p = (user["game_harpoon"]["hits"] * 100 / user["game_harpoon"]["games"]).toFixed(2);
+      // hai
+      var shark = user["game_harpoon"]["targets"]["shark"];
+      // palloon
+      var balloon = user["game_harpoon"]["targets"]["balloon"];
+      // valaaseen
+      var whale = user["game_harpoon"]["targets"]["whale"];
+
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___HARPOON:___***",
+              value: `
+              Pelit: ${games}
+              Voitetut pelit: ${games_won} ${emojies["coin"]}
+              Hävityt pelit: ${games_lost} ${emojies["coin"]}
+              Voitetut rahat: ${money_won} ${emojies["coin"]}
+              Hävityt rahat: ${money_lost} ${emojies["coin"]}
+              Netto: ${netto} ${emojies["coin"]}
+              Osumat: ${hits}
+              Osumaprosentti: ${hits_p} %
+              Hait: ${shark}
+              Ilmapallot: ${balloon}
+              Valaat: ${whale}`
+            }
+          ]
+        }
+      };
+    }
+
+    function fish(user) {
+
+      var tier1 = "Ei suoritettu";
+      var tier2 = "Ei suoritettu";
+      var tier3 = "Ei suoritettu";
+      if (user["game_kalastus"]["tier1_completed"]) {
+        tier1 = "Suoritettu";
       }
-      if (_rarity == "uncommon") {
-        msg1 = chest_uncommon + " Uncommon LootBox" ;
-        msg2 = "";
-        color = 1276418;
-        data[_id]["omistus"]["avatut_lootboxit"]["uncommon"] += 1;
-        for (var x = 0; x < 2; x++) {
-          var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-          if (rnd > 90) {
-            msg2 += "- 3 Keppiä " + keppi + "\n";
-            if (!("inventory" in data[_id]["omistus"])) {
-              data[_id]["omistus"]["inventory"] = {};
-            }
-            if (!("kepit" in data[_id]["omistus"]["inventory"])) {
-              data[_id]["omistus"]["inventory"]["kepit"] = 0;
-            }
-            data[_id]["omistus"]["inventory"]["kepit"] += 5;
-          }
-          else if (rnd > 55) {
-            msg2 += "- 2000" + coins + "\n";
-            data[_id]["omistus"]["rahat"] += 2000;
-          }
-          else if (rnd > 37) {
-            msg2 += "- 2000" + es + "\n";
-            data[_id]["omistus"]["ES"] += 2000;
-          }
-          else if (rnd > 27) {
-            msg2 += "- 1 x " + supersytti + "!\n";
-            if (!("inventory" in data[_id]["omistus"])) {
-              data[_id]["omistus"]["inventory"] = {};
-            }
-            if (!("supersytti" in data[_id]["omistus"]["inventory"])) {
-              data[_id]["omistus"]["inventory"]["supersytti"] = 0;
-            }
-            data[_id]["omistus"]["inventory"]["supersytti"] += 1;
-          }
-          else if (rnd > 2) {
-            msg2 += "- 4 x "+ sytti + "\n";
-            if (!("inventory" in data[_id]["omistus"])) {
-              data[_id]["omistus"]["inventory"] = {};
-            }
-            if (!("sytti" in data[_id]["omistus"]["inventory"])) {
-              data[_id]["omistus"]["inventory"]["sytti"] = 0;
-            }
-            data[_id]["omistus"]["inventory"]["sytti"] += 4;
-          }
-          else if (rnd >= 0) {
-            if (data[_id]["omistus"]["onki"] == false){
-              msg2 += "- "+ onki +" Onki! (Saatavilla vain kerran)\n";
-              data[_id]["omistus"]["onki"] = true;
-
-            } else {
-              msg2 += "- 3 x "+ sytti;
-              if (!("inventory" in data[_id]["omistus"])) {
-                data[_id]["omistus"]["inventory"] = {};
-              }
-              if (!("sytti" in data[_id]["omistus"]["inventory"])) {
-                data[_id]["omistus"]["inventory"]["sytti"] = 0;
-              }
-              data[_id]["omistus"]["inventory"]["sytti"] += 3;
-            }
-          }
-        }
+      if (user["game_kalastus"]["tier2_completed"]) {
+        tier2 = "Suoritettu";
       }
-      if (_rarity == "rare") {
-        msg1 = chest_rare + " Rare LootBox" ;
-        msg2 = "";
-        color = 1146367;
-        data[_id]["omistus"]["avatut_lootboxit"]["rare"] += 1;
-        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-        if (rnd > 80) {
-
-          if (data[_id]["omistus"]["onki"] == false){
-            msg2 += "- "+ onki +" Onki! (Saatavilla vain kerran)\n";
-            data[_id]["omistus"]["onki"] = true;
-
-          } else {
-            msg2 += "- 10 x "+ sytti +"!\n- 5000" + coins;
-            if (!("inventory" in data[_id]["omistus"])) {
-              data[_id]["omistus"]["inventory"] = {};
-            }
-            if (!("sytti" in data[_id]["omistus"]["inventory"])) {
-              data[_id]["omistus"]["inventory"]["sytti"] = 0;
-            }
-            data[_id]["omistus"]["inventory"]["sytti"] += 10;
-            data[_id]["omistus"]["rahat"] += 5000;
-          }
-
-
-        }
-        else if (rnd > 50) {
-          msg2 += "- 10000" + coins + "\n- 10000" + es;
-          data[_id]["omistus"]["rahat"] += 10000;
-          data[_id]["omistus"]["ES"] += 10000;
-        }
-        else if (rnd > 25) {
-          msg2 += "- " + tulokone + "Tulokone\n";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tulokone" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["tulokone"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["tulokone"] += 1;
-        }
-        else if (rnd > 25) {
-          msg2 += "- 1 x " + hypersytti + " Hypersytti\n";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["hypersytti"] += 1;
-        }
-        else if (rnd >= 0) {
-          msg2 += "- 5 x " + supersytti + " Supersytti";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("supersytti" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["supersytti"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["supersytti"] += 5;
-        }
-      }
-      if (_rarity == "epic") {
-        msg1 = chest_epic + " Epic LootBox" ;
-        msg2 = "";
-        color = 12390624;
-        data[_id]["omistus"]["avatut_lootboxit"]["epic"] += 1;
-        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-        if (rnd > 90) {
-          msg2 += "- " + _perustulo + "Perustulo +5!";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("perustulo" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["perustulo"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["perustulo"] += 1;
-        }
-        else if (rnd > 65) {
-          msg2 += "- 5 " + maski;
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("maskit" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["maskit"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["maskit"] += 5;
-        }
-        else if (rnd > 55) {
-          msg2 += "- " + tulokone_x + " Tulokone-X";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tulokone-x" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["tulokone-x"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["tulokone-x"] += 1;
-        }
-        else if (rnd > 35) {
-          msg2 += "- 5 x " + hypersytti + " Hypersytti";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["hypersytti"] += 5;
-        }
-        else if (rnd > 20) {
-          msg2 += "- " + tuloimu + " Tuloimu!";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tuloimu" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["tuloimu"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["tuloimu"] += 1;
-        }
-        else if (rnd >= 0) {
-          msg2 += "- 50000" + coins + "\n";
-          data[_id]["omistus"]["rahat"] += 50000;
-
-        }
-      }
-      if (_rarity == "legendary") {
-        msg1 = chest_legendary + " Legendary LootBox" ;
-        msg2 = "";
-        color = 16098851;
-        data[_id]["omistus"]["avatut_lootboxit"]["legendary"] += 1;
-        var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
-        if (rnd > 80) {
-          if (data[_id]["omistus"]["kultainen_harppuuna"] == false){
-            msg2 += "- " + harpoon_e + "Kultainen harpuuna! (Saatavilla vain kerran)";
-            data[_id]["omistus"]["kultainen_harppuuna"] = true;
-
-          } else {
-            msg2 += "- 100000" + coins;
-            data[_id]["omistus"]["rahat"] += 100000;
-          }
-        }
-        else if (rnd > 60) {
-          msg2 += "- "+ dupepyssy + " Dupepyssy!";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("dupepyssyt" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["dupepyssyt"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["dupepyssyt"] += 1;
-        }
-        else if (rnd > 40) {
-          msg2 += "- " + gem + " Gem!";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("gem" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["gem"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["gem"] += 1;
-        }
-        else if (rnd > 20) {
-          if (data[_id]["omistus"]["hiilikuituonki"] == false){
-            msg2 += "- "+ hiilikuituonki + " Hiilikuituonki (Saatavilla vain kerran)";
-            data[_id]["omistus"]["hiilikuituonki"] = true;
-
-          } else {
-            msg2 += "- 80000" + coins + "\n- 3 x "+ hypersytti + " Hypersytti!";
-            data[_id]["omistus"]["rahat"] += 100000;
-            if (!("inventory" in data[_id]["omistus"])) {
-              data[_id]["omistus"]["inventory"] = {};
-            }
-            if (!("hypersytti" in data[_id]["omistus"]["inventory"])) {
-              data[_id]["omistus"]["inventory"]["hypersytti"] = 0;
-            }
-            data[_id]["omistus"]["inventory"]["hypersytti"] += 3;
-          }
-        }
-        else if (rnd >= 0) {
-          msg2 += "- " + tulokiihdytin + " Tulokiihdytin!\n";
-          if (!("inventory" in data[_id]["omistus"])) {
-            data[_id]["omistus"]["inventory"] = {};
-          }
-          if (!("tulokiihdytin" in data[_id]["omistus"]["inventory"])) {
-            data[_id]["omistus"]["inventory"]["tulokiihdytin"] = 0;
-          }
-          data[_id]["omistus"]["inventory"]["tulokiihdytin"] += 1;
-        }
+      if (user["game_kalastus"]["tier3_completed"]) {
+        tier3 = "Suoritettu";
       }
 
+      var avrg_w = (user["game_kalastus"]["all_fish_weight"]/user["game_kalastus"]["fish_caught"]).toFixed(2);
+      var avrg_p = (user["game_kalastus"]["money_got"]/user["game_kalastus"]["fish_caught"]).toFixed(2);
 
-      if (data[_id]["omistus"]["rahat"] > data[_id]["omistus"]["maxrahat"]) {
-        data[_id]["omistus"]["maxrahat"] = data[_id]["omistus"]["rahat"]
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___KALASTUS:___***",
+              value: `
+              Kalastettu: ${user["game_kalastus"]["fish_caught"]}
+              Saadut rahat: ${user["game_kalastus"]["money_got"]} ${emojies["coin"]}
+              Kaikkien kalojen paino: ${user["game_kalastus"]["all_fish_weight"].toFixed(2)} kg
+              Keskiarvohinta: ${avrg_p} ${emojies["coin"]}
+              Keskiarvopaino: ${avrg_w} kg`
+
+            },
+            {
+              name: "***___Käytetty:___***",
+              value: `
+              ${emojies["sytti"]} Käytetyt sytit: ${user["game_kalastus"]["bait_consumed"]}
+              ${emojies["supersytti"]} Käytetyt supersytit: ${user["game_kalastus"]["super_bait_consumed"]}
+              ${emojies["hypersytti"]} Käytetyt hypersytit: ${user["game_kalastus"]["hyper_bait_consumed"]}
+              ${emojies["onki"]} Onkea käytetty: ${user["game_kalastus"]["rod_used"]}
+              ${emojies["superonki"]} Superonkea käytetty: ${user["game_kalastus"]["super_rod_used"]}
+              ${emojies["hyperonki"]} Hyperonkea käytetty: ${user["game_kalastus"]["hyper_rod_used"]}
+              Kalastettu meressä: ${user["game_kalastus"]["in_sea"]}
+              Kalastettu järvessä: ${user["game_kalastus"]["in_lake"]}
+              Kalastettu joessa: ${user["game_kalastus"]["in_river"]}
+              Kalastettu pinnalta: ${user["game_kalastus"]["top"]}
+              Kalastettu keskeltä: ${user["game_kalastus"]["mid"]}
+              Kalastettu pohjasta: ${user["game_kalastus"]["bot"]}
+              ${emojies["kalastusvene"]} Kalastusveneilty: ${user["game_kalastus"]["fishing_boat_used"]}`
+
+            },
+            {
+              name: "***___KalaDex:___***",
+              value: `
+              KalaDex Tier1: ${tier1}
+              KalaDex Tier2: ${tier2}
+              KalaDex Tier3: ${tier3}`
+
+            }
+          ]
+        }
+      };
+    }
+
+    function ryhmäpeli(user) {
+
+      var games = user["game_ryhmäpeli"]["games"];
+      // Voitetut Pelit
+      var games_won = user["game_ryhmäpeli"]["games_won"];
+      // hävityt Pelit
+      var games_lost = user["game_ryhmäpeli"]["games_lost"];
+      // voitetut Rahat
+      var money_won = user["game_ryhmäpeli"]["money_won"];
+      // hävityt Rahat
+      var money_lost = user["game_ryhmäpeli"]["money_lost"];
+      // NEtto
+      var netto = user["game_ryhmäpeli"]["money_won"] - user["game_ryhmäpeli"]["money_lost"];
+      // OSUMAT
+      var w_p = (games_won * 100 / games).toFixed(2);
+
+
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___RYHMÄPELI:___***",
+              value: `
+              Pelit: ${games}
+              Voitetut pelit: ${games_won} ${emojies["coin"]}
+              Hävityt pelit: ${games_lost} ${emojies["coin"]}
+              Voitetut rahat: ${money_won} ${emojies["coin"]}
+              Hävityt rahat: ${money_lost} ${emojies["coin"]}
+              Netto: ${netto} ${emojies["coin"]}
+              Osumat: ${w_p} %`
+            }
+          ]
+        }
+      };
+    }
+
+    function ktem(user) {
+      // KTEM
+      // pelit
+      // VOITETUT
+      // Hävityt
+      // W%
+      // Keskiarvopanos
+      // voitetut Rahat
+      // hävityt Rahat
+      // NEtto
+
+      var games = user["game_KTEM"]["games"];
+      // Voitetut Pelit
+      var games_won = user["game_KTEM"]["games_won"];
+      // hävityt Pelit
+      var games_lost = user["game_KTEM"]["games_lost"];
+      // voitetut Rahat
+      var money_won = user["game_KTEM"]["money_won"];
+      // hävityt Rahat
+      var money_lost = user["game_KTEM"]["money_lost"];
+      // NEtto
+      var netto = user["game_KTEM"]["money_won"] - user["game_ryhmäpeli"]["money_lost"];
+      // OSUMAT
+      var w_p = (games_won * 100 / games).toFixed(2);
+
+      var average_bet = Math.floor(user["game_KTEM"]["all_bets"] / games);
+
+
+
+      return {
+        embed: {
+          title: `***PELIDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___KTEM:___***",
+              value: `
+              Pelit: ${games}
+              Voitetut pelit: ${games_won} ${emojies["coin"]}
+              Hävityt pelit: ${games_lost} ${emojies["coin"]}
+              Voitetut rahat: ${money_won} ${emojies["coin"]}
+              Hävityt rahat: ${money_lost} ${emojies["coin"]}
+              Netto: ${netto} ${emojies["coin"]}
+              Voittoprosentti: ${w_p} %
+              Keskiarvopanos: ${average_bet} ${emojies["coin"]}`
+            }
+          ]
+        }
+      };
+    }
+  },
+
+  data: async msg => {
+    let name = msg.content.split(" ")[1];
+    let category = msg.content.split(" ")[2];
+    let thrd = msg.content.split(" ")[3];
+    let all = msg.content.split(" ");
+    let edit = "";
+
+    for (var i = 3; i < all.length; i++) {
+      edit += all[i] + " ";
+    }
+
+    if (name == "" || name === undefined) {
+      name = msg.author.id;
+    }
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
       }
+    }
 
-      firebase.database().ref('profiles').set(data);
-      _msg.channel.send({
-        "embed": {
-          "title": "***" + msg1 + "***",
-          "color": color,
-          "fields": [{
-              "name": "***___Loot:___***",
-              "value": msg2
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+    var target_id = name;
+    await check_user_in_database(target_id);
+    var user = await get_user(target_id);
+    print_generaldata(user);
+
+    function print_generaldata(user) {
+      // rahat
+      var money =
+        "`Rahat:` " + user["inventory"]["money"] + emojies["coin"] + "\n";
+      // Aktiivisuus
+      var activity =
+        "`Aktiivisuus:` " +
+        user["basic_statistics"]["minutes_on_channel"] +
+        " mins\n";
+      // PERUSTULO
+      var income =
+        "`Perustulo:` " +
+        user["inventory"]["income"] +
+        emojies["coin"] +
+        "/min\n";
+      // Peak money
+      var peak_money =
+        "`Peakrahat:` " +
+        user["basic_statistics"]["peak_money"] +
+        emojies["coin"] +
+        "\n";
+      // Omaisuus
+      var wealth =
+        "`Omaisuus:` " + calculate_wealth(user) + emojies["coin"] + "\n";
+      // Ostetut perustulot
+      var income_bought =
+        "`Ostetut perustulot:` " +
+        user["basic_statistics"]["income_bought"] +
+        "\n";
+      // Perustuloista saadut Rahat
+      var money_from_incomes =
+        "`Perustuloista saadut rahat:` " +
+        user["basic_statistics"]["money_from_incomes"] +
+        emojies["coin"] +
+        "\n";
+
+      // sakot
+      var fines =
+        "`Sakot:` " +
+        user["basic_statistics"]["fines"] +
+        emojies["coin"] +
+        "\n";
+      // korvaukset
+      var compensations =
+        "`Korvaukset:` " +
+        user["basic_statistics"]["compensations"] +
+        emojies["coin"] +
+        "\n";
+      // varastut Rahat
+      var money_stolen =
+        "`Rahat varastettu muilta:` " +
+        user["basic_statistics"]["money_stolen"] +
+        emojies["coin"] +
+        "\n";
+      // sulta varastetut Rahat
+      var money_stolen_from_you =
+        "`Muut varastaneet:` " +
+        user["basic_statistics"]["money_stolen_from_you"] +
+        emojies["coin"] +
+        "\n";
+      // Lyöty kepillä
+      var hit =
+        "`Muut lyöneet kepillä:` " + user["basic_statistics"]["hit"] + "\n";
+      // Keppiä käytetty
+      var stick_used =
+        "`Käytetyt kepit:` " + user["basic_statistics"]["stick_used"] + "\n";
+      // Pommitettu
+      var bombed =
+        "`Muut pommittaneet:` " + user["basic_statistics"]["bombed"] + "\n";
+      // Pommia käytetty
+      var bomb_used =
+        "`Käytetyt pommit:` " + user["basic_statistics"]["bomb_used"] + "\n";
+
+      // Lootboxit afkaamalla
+      var loot_afk =
+        "`LootBoxit Afkaamalla:` " +
+        user["basic_statistics"]["lootboxes_by_afking"] +
+        "\n";
+      // Lootboxit pelaamalla
+      var loot_game =
+        "`LootBoxit Pelaamalla:` " +
+        user["basic_statistics"]["lootboxes_by_playing"] +
+        "\n";
+      // common / minuutti
+      var common_min =
+        "`Common LootBoxit / 1k min:` " +
+        (
+          ((user["basic_statistics"]["opened_lootboxes"]["common"] +
+            user["inventory"]["lootboxes"]["common"]) *
+            1000) /
+          user["basic_statistics"]["minutes_on_channel"]
+        ).toFixed(2) +
+        "\n";
+      // uncommon / minuutti
+      var uncommon_min =
+        "`Unommon LootBoxit / 1k min:` " +
+        (
+          ((user["basic_statistics"]["opened_lootboxes"]["uncommon"] +
+            user["inventory"]["lootboxes"]["uncommon"]) *
+            1000) /
+          user["basic_statistics"]["minutes_on_channel"]
+        ).toFixed(2) +
+        "\n";
+      // rare / minuutti
+      var rare_min =
+        "`Rare LootBoxit / 1k min:` " +
+        (
+          ((user["basic_statistics"]["opened_lootboxes"]["rare"] +
+            user["inventory"]["lootboxes"]["rare"]) *
+            1000) /
+          user["basic_statistics"]["minutes_on_channel"]
+        ).toFixed(2) +
+        "\n";
+      // epic / minuutti
+      var epic_min =
+        "`Epic LootBoxit / 1k min:` " +
+        (
+          ((user["basic_statistics"]["opened_lootboxes"]["epic"] +
+            user["inventory"]["lootboxes"]["epic"]) *
+            1000) /
+          user["basic_statistics"]["minutes_on_channel"]
+        ).toFixed(2) +
+        "\n";
+      // legendary / minuutti
+      var legendary_min =
+        "`Legendary LootBoxit / 1k min:` " +
+        (
+          ((user["basic_statistics"]["opened_lootboxes"]["legendary"] +
+            user["inventory"]["lootboxes"]["legendary"]) *
+            1000) /
+          user["basic_statistics"]["minutes_on_channel"]
+        ).toFixed(2) +
+        "\n";
+      // Rahat lootboxeista
+      var money_from_boxes =
+        "`Rahat LootBoxeista:` " +
+        user["basic_statistics"]["money_from_lootboxes"] +
+        emojies["coin"] +
+        "\n";
+
+      // Rahat tulokoneista
+      var income_machine =
+        "`Rahat tulokoneista:` " +
+        user["basic_statistics"]["money_from_income_machines"] +
+        emojies["coin"] +
+        "\n";
+      // Imetyt Rahat
+      var money_absorbed =
+        "`Imetyt tulot:` " +
+        user["basic_statistics"]["money_absorbed_to_you"] +
+        emojies["coin"] +
+        "\n";
+      // sulta imetyt Rahat
+      var money_absorbed_from_you =
+        "`Muut imeneet tuloa:` " +
+        user["basic_statistics"]["money_absorbed_from_you"] +
+        emojies["coin"] +
+        "\n";
+
+      var uz = client.users.get(user["id"]);
+      var avatar = uz.avatarURL;
+
+      msg.channel.send({
+        embed: {
+          title: `***YLEISDATA: ***`,
+          color: user["info"]["color"],
+          author: {
+            name: user["name"],
+            icon_url: avatar
+          },
+          fields: [
+            {
+              name: "***___Yleistä:___***",
+              value:
+                money +
+                activity +
+                income +
+                peak_money +
+                wealth +
+                income_bought +
+                money_from_incomes
+            },
+            {
+              name: "***___Väkivalta ja muu paska:___***",
+              value:
+                fines +
+                compensations +
+                money_stolen +
+                money_stolen_from_you +
+                stick_used +
+                hit +
+                bomb_used +
+                bombed
+            },
+            {
+              name: "***___LootBoxit:___***",
+              value:
+                loot_afk +
+                loot_game +
+                common_min +
+                uncommon_min +
+                rare_min +
+                epic_min +
+                legendary_min +
+                money_from_boxes
+            },
+            {
+              name: "***___Tulokoneet ja Tuloimut:___***",
+              value: income_machine + money_absorbed + money_absorbed_from_you
             }
           ]
         }
@@ -4060,604 +6670,371 @@ const commands = {
     }
   },
 
-  'aktivoi' : (msg) => {
+  yhteisdata: async msg => {
+    var users;
+    msg.delete();
+    bot_users.once("value", async function(u) {
+      users = u.val();
+      var message;
+      await msg.channel.send(await activity(users)).then(async m => {
+        message = m;
+        await message.react("1⃣");
+        await message.react("2⃣");
+        await message.react("3⃣");
+        await message.react("4⃣");
+        //await message.react("5⃣");
+      });
 
-    let item = msg.content.split(' ')[1];
-    let name = msg.content.split(' ')[2];
-
-    if ((name == '' || name === undefined)) {
-      name = msg.author.id;
-    }
-
-    if ((item == '' || item === undefined)) {
-      return msg.channel.send(`Valitse aktivoitava tavara ja mahdollinen kohde!`);
-    }
-
-    name = name.replace(/\D/g, '');
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return ref.on('value', gotData, errData);
-    ref.on('value', gotData, errData);
-
-
-    var target_id = name;
-    var sender_id = msg.author.id;
-
-    user_check_database(target_id);
-    user_check_database(sender_id);
-
-
-    if (!("inventory" in data[sender_id]["omistus"])) return msg.channel.send(`Sulla ei ole mitään tavaraa...`);
-
-    if (item == "tulokone" ) {
-      if (!("tulokone" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tulokonetta`);
-      if ("tulokoneajastin" in data[sender_id]) return msg.channel.send(`Sulla on jo Tulokone päällä!`);
-      data[sender_id]["tulokoneajastin"] = {
-        "tulokonetier" : 1,
-        "tulokoneaika": 60,
-        "summa" : 0
-      };
-
-      data[sender_id]["omistus"]["inventory"]["tulokone"] -= 1;
-      if (data[sender_id]["omistus"]["inventory"]["tulokone"] == 0) {
-        delete data[sender_id]["omistus"]["inventory"]["tulokone"];
-      }
-
-      msg.channel.send(`Hurraa! Tulokone hurraa!`);
-      firebase.database().ref('profiles').set(data);
-      return;
-    }
-    else if (item == "tulokone-x" ) {
-      if (!("tulokone-x" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tulokone-X:ää`);
-      if ("tulokoneajastin" in data[sender_id]) return msg.channel.send("Sulla on jo Tulokone päällä!");
-      data[sender_id]["tulokoneajastin"] = {
-        "tulokonetier" : 2,
-        "tulokoneaika": 60,
-        "summa" : 0,
-      };
-
-      data[sender_id]["omistus"]["inventory"]["tulokone-x"] -= 1;
-      if (data[sender_id]["omistus"]["inventory"]["tulokone-x"] == 0) {
-        delete data[sender_id]["omistus"]["inventory"]["tulokone-x"];
-      }
-
-      msg.channel.send(`Hurraa! Tulokone-X hurraa!`);
-      firebase.database().ref('profiles').set(data);
-      return;
-    }
-    else if (item == "tulokiihdytin" ) {
-      if (!("tulokiihdytin" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tulokiihdytintä`);
-      if ("tulokoneajastin" in data[sender_id]) return msg.channel.send(`Sulla on jo Tulokone päällä!`);
-      data[sender_id]["tulokoneajastin"] = {
-        "tulokonetier" : 4,
-        "tulokoneaika": 60,
-        "summa" : 0
-      };
-
-      data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] -= 1;
-      if (data[sender_id]["omistus"]["inventory"]["tulokiihdytin"] == 0) {
-        delete data[sender_id]["omistus"]["inventory"]["tulokiihdytin"];
-      }
-
-      msg.channel.send(`Hurraa! Tulokiihdytin hurraa!`);
-      firebase.database().ref('profiles').set(data);
-      return;
-    }
-    else if (item == "gem" ) {
-      if (!("gem" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole gemiä...`);
-
-        data[name]["omistus"]["rahat"] = data[name]["omistus"]["rahat"] * 2;
-        msg.channel.send(`Uiui, rahasi tuplaantuivat!`);
-
-        data[sender_id]["omistus"]["inventory"]["gem"] -= 1;
-        if (data[sender_id]["omistus"]["inventory"]["gem"] == 0) {
-          delete data[sender_id]["omistus"]["inventory"]["gem"];
+      let co = message.createReactionCollector(
+        (reaction, _user) => !_user.bot,
+        {
+          time: 10 * 60 * 1000
         }
-    }
-    else if (item == "perustulo" ) {
-      if (!("perustulo" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole perustuloa...`);
+      );
 
-        data[name]["omistus"]["perustulo"] += 5;
-        msg.channel.send(`Uiui, sait perustuloa +5!`);
-
-        data[sender_id]["omistus"]["inventory"]["perustulo"] -= 1;
-        if (data[sender_id]["omistus"]["inventory"]["perustulo"] == 0) {
-          delete data[sender_id]["omistus"]["inventory"]["perustulo"];
+      co.on("collect", async (reaction, _user) => {
+        var all_users = await reaction.fetchUsers();
+        for (var _u of all_users) {
+          if (!_u[1].bot) {
+            reaction.remove(_u[1].id);
+          }
         }
-    }
-
-    if ("ironman" in data[sender_id]) return msg.channel.send(`Olet Ironman... et voi koskea muihin`);
-    if ("ironman" in data[target_id]) return msg.channel.send(`Kohde on Ironman...`);
-
-    if (item == "keppi" ) {
-
-      if (!("kepit" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole keppejä`);
-      if (name == sender_id) return msg.channel.send(`Ai vittu!`);
-        var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
-        if (rnd > 3 && data[name]["omistus"]["rahat"] > 100) {
-          msg.channel.send("Löit jäbää <@" + name +  ">! Hän pudotti 100" + coins + " maahan... Keppikin meni poikki...");
-          data[name]["omistus"]["rahat"] -= 100;
-        } else {
-          msg.channel.send("Löit jäbää <@" + name +  ">! Hän muistaa tämän seuraavan kerran... Keppi meni poikki...");
+        if (reaction.emoji == "1⃣") {
+          message.edit(await activity(users));
+        } else if (reaction.emoji == "2⃣") {
+          message.edit(await money(users));
+        } else if (reaction.emoji == "3⃣") {
+          message.edit(await peak(users));
+        } else if (reaction.emoji == "4⃣") {
+          message.edit(await owns(users));
         }
-        data[sender_id]["omistus"]["inventory"]["kepit"] -= 1;
-        data[sender_id]["omistus"]["lyöty"] += 1;
-        data[target_id]["omistus"]["suo_lyöty"] += 1;
-        if (data[sender_id]["omistus"]["inventory"]["kepit"] == 0) {
-          delete data[sender_id]["omistus"]["inventory"]["kepit"];
-        }
-    }
-    if (item == "maski" ) {
-      if (name == sender_id) return msg.channel.send(`Et voi varastaa omaa rahaa, lol!`);
-      if (!("maskit" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole maskeja`);
-      if (data[name]["omistus"]["rahat"] <= 0) return msg.channel.send(`Kohteella ei ole oikein rahaa...`);
-        var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
-        var sum = Math.floor(Math.random() * Math.floor(data[name]["omistus"]["rahat"]/100 + 1))*10+10;
+        //else if (reaction.emoji == "5⃣") {
+        //  message.edit(await money(users));
+        //}
+      });
 
-        if (sum > 28000){
-          sum = 28000;
+      co.on("end", () => {
+        message.delete();
+        co.stop();
+      });
+
+      async function activity(users) {
+        var w_l = {};
+        for (var id in users) {
+          await check_user_in_database(id);
+
+          key = id;
+          value = users[id]["basic_statistics"]["minutes_on_channel"];
+          w_l[key] = value;
         }
 
-        if (rnd > 2) {
-          msg.channel.send("Varastit jäbältä <@" + name +  ">! Sait: " + sum + coins);
-          data[sender_id]["omistus"]["rahat"] += sum;
-          data[sender_id]["omistus"]["varastetut"] += sum;
-          data[name]["omistus"]["rahat"] -= sum;
-          data[name]["omistus"]["sulta_varastetut"] -= sum;
-        } else {
-          msg.channel.send("Jäit kiinni varastaessasi jäbältä <@" + name +  ">! Sait sakkoa " + sum + coins + ". Kohdehenkilö saa korvausta: " + Math.floor(sum/2) + coins);
-          data[sender_id]["omistus"]["rahat"] -= sum;
-          data[sender_id]["omistus"]["sakot"] += sum;
-          data[name]["omistus"]["rahat"] += Math.floor(sum/2);
-          data[name]["omistus"]["korvaukset"] += Math.floor(sum/2);
-        }
-        data[sender_id]["omistus"]["inventory"]["maskit"] -= 1;
-        if (data[sender_id]["omistus"]["inventory"]["maskit"] == 0) {
-          delete data[sender_id]["omistus"]["inventory"]["maskit"];
-        }
-    }
-    if (item == "dupepyssy" ) {
-      if (name == sender_id) return msg.channel.send(`Et voi käyttää pyssyä itseesi, pelottaa!`);
-      if (!("dupepyssyt" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole dupepyssyä...`);
+        var items = Object.keys(w_l).map(function(key) {
+          return {
+            id: key,
+            val: w_l[key]
+          };
+        });
 
-        data[name]["omistus"]["rahat"] = data[name]["omistus"]["rahat"] * 2;
-        msg.channel.send(`Uiui, hänen rahat tuplaantuivat!`);
+        items = items.sort(function(a, b) {
+          return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
+        });
 
-        data[sender_id]["omistus"]["inventory"]["dupepyssyt"] -= 1;
-        if (data[sender_id]["omistus"]["inventory"]["dupepyssyt"] == 0) {
-          delete data[sender_id]["omistus"]["inventory"]["dupepyssyt"];
+        most_active_list = "";
+
+        var len = items.length;
+        if (items.length > 25) {
+          len = 25;
         }
-    }
-    if (item == "tuloimu" ) {
-      if (!("tuloimu" in data[sender_id]["omistus"]["inventory"])) return msg.channel.send(`Sulla ei ole Tuloimuria`);
-      if ("tuloimuajastin" in data[sender_id]) return msg.channel.send(`Sulla on jo imuri päällä!`);
-      data[sender_id]["tuloimuajastin"] = {
-        "kohde" : name,
-        "tuloimuaika": 480,
-        "summa": 0
-      };
 
-      data[sender_id]["omistus"]["inventory"]["tuloimu"] -= 1;
-      if (data[sender_id]["omistus"]["inventory"]["tuloimu"] == 0) {
-        delete data[sender_id]["omistus"]["inventory"]["tuloimu"];
+        for (var i = 0; i < len; i++) {
+          most_active_list +=
+            i + 1 + ". <@" + items[i].id + "> : " + items[i].val + " mins\n";
+        }
+
+        return {
+          embed: {
+            title: "***AKTIIVISIMMAT***",
+            color: users[msg.author.id]["info"]["color"],
+            description: most_active_list,
+            footer: {
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+            }
+          }
+        };
       }
 
-      msg.channel.send(`Imet tuloa!`);
-    }
-
-    firebase.database().ref('profiles').set(data);
-
-  },
-
-  // Other commands
-
-  'juo': (msg) => {
-
-    user_check_database(msg.author.id);
-
-    if (data[msg.author.id]["omistus"]["ES"] <= 0) return msg.channel.send("Sulla ei oo juotavaa... ostas ES");
-
-    data[msg.author.id]["omistus"]["ES"] -= 1;
-    data[msg.author.id]["omistus"]["ES_tyhjät"] += 1;
-
-    const answers = [
-      "Bärbär",
-      "ES jumalten juoma, jonnen parhain kuoma!",
-      "Saa keulisuitn moposi!",
-      "Nothing interesting happens.",
-      "You drink ES. It makes you feel dizzy...",
-      "Tshiiii, kruts... glug glug glug... aah",
-      "" + es + kys + es,
-      "" + es + poggers,
-      "5/5",
-      "Olis testis...",
-      "ES > MF",
-      "Joit ES ennätysajassa, toivoisit saavasi lisää...",
-      "Oletko maistanu es-hyytelöä?",
-      es + "\:boy:" + es,
-      "Mukavan hapokasta.",
-      "Humala on lähellä...",
-      "Hyvää, maistakaa muutkin!",
-      "Joit purkin ES, kyrpäsi värähti.",
-      "Panttia 15 euroo...",
-      "Kolmoissalama",
-      "Tunsit sateenkaaren värit kielelläsi",
-      "Sekoitit tipan viinaa joukkoon, yäiks",
-      "Sätii"
-
-    ];
-
-    var rnd = Math.floor(Math.random() * Math.floor(answers.length));
-    msg.channel.send(answers[rnd]);
-    firebase.database().ref('profiles').set(data);
-
-
-  },
-
-  'ironman': (msg) => {
-    ref.on('value', gotData, errData);
-    if ("ironman" in data[msg.author.id]) return msg.channel.send(`Olet jo Ironman, etkä muuksi muutu...`);
-    data[msg.author.id]["ironman"] = true;
-
-    msg.channel.send(`Olet nyt Ironman. Sinä et voi vaihtaa mitään. Muut eivät voi varastaa sinulta, etkä sinä muilta!`);
-    firebase.database().ref('profiles').set(data);
-  },
-
-  'dj': (msg) => {
-    ref.on('value', gotData, errData);
-
-    if (data["dj"] == undefined) {
-      if (msg.member.voiceChannel === undefined) return msg.channel.send("Kaikkien ehdokkaiden pitää olla voicein_channel, myös sun!");
-      var in_channel = msg.member.voiceChannel.members.keyArray();
-      var rnd = Math.floor(Math.random() * Math.floor(in_channel.length + 1));
-      data["dj"] = "<@" + in_channel[rnd] + ">";
-      msg.channel.send("Pääpäivän DJ on " + data["dj"] + "!");
-    } else {
-      msg.channel.send("Pääpäivän DJ on jo valittu, ttunettaja on " + data["dj"] + "!");
-    }
-    firebase.database().ref('profiles').set(data);
-
-  },
-
-  'rikkaimmat': (msg) => {
-    ref.on('value', gotData, errData);
-
-    var w_l = {};
-    for (var id in data) {
-      user_check_database(id);
-
-      if (isNaN(id)) continue;
-
-      key = id;
-      value = data[id]["omistus"]["rahat"];
-      w_l[key] = value;
-    }
-
-    var items = Object.keys(w_l).map(function(key) {
-      return {
-        id: key,
-        val: w_l[key]
-      };
-    });
-
-
-    items = items.sort(function(a, b) {
-      return ((a.val > b.val) ? -1 : ((a.val == b.val) ? 0 : 1));
-    });
-
-    richest_list = "";
-
-    for (var i = 0; i < items.length; i++) {
-      richest_list += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + " (" + data[items[i].id]["omistus"]["perustulo"] + "/min)\n";
-    }
-
-    msg.channel.send({
-      "embed": {
-        "title": "***RIKKAIMMAT***",
-        "color": 15466496,
-        "description": richest_list
-      },
-    });
-    firebase.database().ref('profiles').set(data);
-  },
-
-  'suurimmat_summat': (msg) => {
-    ref.on('value', gotData, errData);
-
-    var w_l = {};
-    for (var id in data) {
-      user_check_database(id);
-
-      if (isNaN(id)) continue;
-
-      key = id;
-      value = data[id]["omistus"]["maxrahat"];
-      w_l[key] = value;
-    }
-
-    var items = Object.keys(w_l).map(function(key) {
-      return {
-        id: key,
-        val: w_l[key]
-      };
-    });
-
-
-    items = items.sort(function(a, b) {
-      return ((a.val > b.val) ? -1 : ((a.val == b.val) ? 0 : 1));
-    });
-
-    peakest_list = "";
-
-    for (var i = 0; i < items.length; i++) {
-      peakest_list += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + coins + '\n';
-    }
-
-    msg.channel.send({
-      "embed": {
-        "title": "***SUURIMMAT SUMMAT (Peakannut korkeimmillaan)***",
-        "color": 15466496,
-        "description": peakest_list
-      },
-    });
-    firebase.database().ref('profiles').set(data);
-  },
-
-  'aktiivisimmat': (msg) => {
-    ref.on('value', gotData, errData);
-
-    var w_l = {};
-    for (var id in data) {
-      user_check_database(id);
-
-      if (isNaN(id)) continue;
-
-      key = id;
-      value = data[id]["aika_kannuilla"];
-      w_l[key] = value;
-    }
-
-    var items = Object.keys(w_l).map(function(key) {
-      return {
-        id: key,
-        val: w_l[key]
-      };
-    });
-
-
-    items = items.sort(function(a, b) {
-      return ((a.val > b.val) ? -1 : ((a.val == b.val) ? 0 : 1));
-    });
-
-    most_active_list = "";
-
-    for (var i = 0; i < items.length; i++) {
-      most_active_list += i + 1 + ". <@" + items[i].id + "> : " + items[i].val + " mins\n";
-    }
-
-    msg.channel.send({
-      "embed": {
-        "title": "***AKTIIVISIMMAT***",
-        "color": 15466496,
-        "description": most_active_list
-      },
-    });
-    firebase.database().ref('profiles').set(data);
-  },
-
-  'profiilit': (msg) => {
-    ref.on('value', gotData, errData);
-
-    var all_profiles = "";
-    for (var id in data) {
-      user_check_database(id);
-      if (isNaN(id)) continue;
-
-      all_profiles += "<@" + id + ">\n";
-    }
-
-    msg.channel.send({
-      "embed": {
-        "title": "***KAIKKI PROFIILIT***",
-        "color": 15466496,
-        "description": all_profiles
-      },
-    });
-    firebase.database().ref('profiles').set(data);
-  },
-
-  'profiili': (msg) => {
-
-    let name = msg.content.split(' ')[1];
-    let category = msg.content.split(' ')[2];
-    let all = msg.content.split(' ');
-    let edit = "";
-    for (var i = 3; i < all.length; i++) {
-      edit += all[i] + " ";
-    }
-
-    if ((name == '' || name === undefined)) {
-      name = msg.author.id;
-    }
-    name = name.replace(/\D/g, '');
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
-    ref.on('value', gotData, errData);
-
-
-    var target_id = name;
-    var sender_id = msg.author.id;
-
-    user_check_database(target_id);
-
-    if ((category == '' || category === undefined)) {
-
-      print_profile(target_id, msg);
-
-    } else {
-
-      if (target_id === sender_id) return msg.channel.send("Et voi muokata osuit profiiliasi...");
-
-      if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
-
-
-        if (category == "nimi") {
-
-          data[target_id]["nimi"] = edit;
-          msg.channel.send("Nimi vaihdettu!");
-
-        } else if (category == "motto") {
-
-          data[target_id]["motto"] = edit;
-          msg.channel.send("Motto vaihdettu!");
-
-        } else if (category == "kuvaus") {
-
-          data[target_id]["kuvaus"] = edit;
-          msg.channel.send("Kuvaus vaihdettu!");
-
-        } else if (category == "kuva") {
-
-          data[target_id]["kuva"] = edit;
-          msg.channel.send("Kuva vaihdettu!");
-
-        } else {
-          msg.channel.send("Vialliset komennot...");
-          return;
+      async function money(users) {
+        var w_l = {};
+        for (var id in users) {
+          await check_user_in_database(id);
+
+          key = id;
+          value = users[id]["inventory"]["money"];
+          w_l[key] = value;
         }
 
-        firebase.database().ref('profiles').set(data);
+        var items = Object.keys(w_l).map(function(key) {
+          return {
+            id: key,
+            val: w_l[key]
+          };
+        });
 
-      } else {
-        msg.channel.send("Vain Aktiiviset ja Adminit voi muuttaa profiileja!");
+        items = items.sort(function(a, b) {
+          return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
+        });
+
+        list = "";
+
+        var len = items.length;
+        if (items.length > 25) {
+          len = 25;
+        }
+
+        for (var i = 0; i < len; i++) {
+          list +=
+            i +
+            1 +
+            ". <@" +
+            items[i].id +
+            "> : " +
+            items[i].val +
+            emojies["coin"] +
+            " (" +
+            users[items[i].id]["inventory"]["income"] +
+            emojies["coin"] +
+            "/min)\n";
+        }
+
+        return {
+          embed: {
+            title: "***RIKKAIMMAT***",
+            color: users[msg.author.id]["info"]["color"],
+            description: list,
+            footer: {
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+            }
+          }
+        };
       }
-    }
+
+      async function peak(users) {
+        var w_l = {};
+        for (var id in users) {
+          await check_user_in_database(id);
+
+          key = id;
+          value = users[id]["basic_statistics"]["peak_money"];
+          w_l[key] = value;
+        }
+
+        var items = Object.keys(w_l).map(function(key) {
+          return {
+            id: key,
+            val: w_l[key]
+          };
+        });
+
+        items = items.sort(function(a, b) {
+          return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
+        });
+
+        list = "";
+
+        var len = items.length;
+        if (items.length > 25) {
+          len = 25;
+        }
+
+        for (var i = 0; i < len; i++) {
+          list +=
+            i +
+            1 +
+            ". <@" +
+            items[i].id +
+            "> : " +
+            items[i].val +
+            emojies["coin"] +
+            "\n";
+        }
+
+        return {
+          embed: {
+            title: "***PEAKRAHAT***",
+            color: users[msg.author.id]["info"]["color"],
+            description: list,
+            footer: {
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+            }
+          }
+        };
+      }
+
+      async function owns(users) {
+        var w_l = {};
+        for (var id in users) {
+          await check_user_in_database(id);
+
+          key = id;
+          value = calculate_wealth(users[id]);
+          w_l[key] = value;
+        }
+
+        var items = Object.keys(w_l).map(function(key) {
+          return {
+            id: key,
+            val: w_l[key]
+          };
+        });
+
+        items = items.sort(function(a, b) {
+          return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
+        });
+
+        list = "";
+
+        var len = items.length;
+        if (items.length > 25) {
+          len = 25;
+        }
+
+        for (var i = 0; i < len; i++) {
+          list +=
+            i +
+            1 +
+            ". <@" +
+            items[i].id +
+            "> : " +
+            items[i].val +
+            emojies["coin"] +
+            "\n";
+        }
+
+        return {
+          embed: {
+            title: "***OMAISUUS***",
+            color: users[msg.author.id]["info"]["color"],
+            description: list,
+            footer: {
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+            }
+          }
+        };
+      }
+    });
   },
 
-  'pääpäivä': (msg) => {
+  // tapahtumat
+
+  // boxisade
+
+  pääpäivä: msg => {
     var date = new Date();
     date_array = [date.getDate(), date.getMonth(), date.getYear()];
 
-    if (date_array[0] == data["date"][0] && date_array[1] == data["date"][1] && date_array[2] == data["date"][2]) {
-      pääpäivä = true;
-    } else {
-      pääpäivä = false;
-      console.log("pääpäivä loppu");
-      data["date"] = [0, 0, 0];
-    }
+    let second = msg.content.split(" ")[1];
 
-    if (pääpäivä == true) {
-      msg.channel.send("Tänään on pääpäivä!");
-    } else if (pääpäivä == false) {
-      msg.channel.send("Tänään ei ole pääpäivä :(");
-    }
+    var pp = firebase
+      .database()
+      .ref("global_data/pääpäivä")
+      .once("value", d => {
+        var pp = d.val();
+        if (pp == undefined) {
+          pp = {
+            on: false,
+            date: [0, 0, 0]
+          };
+        }
+
+        if (second == "on") {
+          if (
+            !msg.member.roles.some(r =>
+              ["Admin", "Aktiivinen"].includes(r.name)
+            )
+          )
+            return msg.channel.send(
+              "Sulla ei ole oikeuksia määrittää pääpäivää!"
+            );
+          pp["date"] = date_array;
+          change_title("PÄÄPÄIVÄ");
+          if (pp["on"]) {
+            msg.channel.send("Tänään on jo pääpäivä!");
+          } else {
+            pp["on"] = true;
+            msg.channel.send("Nyt se on päätetty! Tänään on pääpäivä!");
+          }
+          firebase
+            .database()
+            .ref("global_data/pääpäivä")
+            .set(pp);
+        } else if (second == "ei") {
+          if (
+            !msg.member.roles.some(r =>
+              ["Admin", "Aktiivinen"].includes(r.name)
+            )
+          )
+            return msg.channel.send(
+              "Sulla ei ole oikeuksia määrittää pääpäivää!"
+            );
+          change_title("ttunes");
+          if (pp["on"]) {
+            msg.channel.send("Ei olekaan pääpäivä :(");
+          } else {
+            msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
+          }
+
+          pp["on"] = false;
+          pp["date"] = [0, 0, 0];
+          firebase
+            .database()
+            .ref("global_data/pääpäivä")
+            .set(pp);
+        } else {
+          if (pp["on"] == true) {
+            msg.channel.send("Tänään on pääpäivä!");
+          } else if (pp["on"] == false) {
+            msg.channel.send("Tänään ei ole pääpäivä :(");
+          }
+        }
+      });
   },
 
-  'pääpäivä_on': (msg) => {
-    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
-      var d = new Date();
-      data["date"] = [d.getDate(), d.getMonth(), d.getYear()];
-      change_title("PÄÄPÄIVÄ");
-      if (pääpäivä == true) {
-        msg.channel.send("Tänään on jo pääpäivä!");
-
-      } else {
-        pääpäivä = true;
-        msg.channel.send("Pääpäivä päätetty! Tänään on pääpäivä!");
-
-        var link = "https://www.youtube.com/watch?v=687_ZGkP6OU";
-
-        commands.play(msg, link);
-
-      }
-    } else {
-      msg.channel.send("Sulla ei oo oikeuksia määrittää pääpäivää t. bOtter");
-    }
-    firebase.database().ref('profiles').set(data);
+  dj: msg => {
+    var dj = firebase
+      .database()
+      .ref("global_data")
+      .once("value", d => {
+        var g = d.val();
+        if (g["dj"] == undefined) {
+          if (msg.member.voiceChannel === undefined)
+            return msg.channel.send(
+              "Kaikkien ehdokkaiden pitää olla voicekannulla, myös sun!"
+            );
+          if (g["pääpäivä"]["on"] == false) return msg.channel.send("Eihän tänään ees oo pääpäivä...");
+          var in_channel = msg.member.voiceChannel.members.keyArray();
+          var rnd = Math.floor(Math.random() * Math.floor(in_channel.length));
+          g["dj"] = in_channel[rnd];
+          msg.channel.send("Pääpäivän DJ on <@" + g["dj"] + ">!");
+        } else {
+          msg.channel.send(
+            "Pääpäivän DJ on jo valittu, ttunettaja on <@" + g["dj"] + ">!"
+          );
+        }
+        firebase
+          .database()
+          .ref("global_data/dj")
+          .set(g["dj"]);
+      });
   },
 
-  'pääpäivä_ei': (msg) => {
-    if (msg.member.roles.some(r => ["Admin", "Aktiivinen"].includes(r.name))) {
-
-      data["date"] = [0, 0, 0];
-
-      if (pääpäivä) {
-        msg.channel.send("pääpäivä on peruttu :(");
-      } else {
-        msg.channel.send("Eihä tänää ollukkaa pääpäivä...");
-
-      }
-      pääpäivä = false;
-      console.log("pääpäivä postettu");
-
-    } else {
-      msg.channel.send("Sinähän et täällä rupea pääpäivää säätelemään!");
-    }
-  },
-
-  'wednesday': (msg) => {
-
-    //IS IT WEDNESDAY MY DUDES?
-    let this_date = new Date();
-
-    let day = this_date.getDay();
-    console.log(this_date + " " + day);
-
-    if (day == 3) {
-
-      msg.channel.send("Valitettavasti wednesdayn aplikaatio on vielä work in progress, mutta ON WEDNESDAY");
-    } else {
-      msg.channel.send("Valitettavasti wednesdayn aplikaatio on vielä work in progress, mutta ei oo wednesday :(");
-    }
-
-  },
-
-  'kruuna': (msg) => {
-
-    result = Math.floor(Math.random() * Math.floor(2));
-
-    if (result === 1) {
-      msg.channel.send("Klaava, " + "hävisit " + msg.author.username);
-    } else {
-      msg.channel.send("Kkruuna, " + "voitit " + msg.author.username);
-    }
-  },
-
-  'klaava': (msg) => {
-
-    result = Math.floor(Math.random() * Math.floor(2));
-
-    if (result === 1) {
-      msg.channel.send("Kruuna, " + "hävisit " + msg.author.username);
-    } else {
-      msg.channel.send("Kklaava, " + "voitit " + msg.author.username);
-    }
-  },
-
-  'onkokarvisvammanen': (msg) => {
+  onkokarvisvammanen: msg => {
     msg.channel.send("ON");
   },
 
-  'onkovammanen': (msg) => {
-    let dude = msg.content.split(' ')[1];
-    if ((dude == '' || dude === undefined)) return msg.channel.send(`Ketä tarkoitat?`);
+  onkovammanen: msg => {
+    let dude = msg.content.split(" ")[1];
+    if (dude == "" || dude === undefined)
+      return msg.channel.send(`Ketä tarkoitat?`);
 
     result = Math.floor(Math.random() * Math.floor(2));
 
@@ -4666,807 +7043,579 @@ const commands = {
     } else {
       msg.channel.send(dude + " ei ole vammanen");
     }
-
   },
 
-  // MusicBot
+  wednesday: msg => {
+    //IS IT WEDNESDAY MY DUDES?
+    let this_date = new Date();
+    let day = this_date.getDay();
 
-  'join': (msg) => {
-    return new Promise((resolve, reject) => {
-      voiceChannel = msg.member.voiceChannel;
-      if (!voiceChannel || voiceChannel.type !== 'voice') return msg.reply('En voinut liittyä voicekannulle...');
-      voiceChannel.join().then(connection => resolve(connection)).catch(err => reject(err));
-      console.log("Liityttiin voicekanavalle!");
-    });
-  },
-
-  'play': (msg, manual = null, joining = false) => {
-
-    if (joining === true) {
-      startPlay(msg);
-      return;
+    if (day == 3) {
+      msg.channel.send(
+        "IT IS WEDNESDAY MY DUDES"
+      );
     } else {
-      // ADDAA TTUNEN JONOON //
-      var flag = false;
-      let url;
-      if (manual !== null) {
-        url = manual;
-      } else {
-        url = msg.content.split(' ')[1];
-        if (url == '' || url === undefined) return msg.channel.send(`Laita Youtube linkki tai ID tämän jälkeen: ${tokens.prefix}add`);
-      }
-      console.log("aloitetaan lataus");
-      yt.getInfo(url, (err, info) => {
-        if (err) return msg.channel.send('Kelvotonta linkkiä: ' + err);
-        if (!queue.hasOwnProperty(msg.guild.id)) queue[msg.guild.id] = {}, queue[msg.guild.id].playing = false, queue[msg.guild.id].songs = [];
-        queue[msg.guild.id].songs.push({
-          url: url,
-          title: info.title,
-          requester: msg.author.username
-        });
-        msg.channel.send(`**${info.title}** jonossa!`);
-        console.log("biisi ladannut" + queue[msg.guild.id].songs);
-        startPlay(msg);
-      });
-    }
-
-    // ALKAA SOITTAA QUEUEA //
-    function startPlay(msg) {
-      if (!msg.guild.voiceConnection) return commands.join(msg).then(() => commands.play(msg, null, true));
-      if (queue[msg.guild.id].playing || queue[msg.guild.id].playing == undefined) return;
-
-
-      queue[msg.guild.id].playing = true;
-
-      (function play(song) {
-        console.log(song);
-        if (song === undefined) {
-          console.log("biisi ei ollut havaiitavissa");
-          queue[msg.guild.id].playing = false;
-          voiceChannel.leave();
-        };
-        msg.channel.send(`Soitetaan: **${song.title}**, jäbän **${song.requester}** toiveesta!`);
-        dispatcher = msg.guild.voiceConnection.playStream(yt(song.url), streamOptions);
-        console.log("Ruvettiin soittasuitn");
-        let collector = msg.channel.createCollector(m => m);
-        collector.on('collect', m => {
-          if (m.content.startsWith(tokens.prefix + 'pause')) {
-            msg.channel.send('Pauseettu').then(() => {
-              dispatcher.pause();
-            });
-          } else if (m.content.startsWith(tokens.prefix + 'resume')) {
-            msg.channel.send('Jatketaan').then(() => {
-              dispatcher.resume();
-            });
-          } else if (m.content.startsWith(tokens.prefix + 'skip')) {
-            msg.channel.send('Skipattu').then(() => {
-              dispatcher.end();
-            });
-          } else if (m.content.startsWith(tokens.prefix + 'time')) {
-            msg.channel.send(`time: ${Math.floor(dispatcher.time / 60000)}:${Math.floor((dispatcher.time % 60000)/1000) <10 ? '0'+Math.floor((dispatcher.time % 60000)/1000) : Math.floor((dispatcher.time % 60000)/1000)}`);
-          }
-        });
-        dispatcher.on('end', () => {
-          collector.stop();
-          play(queue[msg.guild.id].songs.shift());
-        });
-        dispatcher.on('error', (err) => {
-          return msg.channel.send('error: ' + err).then(() => {
-            collector.stop();
-            play(queue[msg.guild.id].songs.shift());
-          });
-        });
-      })(queue[msg.guild.id].songs.shift());
+      msg.channel.send(
+        ":("
+      );
     }
   },
 
-  'queue': (msg) => {
-    if (queue[msg.guild.id] === undefined) return msg.channel.send(`Laita ttuneja jonoon: ${tokens.prefix}add`);
-    let tosend = [];
-    queue[msg.guild.id].songs.forEach((song, i) => {
-      tosend.push(`${i+1}. ${song.title} - Tilaaja: ${song.requester}`);
+  juo: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        if (user["inventory"]["items"]["ES"] <= 0)
+          return msg.channel.send("Sulla ei oo juotavaa... ostas ES");
+
+        user["inventory"]["items"]["ES"] -= 1;
+        user["inventory"]["items"]["ES_can"] += 1;
+
+        const answers = [
+          "Bärbär",
+          "ES jumalten juoma, jonnen parhain kuoma!",
+          "Saa keulisuitn moposi!",
+          "Nothing interesting happens.",
+          "You drink ES. It makes you feel dizzy...",
+          "Tshiiii, kruts... glug glug glug... aah",
+          "" + emojies["ES"] + emojies["alfa"] + emojies["ES"],
+          "" + emojies["ES"] + emojies["pogges"],
+          "5/5",
+          "Olis testis...",
+          "ES > MF",
+          "Joit ES ennätysajassa, toivoisit saavasi lisää...",
+          "Oletko maistanu es-hyytelöä?",
+          emojies["ES"] + ":boy:" + emojies["ES"],
+          "Mukavan hapokasta.",
+          "Humala on lähellä...",
+          "Hyvää, maistakaa muutkin!",
+          "Joit purkin ES, kyrpäsi värähti.",
+          "Panttia 15 euroo...",
+          "Kolmoissalama",
+          "Tunsit sateenkaaren värit kielelläsi",
+          "Sekoitit tipan viinaa joukkoon, yäiks",
+          "Sätii"
+        ];
+
+        var rnd = Math.floor(Math.random() * Math.floor(answers.length));
+        msg.channel.send(answers[rnd]);
+        save_user(user);
+      });
     });
-    msg.channel.send(`__**${msg.guild.name}, Musiikki jono:**__ Nyt **${tosend.length}** ttunea jonossa ${(tosend.length > 15 ? '*[Näyttää vain 15 viimeisintä]*' : '')}\n\`\`\`${tosend.slice(0,15).join('\n')}\`\`\``);
+  },
+
+  apustus: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
+
+    msg.channel.send({
+      embed: {
+        title: "***bOtter-Apustus***",
+        color: user["info"]["color"],
+        fields: [
+          {
+            name: "***___Komennot:___***",
+            value:
+              "Kaikki käytössä olevat komennot löytyvät tältä sivulta:\nLinkki"
+          },
+          {
+            name: "***___Ohjeet:___***",
+            value:
+              "Täältä löydät pelien ohjeet, todennäköisyyksiä ja muuta nippelitietoa.\nlinkki"
+          },
+          {
+            name: "***___BotterData:___***",
+            value:
+              "Täältä löydät tilastoja ja dataa bOtterin peleihin ja kaikkeen liittyen.\nlinkki"
+          },
+          {
+            name: "***___Patchnotet:___***",
+            value:
+              "Täällä on kirjattu kaikki bOtteriin tehdyt muutokset.\nlinkki"
+          }
+        ]
+      }
+    });
+  },
+
+  ilmoitukset: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
+
+    if (user["info"]["notifications"]) {
+      user["info"]["notifications"] = false;
+      msg.channel.send("Ilmoitukset pois päältä!");
+    } else {
+      user["info"]["notifications"] = true;
+      msg.channel.send("Ilmoitukset päällä!");
+
+    }
+    save_user(user);
   },
 
   // Tool Commands
 
-  'sano': (msg) => {
+  siirräsaldo: msg => {
     if (msg.author.id != "247754056804728832") return msg.delete();
-    let text_parts = msg.content.split(' ');
+
+    let name = msg.content.split(" ")[1];
+    let amount = msg.content.split(" ")[2];
+
+    if (amount == "" || amount === undefined) {
+      amount = 1;
+    }
+
+    if (amount.slice(-1) == "k") {
+      amount = Math.floor(1000*parseFloat(amount));
+    }
+    else if (amount.slice(-1) == "m") {
+      amount = Math.floor(1000000*parseFloat(amount));
+    }
+
+    if (name == "" || name === undefined) return;
+    if (isNaN(amount)) return;
+    if (amount == undefined || amount == "") return;
+
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return;
+
+    var target_id = name;
+
+    check_user_in_database(target_id).then(() => {
+      get_user(target_id).then(user => {
+        user["inventory"]["money"] += parseInt(amount);
+
+        check_peak(user);
+
+        var mark = "+";
+        if (amount < 0) {
+          mark = "";
+        }
+        msg.channel.send(
+          "<@" + target_id + "> saldoa muutettu " + mark + amount + "!"
+        );
+        msg.delete();
+        save_user(user);
+      });
+    });
+  },
+
+  muutasaldo: msg => {
+    if (msg.author.id != "247754056804728832") return msg.delete();
+
+    if (amount == "" || amount === undefined) {
+      amount = 1;
+    }
+
+    if (amount.slice(-1) == "k") {
+      amount = Math.floor(1000*parseFloat(amount));
+    }
+    else if (amount.slice(-1) == "m") {
+      amount = Math.floor(1000000*parseFloat(amount));
+    }
+
+    let name = msg.content.split(" ")[1];
+    let amount = msg.content.split(" ")[2];
+
+    if (name == "" || name === undefined) return;
+    if (isNaN(amount)) return;
+    if (amount == undefined || amount == "") return;
+
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return;
+
+    var target_id = name;
+
+    check_user_in_database(target_id).then(() => {
+      get_user(target_id).then(user => {
+        user["inventory"]["money"] = parseInt(amount);
+
+        check_peak(user);
+
+        var mark = "+";
+        if (amount < 0) {
+          mark = "";
+        }
+        msg.channel.send(
+          "<@" + target_id + ">: saldo asetettu " + mark + amount + "!"
+        );
+        msg.delete();
+        save_user(user);
+      });
+    });
+  },
+
+  sano: msg => {
+    if (user["id"] != "247754056804728832") return msg.delete();
+    let text_parts = msg.content.split(" ");
     str = "";
     for (var i = 1; i < text_parts.length; i++) {
       str += text_parts[i] + " ";
     }
     msg.channel.send(str);
-    msg.delete();
-
+    return msg.delete();
   },
 
-  'siirräsaldo': (msg) => {
-    if (msg.author.id != "247754056804728832") return msg.delete();
-
-    let name = msg.content.split(' ')[1];
-    let amount = msg.content.split(' ')[2];
-    let product = msg.content.split(' ')[3];
-
-    const products = ["rahat", "ES"];
-
-    if (product == undefined || product == null) {
-      product = "rahat";
-    }
-
-    if (!products.includes(product)) return;
-
-    if (product == "es") {
-      product = product.toUpperCase();
-    }
-
-    if ((name == '' || name === undefined)) return;
-    if (isNaN(amount)) return;
-    if (amount == undefined || amount == "") return;
-
-    name = name.replace(/\D/g, '');
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return;
-
-    ref.on('value', gotData, errData);
-
-    var target_id = name;
-
-    user_check_database(target_id)
-
-
-    if (product == "rahat") {
-      data[target_id]["omistus"]["rahat"] += parseInt(amount);
-
-      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
-        data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
-      }
-
-    } else {
-      data[target_id]["pelit"][product] += parseInt(amount);
-    }
-
-    mark = "+";
-    if (amount < 0) {
-      mark = ""
-    }
-
-    firebase.database().ref('profiles').set(data);
-    msg.channel.send("<@" + target_id + ">:lle " + product.charAt(0).toUpperCase() + product.slice(1) + " - Saldoa muutettu " + mark + amount + "!")
-    msg.delete();
-
-  },
-
-  'muutasaldo': (msg) => {
-    if (msg.author.id != "247754056804728832") return msg.delete();
-
-    let name = msg.content.split(' ')[1];
-    let amount = msg.content.split(' ')[2];
-    let product = msg.content.split(' ')[3];
-
-    const products = ["rahat", "ES"];
-
-    if (product == undefined || product == null) {
-      product = "rahat";
-    }
-
-    if (!products.includes(product)) return msg.channel.send("");
-
-
-    if ((name == '' || name === undefined)) return;
-    if (isNaN(amount)) return;
-    if (amount == undefined || amount == "") return;
-
-    name = name.replace(/\D/g, '');
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return;
-
-    ref.on('value', gotData, errData);
-
-    var target_id = name;
-
-    user_check_database(target_id)
-
-
-    if (product == "rahat") {
-      data[target_id]["omistus"]["rahat"] = parseInt(amount);
-
-      if (data[target_id]["omistus"]["rahat"] > data[target_id]["omistus"]["maxrahat"]) {
-        data[target_id]["omistus"]["maxrahat"] = data[target_id]["omistus"]["rahat"]
-      }
-
-    } else {
-      data[target_id]["pelit"][product] = parseInt(amount);
-    }
-
-    mark = "";
-    if (amount < 0) {
-      mark = "-"
-    }
-
-    firebase.database().ref('profiles').set(data);
-    msg.channel.send("<@" + target_id + ">:lle " + product.charAt(0).toUpperCase() + product.slice(1) + " - Saldo nyt " + mark + amount + "!")
-    msg.delete();
-
-  },
-
-  'purge': (msg) => {
+  purge: msg => {
     // This command removes all messages from all users in the channel, up to 100.
-    if (msg.author.id != "247754056804728832") return msg.delete();
-    let amount = msg.content.split(' ')[1];
+    if (user["id"] != "247754056804728832") return msg.delete();
+    let amount = msg.content.split(" ")[1];
     // get the delete count, as an actual number.
-    if ((amount == '' || amount === undefined)) {
+    if (amount == "" || amount === undefined) {
       msg.channel.send("Kirjoita !purge ja määrä");
       return;
     }
 
-    if (isNaN(amount)) return msg.channel.send("Purge tarvitsee olla positiivinen luku");
+    if (isNaN(amount))
+      return msg.channel.send("Purge tarvitsee olla positiivinen luku");
     if (amount < 2) return msg.channel.send(`Purge pitää olla vähintään 2 `);
 
     amount = Math.floor(amount);
 
     // So we get our messages, and delete them. Simple enough, right?
-    msg.channel.fetchMessages({
-      limit: amount + 1
-    }).then(fetch => {
-      msg.channel.bulkDelete(fetch)
-        .catch(error => msg.reply(`Ei voitu purgea syystä: ${error}`));
-    });
+    msg.channel
+      .fetchMessages({
+        limit: amount + 1
+      })
+      .then(fetch => {
+        msg.channel
+          .bulkDelete(fetch)
+          .catch(error => msg.reply(`Ei voitu purgea syystä: ${error}`));
+      });
   },
 
-  'ping': (msg) => {
-
+  ping: msg => {
     // Calculates ping between sending a message and editing it, giving a nice round-trip latency.
     // The second ping is an average latency between the bot and the websocket server (one-way, not round-trip)
     msg.channel.send("Ping?").then(m => {
-
-      m.edit(`Pong! Viive on ${m.createdTimestamp - msg.createdTimestamp}ms. API viive on ${Math.round(client.ping)}ms`);
-
-    });
-
-  },
-
-  // Help
-
-  'apustus': (msg) => {
-    msg.channel.send({
-      embed: {
-        color: 3447003,
-
-        title: "**__Komennot:__**",
-        fields: [{
-            name: tokens.prefix + "profiili + (nimi) + (luo / nimi / motto / kuvaus / kuva)",
-            value: "Näyttää käyttäjän profiilin. Suluissa olevilla voi muokata"
-          },
-          {
-            name: tokens.prefix + "profiilit",
-            value: "Näyttää kaikki tarjolla olevat profiilit"
-          },
-          {
-            name: tokens.prefix + "pääpäivä",
-            value: "Kertoo onko pääpäivä"
-          },
-          {
-            name: tokens.prefix + "pääpäivä_on",
-            value: "Asettaa kyseisen päivän pääpäiväksi"
-          },
-          {
-            name: tokens.prefix + "pääpäivä_ei",
-            value: "Lopettaa pääpäivän"
-          },
-          {
-            name: tokens.prefix + "dj",
-            value: "Arpoo pääpäivälle DJ:n!"
-          },
-          {
-            name: tokens.prefix + "wednesday",
-            value: "Tarkistaa onko keskiviikko"
-          },
-          {
-            name: tokens.prefix + "kruuna/klaava",
-            value: "Heittää rahea"
-          },
-          {
-            name: tokens.prefix + "rahat + (nimi)",
-            value: "Näyttää rahat"
-          },
-          {
-            name: tokens.prefix + "rikkaimmat",
-            value: "Näyttää listan rikkaimmista"
-          },
-          {
-            name: tokens.prefix + "suurimmat_summat",
-            value: "Näyttää listan suurimmista hetkellisistä rahoista"
-          },
-          {
-            name: tokens.prefix + "aktiivisimmat",
-            value: "Näyttää listan aktiivisimmista (aika kanavalla)"
-          },
-          {
-            name: tokens.prefix + "anna + nimi + summa",
-            value: "Antaa rahaasi henkilölle"
-          },
-          {
-            name: tokens.prefix + "slot + (panos)",
-            value: "Uhkapelaa rahaasi"
-          },
-          {
-            name: tokens.prefix + "ryhmäpeli + panos",
-            value: "Ryhmäuhkapeli ;)"
-          },
-          {
-            name: tokens.prefix + "harpoon",
-            value: "Aloittaa harppuuna-pelin (maksaa 50 coins)"
-          },
-          {
-            name: tokens.prefix + "Ammu [asteet 1-90] [voima 1-100]",
-            value: "Ampuu harppuunan"
-          },
-          {
-            name: tokens.prefix + "Kalasta [Syvyys 1-10] [Matka 1-100] [Paikka/Sytti]",
-            value: "Kalastetaan! Tarvitset ongen. Jos tavallinen sytti, valitse paikka: (joki, järvi, meri). Jos erikoisytti, niin laita sen nimi."
-          },
-          {
-            name: tokens.prefix + "bj + (panos)",
-            value: "Pelaa Blackjackiä. !hit, !stand, !double"
-          },
-          {
-            name: tokens.prefix + "kaikkitaieimitään",
-            value: "Uhkapelaa rahaasi tuplaamalla... uskallatko?"
-          },
-          {
-            name: tokens.prefix + "voittotaulu",
-            value: "Näyttää voittostaulun"
-          },
-          {
-            name: tokens.prefix + "kauppa",
-            value: "Näyttää kaikki tarjolla olevat products"
-          },
-          {
-            name: tokens.prefix + "osta + tuote + (määrä)",
-            value: "Ostaa tuotetta x määrän."
-          },
-          {
-            name: tokens.prefix + "juo",
-            value: "Juo es."
-          },
-          {
-            name: tokens.prefix + "onkokarvisvammanen",
-            value: "Kertoo onko karvis vammanen"
-          },
-          {
-            name: tokens.prefix + "onkovammanen",
-            value: "!onkovammanen + käyttäjänimi kertoo onko hän vammanen"
-          },
-          {
-            name: "**__ttuneBotti:__**",
-            value: "Tässä kaikki ttuneBottiin liittyvät komennot:"
-          },
-          {
-            name: tokens.prefix + "join",
-            value: "ttuneBotti tulee kannulle"
-          },
-          {
-            name: tokens.prefix + "play",
-            value: "Laittaa ttunen jonoon ja soittaa sen"
-          },
-          {
-            name: tokens.prefix + "queue",
-            value: "Näyttää ttunejonon"
-          },
-          {
-            name: tokens.prefix + "pause",
-            value: "Keskeyttää ttunen"
-          },
-          {
-            name: tokens.prefix + "resume",
-            value: "Jatkaa ttunea"
-          },
-          {
-            name: tokens.prefix + "skip",
-            value: "Hheittää ttunen rroskiin"
-          },
-          {
-            name: tokens.prefix + "time",
-            value: "Näyttää biisin soitetun ajan"
-          },
-          {
-            name: "**__Muut:__**",
-            value: "pixlPlace: https://www.kart5a.fi/pixlplace/"
-          }
-        ],
-        timestamp: new Date(),
-        footer: {
-          icon_url: client.user.avatarURL,
-          text: "© Kart5a & ddosSasu"
-        }
-      }
+      m.edit(
+        `Pong! Viive on ${m.createdTimestamp -
+          msg.createdTimestamp}ms. API viive on ${Math.round(client.ping)}ms`
+      );
     });
   }
 
 };
 
-// Loads emojies to server
+var emojies = {};
+
 function loadEmojies() {
-  coins = client.emojis.find(x => x.name === "coin");
-
-  karvis = client.emojis.find(x => x.name === "karvis");
-  sasu = client.emojis.find(x => x.name === "sasu");
-  protect = "\:watermelon:";
-  poggers = client.emojis.find(x => x.name === "poggers");
-  kys = client.emojis.find(x => x.name === "alfa");
-  tyhjä = "\:x:";
-  es = client.emojis.find(x => x.name === "ES");
-  harpoon_e = client.emojis.find(x => x.name === "harpuuna");
-  jaa = client.emojis.find(x => x.name === "jaa");
-  empty_e = client.emojis.find(x => x.name === "empty");
-  card_emojies = {};
-
-  for (let m = 0; m < 5; m++) {
-    let suit;
-    if (m == 0) {
-      suit = "S";
-    } else if (m == 1){
-      suit = "H";
-    } else if (m == 2) {
-      suit = "D";
-    } else if (m == 3) {
-      suit = "C";
-    }
-    for (let k = 1; k < 15; k++) {
-      card_emojies[k + suit + ""] = client.emojis.find(x => x.name === "" + k + suit);
-    }
+  emoji_array = client.emojis.array();
+  for (let emoji of emoji_array) {
+    emojies[emoji.name] = client.emojis.find(x => x.name == emoji.name);
   }
-  card_back = client.emojis.find(x => x.name === "back");
-  hit_emoji = client.emojis.find(x => x.name === "H_");
-  double_emoji = client.emojis.find(x => x.name === "D_");
-  stand_emoji = client.emojis.find(x => x.name === "S_");
-  jako_emoji = client.emojis.find(x => x.name === "J_");
-  poggersrow = client.emojis.find(x => x.name === "PoggersRow");
-
-  chest_common = client.emojis.find(x => x.name === "chest_common");
-  chest_uncommon = client.emojis.find(x => x.name === "chest_uncommon");
-  chest_rare = client.emojis.find(x => x.name === "chest_rare");
-  chest_epic = client.emojis.find(x => x.name === "chest_epic");
-  chest_legendary = client.emojis.find(x => x.name === "chest_legendary");
-
-  sytti = client.emojis.find(x => x.name === "sytti");
-  supersytti = client.emojis.find(x => x.name === "supersytti");
-  hypersytti = client.emojis.find(x => x.name === "hypersytti");
-
-  maski = client.emojis.find(x => x.name === "maski");
-  onki = client.emojis.find(x => x.name === "onki");
-  hiilikuituonki = client.emojis.find(x => x.name === "hiilikuituonki");
-  gem = client.emojis.find(x => x.name === "gemi");
-  dupepyssy = client.emojis.find(x => x.name === "dupepyssy");
-  keppi = client.emojis.find(x => x.name === "keppi");
-
-  tulokone = client.emojis.find(x => x.name === "tulokone");
-  tulokone_x = client.emojis.find(x => x.name === "tulokonex");
-  tulokiihdytin = client.emojis.find(x => x.name === "tulokiihdytin");
-  tuloimu = client.emojis.find(x => x.name === "tuloimu");
-  _perustulo = client.emojis.find(x => x.name === "perustulo");
-
-  big_shark = client.emojis.find(x => x.name === "big_shark");
-  pufferfish = client.emojis.find(x => x.name === "pufferfish");
-  suphi_fish = client.emojis.find(x => x.name === "suphi_fish");
-  shrimps = client.emojis.find(x => x.name === "shrimps");
-  sacred_eel = client.emojis.find(x => x.name === "sacred_eel");
-  anchovies = client.emojis.find(x => x.name === "anchovies");
-  salmon = client.emojis.find(x => x.name === "salmon");
-  dark_crab = client.emojis.find(x => x.name === "dark_crab");
-  manta_ray = client.emojis.find(x => x.name === "manta_ray");
-  eel = client.emojis.find(x => x.name === "eel");
-  lobster = client.emojis.find(x => x.name === "lobster");
-  shark = client.emojis.find(x => x.name === "shark");
-  mackerel = client.emojis.find(x => x.name === "mackerel");
-  monkfish = client.emojis.find(x => x.name === "monkfish");
-  cave_eel = client.emojis.find(x => x.name === "cave_eel");
-  cod = client.emojis.find(x => x.name === "cod");
-  anglerfish = client.emojis.find(x => x.name === "anglerfish");
-  bass = client.emojis.find(x => x.name === "bass");
-  tuna = client.emojis.find(x => x.name === "tuna");
-  herring = client.emojis.find(x => x.name === "herring");
-  pike = client.emojis.find(x => x.name === "pike");
-  trout = client.emojis.find(x => x.name === "trout");
-  rainbow_fish = client.emojis.find(x => x.name === "rainbow_fish");
-  sea_turtle = client.emojis.find(x => x.name === "sea_turtle");
-  sardine = client.emojis.find(x => x.name === "sardine");
-  karambwan = client.emojis.find(x => x.name === "karambwan");
-  swordfish = client.emojis.find(x => x.name === "swordfish");
-  infernal_eel = client.emojis.find(x => x.name === "infernal_eel");
-  leaping_trout = client.emojis.find(x => x.name === "leaping_trout");
-  leaping_salmon = client.emojis.find(x => x.name === "leaping_salmon");
-  leaping_sturgeon = client.emojis.find(x => x.name === "leaping_sturgeon");
-  seaweed = client.emojis.find(x => x.name === "seaweed");
-  casket = client.emojis.find(x => x.name === "casket");
 }
 
 // When bot is ready
-client.on('ready', () => {
-
-  console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
-
-  ref.on('value', gotData, errData);
-
+client.on("ready", () => {
   loadEmojies();
+  console.log(
+    `Bot has started, with ${client.users.size} users, in ${
+      client.channels.size
+    } channels of ${client.guilds.size} guilds.`
+  );
 
   var date = new Date();
   var date_array = [date.getDate(), date.getMonth(), date.getYear()];
   var day = date.getDay();
 
-  // Setting up "Title"
-  if (pääpäivä == true) {
-    change_title("PÄÄPÄIVÄ");
-  } else if (day === 3) {
-    change_title("Wednesday");
-  } else {
-    change_title("ttunes");
-  }
-
+  check_pääpäivä().then( v => {
+    console.log(v);
+    if (v) {
+      change_title("PÄÄPÄIVÄ");
+    } else if (day === 3) {
+      change_title("Wednesday");
+    } else {
+      change_title("ttunes");
+    }
+  });
 });
 
 // When message is recieved
-client.on('message', async msg => {
-
-  react_to_message([/homo/, /autisti/], ["sasu", "karvis"], msg);
-
+client.on("message", async msg => {
   if (msg.author.bot) return;
   if (msg.content.indexOf(tokens.prefix) !== 0) return;
-
   if (!msg.content.startsWith(tokens.prefix)) return;
-  if (commands.hasOwnProperty(msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0])) commands[msg.content.toLowerCase().slice(tokens.prefix.length).split(' ')[0]](msg);
 
+  if(msg.content == tokens.prefix + "r") {
+    msg.content = tokens.prefix + "rahat";
+  }
+  if(msg.content == tokens.prefix + "i") {
+    msg.content = tokens.prefix + "inv";
+  }
+
+  if (
+    commands.hasOwnProperty(
+      msg.content
+        .toLowerCase()
+        .slice(tokens.prefix.length)
+        .split(" ")[0]
+    )
+  )
+    commands[
+      msg.content
+        .toLowerCase()
+        .slice(tokens.prefix.length)
+        .split(" ")[0]
+    ](msg);
 });
-
 
 client.on("error", e => {
   console.log(e);
 });
 
-// INTERVALLIFUNKTIO MINUUTIN VÄLEIN
+const banned_channels = ["", ""];
+
 var minute_count = 0;
-
-setInterval(function() {
-  ref.on('value', gotData, errData);
-
-  var date = new Date();
-  var date_array = [date.getDate(), date.getMonth(), date.getYear()];
-  var day = date.getDay();
-
-  // Next day
-  if (date_array[0] == data["date"][0] && date_array[1] == data["date"][1] && date_array[2] == data["date"][2]) {
-    pääpäivä = true;
-  } else {
-    pääpäivä = false;
-    data["dj"] = null;
-    data["date"] = [0, 0, 0];
-  }
-
-  // Check if there is no card deck
-  try {
-    deck = data["deck"];
-  } catch(err) {
-    console.log("err");
-    check_deck();
-    deck = data["deck"];
-    firebase.database().ref('profiles').set(data);
-  }
-
-  // Setting up "Title"
-  if (pääpäivä == true) {
-    change_title("PÄÄPÄIVÄ");
-  } else if (day === 3) {
-    change_title("Wednesday");
-  } else {
-    change_title("ttunes");
-  }
-  if (data["deck"] == undefined) {
-    check_deck();
-    data["deck"] = deck;
-  }
+setInterval(async function() {
+  var users;
+  var global;
+  await bot_users.on("value", async function(u) {
+    users = u.val();
+  });
+  await global_data.once("value", async function(g) {
+    global = g.val();
+  });
 
   // Happens every time user is active on voicechannel
   var voicechannels_array = client.channels.keyArray();
   for (var i of voicechannels_array) {
     var channel = client.channels.get(i);
-
-    if (channel.type == 'voice' && channel.id != "300242143702679552" && channel.id != "422007359507005440") {
+    if (channel.type == "voice" && !banned_channels.includes(channel.id)) {
       var channel_members = channel.members.keyArray();
-      if (channel_members.length != 0) {
-
-        console.log("Channel: " + channel.name);
-        var list = [];
-
-        for (i of channel_members) {
-          list.push(channel.members.get(i).user.username);
-        }
-        console.log("Members: " + list);
-      }
-      if (channel.id == "404378873380470786") continue;
-
       for (var m of channel_members) {
         var usr = channel.members.get(m);
-        user_check_database(m);
-        if (usr.id == "430827809418772481" || usr.id == "232916519594491906" || usr.id == "155149108183695360") continue;
         if (!usr.deaf) {
-
-          if (data[m]["omistus"]["rahat"] > data[m]["omistus"]["maxrahat"]) {
-            data[m]["omistus"]["maxrahat"] = data[m]["omistus"]["rahat"]
-          }
-
-          data[m]["aika_kannuilla"] += 1;
-
-          data[m]["omistus"]["rahat"] += data[m]["omistus"]["perustulo"];
-
-          var weight = map(data[m]["omistus"]["perustulo"], 10, 80, 1, 1);
-          draw_lootbox_weighted(usr.id, 14400, weight, 180); // 180
-
-        }
-        if (BOT_IDs.includes(usr.id)) {
-          delete data[usr.id];
-          return;
+          await check_user_in_database(usr.id);
+          await add_income(usr.id);
+          await draw_lootbox(usr.id, 45, false);
         }
       }
     }
   }
 
-  // Happens every minute
+  await bot_users.once("value", async function(u) {
+    users = u.val();
+  });
+
+  // Happens anyways
   var server_members = client.users.keyArray();
   for (var m of server_members) {
-    if (m in data) {
-
-      // Tuloimuajastin -> imee tuloa vain jos kohde on paikalla -> muuten kuluu
-      if ("tuloimuajastin" in data[m]) {
-        var trg = client.users.get(data[m]["tuloimuajastin"]["kohde"]);
-
-        if (is_on_voicechannel(trg.id, voicechannels_array) && !(trg.deaf)) {
-
-          if ("tulokoneajastin" in data[trg.id]) {
-            multi = data[trg.id]["tulokoneajastin"]["tulokonetier"]*10;
-          } else {
-            multi = 1;
-          }
-
-          data[trg.id]["omistus"]["rahat"] -= data[trg.id]["omistus"]["perustulo"]*multi;
-          data[trg.id]["omistus"]["sulta_imetyt"] -= data[trg.id]["omistus"]["perustulo"]*multi;
-          data[trg.id]["omistus"]["sulta_imetyt_minuutit"] += 1;
-
-
-          data[m]["omistus"]["rahat"] += data[trg.id]["omistus"]["perustulo"]*multi;
-          data[m]["omistus"]["imetyt"] += data[trg.id]["omistus"]["perustulo"]*multi;
-          data[m]["omistus"]["imetyt_minuutit"] += 1;
-          data[m]["tuloimuajastin"]["summa"] += data[trg.id]["omistus"]["perustulo"]*multi;
-
-        }
-
-        data[m]["tuloimuajastin"]["tuloimuaika"] -= 1;
-        if (data[m]["tuloimuajastin"]["tuloimuaika"] == 0) {
-          client.channels.get("280272696560975872").send("<@" + m + ">, Tuloimusi on päättynyt... Sait: " + data[m]["tuloimuajastin"]["summa"] + coins);
-          delete data[m]["tuloimuajastin"];
+    if (m in users) {
+      // Absorber
+      if ("income_absorb" in users[m]) {
+        console.log(
+          users[m]["name"] + " : " + users[m]["income_absorb"]["timer"]
+        );
+        users[m]["income_absorb"]["timer"] -= 1;
+        if (users[m]["income_absorb"]["timer"] == 0) {
+          client.channels
+            .get("494044533479440384")
+            .send(
+              "Tuloimusi loppui, <@" +
+                m +
+                ">. Imit yhteensä: " +
+                users[m]["income_absorb"]["sum"] +
+                emojies["coin"]
+            );
+          delete users[m].income_absorb;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/income_absorb")
+            .set(null);
         }
       }
 
-      // Tulokoneajastin -> kuluu kokoajan. antaa enemmän rahaa jos paikalla
-      if ("tulokoneajastin" in data[m]) {
-
-        if (is_on_voicechannel(m, voicechannels_array) && !(client.users.get(m).deaf)) {
-
-          data[m]["omistus"]["rahat"] += data[m]["omistus"]["perustulo"]*data[m]["tulokoneajastin"]["tulokonetier"]*10 - data[m]["omistus"]["perustulo"];
-          data[m]["tulokoneajastin"]["summa"] += data[m]["omistus"]["perustulo"]*data[m]["tulokoneajastin"]["tulokonetier"]*10 - data[m]["omistus"]["perustulo"];
-          data[m]["tulokoneajastin"]["tulokoneaika"] -= 1;
-          if (data[m]["tulokoneajastin"]["tulokoneaika"] == 0) {
-            client.channels.get("280272696560975872").send("<@" + m + "> ,Tulokoneesi on päättynyt... Sait: " + (data[m]["tulokoneajastin"]["summa"]) + coins);
-            delete data[m]["tulokoneajastin"];
-          }
-        }
-        else {
-          data[m]["tulokoneajastin"]["tulokoneaika"] -= 1;
-          if (data[m]["tulokoneajastin"]["tulokoneaika"] == 0) {
-            client.channels.get("280272696560975872").send("<@" + m + "> ,Tulokoneesi on päättynyt... Sait: " + (data[m]["tulokoneajastin"]["summa"]) + coins);
-            delete data[m]["tulokoneajastin"];
-          }
+      if ("absorb_target" in users[m]) {
+        users[m]["absorb_target"]["timer"] -= 1;
+        if (users[m]["absorb_target"]["timer"] == 0) {
+          client.channels
+            .get("494044533479440384")
+            .send(
+              "<@" +
+                m +
+                ">, Menetit yhteensä: " +
+                users[m]["absorb_target"]["sum"] +
+                emojies["coin"]
+            );
+          delete users[m].absorb_target;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/absorb_target")
+            .set(null);
         }
       }
 
-      // Kuluu aina -> kalastaminen loppuu kun ajastin päättyy
-      if ("kalastusajastin" in data[m]) {
+      // Income Machine
+      if ("income_machine" in users[m]) {
+        if (user_under_income(users[m])) {
+          users[m]["inventory"]["money"] +=
+            users[m]["income_machine"]["multi"] *
+              users[m]["inventory"]["income"] -
+            users[m]["inventory"]["income"];
+          users[m]["income_machine"]["sum"] +=
+            users[m]["income_machine"]["multi"] *
+              users[m]["inventory"]["income"] -
+            users[m]["inventory"]["income"];
 
-        data[m]["kalastusajastin"]["timer"] -= 1;
-
-        if (data[m]["kalastusajastin"]["timer"] == 0) {
-          data[m]["omistus"]["rahat"] += data[m]["kalastusajastin"]["hinta"];
-
-          var fish_pic = client.emojis.find(x => x.name === data[m]["kalastusajastin"]["emoji"]);
-          var rod_picture = client.emojis.find(x => x.name === data[m]["kalastusajastin"]["onki"]);
-          var bait_picture = client.emojis.find(x => x.name === data[m]["kalastusajastin"]["sytti"]);
-
-          client.channels.get("280272696560975872").send({
-            "embed": {
-              "title": "***" + client.users.get(m).username + " " + "saaliisi:***",
-              "color": 15466496,
-              "fields": [{
-                  "name": fish_pic + " " + data[m]["kalastusajastin"]["kala"],
-                  "value": "(Paino: " + data[m]["kalastusajastin"]["paino"] + "0kg , Arvo: " + data[m]["kalastusajastin"]["hinta"] + coins + ")"
-                },
-                {
-                  "name": "***___Tiedot:___***",
-                  "value": "***Paikka:*** " + data[m]["kalastusajastin"]["paikka"] + "\n***Aika:*** " + data[m]["kalastusajastin"]["päiväaika"] + "\n***Onki:*** " + rod_picture + "\n***Sytti:*** " + bait_picture
-                }
-              ]
+          if ("absorb_target" in users[m]) {
+            if (user_under_income(users[m]["absorb_target"]["absorber"])) {
+              users[m]["basic_statistics"]["money_from_income_machines"] -=
+                users[m]["income_machine"]["multi"] *
+                  users[m]["inventory"]["income"] -
+                users[m]["inventory"]["income"];
+              users[m]["inventory"]["money"] -=
+                users[m]["income_machine"]["multi"] *
+                  users[m]["inventory"]["income"] -
+                users[m]["inventory"]["income"];
             }
-          });
-
-          data[m]["omistus"]["kaloista_saadut_rahat"] += data[m]["kalastusajastin"]["hinta"];
-          data[m]["omistus"]["kalastetut_kalat"] += 1;
-          if (data[m]["omistus"]["painavin_kala"] < data[m]["kalastusajastin"]["paino"]) {
-            data[m]["omistus"]["painavin_kala"] = data[m]["kalastusajastin"]["paino"];
           }
+          users[m]["basic_statistics"]["money_from_income_machines"] +=
+            users[m]["income_machine"]["multi"] *
+              users[m]["inventory"]["income"] -
+            users[m]["inventory"]["income"];
+        }
 
-          delete fish_pic;
-          delete rod_picture;
-          delete bait_picture;
-          delete data[m]["kalastusajastin"];
+        users[m]["income_machine"]["timer"] -= 1;
+        if (users[m]["income_machine"]["timer"] == 0) {
+          client.channels
+            .get("494044533479440384")
+            .send(
+              "<@" +
+                m +
+                ">, Tulokoneesi on päättynyt... Sait: " +
+                users[m]["income_machine"]["sum"] +
+                emojies["coin"]
+            );
+          delete users[m].income_machine;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/income_machine")
+            .set(null);
         }
       }
 
-      if (data[m]["omistus"]["rahat"] > data[m]["omistus"]["maxrahat"]) {
-        data[m]["omistus"]["maxrahat"] = data[m]["omistus"]["rahat"];
-
+      if ("security_cam" in users[m]) {
+        users[m]["security_cam"]["timer"] -= 1;
+        if (users[m]["security_cam"]["timer"] == 0) {
+          client.channels
+            .get("494044533479440384")
+            .send(
+              "<@" +
+                m +
+                ">, Valvontasi on päättynyt... Valvonta suojasi " +
+                users[m]["security_cam"]["protected"] +
+                " tapausta!"
+            );
+          delete users[m].security_cam;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/security_cam")
+            .set(null);
+        }
       }
+
+      if ("fishing_timer" in users[m]) {
+        users[m]["fishing_timer"]["timer"] -= 1;
+        if (users[m]["fishing_timer"]["timer"] == 0) {
+          client.channels
+            .get("494044533479440384")
+            .send(fish_caught(users[m], users));
+          check_kaladex(users[m]);
+          delete users[m].fishing_timer;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/fishing_timer")
+            .set(null);
+        }
+      }
+
+      if ("fishing_boat_timer" in users[m]) {
+        if (!("boat_timer" in users[m])) {
+          users[m]["boat_timer"] = 0;
+          for (var fish of users[m]["fishing_boat_timer"]) {
+            users[m]["boat_timer"] += fish["timer"];
+          }
+        }
+
+        users[m]["boat_timer"] -= 1;
+        if (users[m]["boat_timer"] == 0) {
+          client.channels
+            .get("494044533479440384")
+            .send(fishes_caught(users[m], users));
+          check_kaladex(users[m]);
+          delete users[m].fishing_boat_timer;
+          delete users[m].boat_timer;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/fishing_boat_timer")
+            .set(null);
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/boat_timer")
+            .set(null);
+        }
+      }
+      await check_kaladex(users[m]);
+
+      // Check if peak
+      await check_peak(users[m]);
     }
   }
+
+  await check_income_absorbtion();
+  await save_all_users(users);
+
+  var date = new Date();
+  var date_array = [date.getDate(), date.getMonth(), date.getYear()];
+  var day = date.getDay();
+
+  // Setting up "Title"
+
+  check_pääpäivä().then( v => {
+    if (v) {
+      change_title("PÄÄPÄIVÄ");
+    } else if (day === 3) {
+      change_title("Wednesday");
+    } else {
+      change_title("ttunes");
+    }
+  });
+
+
+  // Next day
+  if (date_array[0] != global["pääpäivä"]["date"][0] || date_array[1] != global["pääpäivä"]["date"][1] || date_array[2] != global["pääpäivä"]["date"][2]) {
+    global["pääpäivä"]["on"] = false;
+    delete global["dj"];
+    global["pääpäivä"]["date"] = [0, 0, 0];
+    firebase
+      .database()
+      .ref("global_data")
+      .set(global);
+  }
+
   minute_count += 1;
   console.log("Intervalli meni! (" + minute_count + ")");
-
-  firebase.database().ref('profiles').set(data);
-
-}, 60000);
-
-function is_on_voicechannel(_id, _voice_channels) {
-  for (var i of _voice_channels) {
-    var kan = client.channels.get(i);
-    if (kan.type == 'voice' && kan.id != "300242143702679552" && kan.id != "422007359507005440" && kan.id != "404378873380470786") {
-      var membrs = kan.members.keyArray();
-      for (var c of membrs) {
-        if (c == _id) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-// FIREBASEN DATAKÄSITTELYFUNKTIOITA
-function gotData(_data) {
-  data = _data.val();
-}
-
-function errData(err) {
-  console.log("Error!");
-  console.log(err);
-}
+}, 10000);
 
 // Bot login
 client.login(tokens.d_token);

@@ -1,5 +1,5 @@
 {
-  "name": "bOtter",
+  "name": "Testibot_",
   "version": "1.0.0",
   "description": "DiscordPerseilyBot",
   "main": "server.js",
@@ -9,11 +9,9 @@
   },
   "dependencies": {
     "discord.js": "^11.4.2",
-    "firebase": "^5.5.0",
-    "node-opus": "^0.2.7",
-    "ytdl-core": "^0.20.2"
+    "ffmpeg": "0.0.4",
+    "firebase": "^5.5.4"
   },
   "author": "Kart5a",
-  "license": "",
-  "devDependencies": {}
+  "license": ""
 }
