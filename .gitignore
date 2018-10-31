@@ -1,4 +1,4 @@
-fishes.json
-tokens.json
-config.json
-node_modules/*
+/fishes.json
+/tokens.json
+/config.json
+/node_modules/*
