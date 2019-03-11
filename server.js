@@ -96,7 +96,7 @@ function print_profile(user, msg) {
   var name = user["name"];
   var motto = user["info"]["motto"];
   var description = user["info"]["description"];
-  var picture = user["info"]["picture"];
+  var picture = user["info"]["pictures"];
   var money = user["inventory"]["money"];
   var time = user["basic_statistics"]["minutes_on_channel"];
   var basic_incoming = user["inventory"]["income"];
@@ -124,7 +124,7 @@ function print_profile(user, msg) {
           url: avatar
         },
         image: {
-          url: picture
+          "url": picture
         },
         fields: [
           {
@@ -164,12 +164,16 @@ function print_profile(user, msg) {
 }
 
 //// Adders
-function draw_lootbox(user, multi, game = true) {
-  get_user(user).then(user => {
+async function draw_lootbox(user_id, multi, game = true) {
+
+  check_user_in_database(user_id)
+  var user = await get_user(user_id);
+
+
     var propabilities = {
-      legendary: 480,
-      epic: 48,
-      rare: 12,
+      legendary: 300,
+      epic: 50,
+      rare: 10,
       uncommon: 3,
       common: 1
     };
@@ -258,28 +262,27 @@ function draw_lootbox(user, multi, game = true) {
       lootbox_text +=
         "Legendaarista! " + name + emojies["chest_legendary"] + "\n";
     }
-    if (game) {
-      user["basic_statistics"]["lootboxes_by_playing"] += 1;
-    } else {
-      user["basic_statistics"]["lootboxes_by_afking"] += 1;
-    }
 
-    save_user(user);
     if (lootbox_text != "") {
-      client.channels.get("494044533479440384").send(lootbox_text);
+      client.channels.get("280272696560975872").send(lootbox_text);
     }
-  });
+    return save_user(user);
 }
 
-function add_income(_id) {
-  get_user(_id).then(user => {
-    user["inventory"]["money"] += user["inventory"]["income"];
-    user["basic_statistics"]["money_from_incomes"] +=
-      user["inventory"]["income"];
-    user["basic_statistics"]["minutes_on_channel"] += 1;
+async function add_income(_id) {
+  var user = await get_user(_id);
+  user["inventory"]["money"] += user["inventory"]["income"];
+  user["basic_statistics"]["money_from_incomes"] += user["inventory"]["income"];
+  user["basic_statistics"]["minutes_on_channel"] += 1;
 
-    save_user(user);
-  });
+  await save_user(user);
+}
+
+async function add_solo(_id) {
+  console.log(_id);
+  var user = await get_user(_id);
+  user["basic_statistics"]["solo_minutes"] += 1;
+  await save_user(user);
 }
 
 //// Checkers
@@ -334,7 +337,8 @@ function check_user_in_database(_id) {
             security_cam: 0,
             bronze_income: 0,
             silver_income: 0,
-            gold_income: 0
+            gold_income: 0,
+            timemachine : 0
           },
           key_items: {
             rod: false,
@@ -350,7 +354,8 @@ function check_user_in_database(_id) {
             },
             bush: {
               own: false,
-              on: false
+              on: false,
+              timer: 0
             }
           },
           lootboxes: {
@@ -366,6 +371,7 @@ function check_user_in_database(_id) {
           peak_money: 500,
           income_bought: 0,
           money_from_incomes: 0,
+          solo_minutes : 0,
           money_from_opening_lootboxes: 0,
           money_from_lootboxes: 0,
           money_from_income_machines: 0,
@@ -384,7 +390,9 @@ function check_user_in_database(_id) {
           money_stolen: 0,
           money_stolen_from_you: 0,
           bomb_used: 0,
+          bombed_money : 0,
           bombed: 0,
+          bombed_money_from_you: 0,
           opened_lootboxes: {
             common: 0,
             uncommon: 0,
@@ -397,7 +405,9 @@ function check_user_in_database(_id) {
           fines: 0,
           compensations: 0,
           hit: 0,
+          sticked_money_from_you : 0,
           stick_used: 0,
+          sticked_money : 0,
           money_absorbed_from_you: 0,
           money_absorbed_to_you: 0
         },
@@ -464,6 +474,7 @@ function check_user_in_database(_id) {
         },
         game_kalastus: {
           bait_consumed: 0,
+          treasure_chest : 0,
           super_bait_consumed: 0,
           hyper_bait_consumed: 0,
           fish_caught: 0,
@@ -750,7 +761,7 @@ function calculate_wealth(user) {
   all_money +=
     user["inventory"]["money"] * Math.pow(user["inventory"]["items"]["gem"], 2);
   all_money +=
-    user["inventory"]["money"] * (user["inventory"]["items"]["glitch"] * 10);
+    user["inventory"]["money"] * (user["inventory"]["items"]["glitch"] * 2.5);
   all_money += user["inventory"]["items"]["bronze_income"] * 10000;
   all_money += user["inventory"]["items"]["silver_income"] * 10000 * 3;
   all_money += user["inventory"]["items"]["gold_income"] * 10000 * 5;
@@ -773,21 +784,21 @@ function calculate_wealth(user) {
     user["inventory"]["income"];
   all_money += user["inventory"]["items"]["mask"] * 10000;
   all_money += user["inventory"]["items"]["security_cam"] * 8000;
-  all_money += user["inventory"]["items"]["shield"] * 3000;
+  all_money += user["inventory"]["items"]["shield"] * 1500;
   all_money += user["inventory"]["items"]["stick"] * 100;
 
   all_money += user["inventory"]["lootboxes"]["common"] * 1000;
   all_money += user["inventory"]["lootboxes"]["uncommon"] * 3000;
   all_money += user["inventory"]["lootboxes"]["rare"] * 12000;
-  all_money += user["inventory"]["lootboxes"]["epic"] * 40000;
+  all_money += user["inventory"]["lootboxes"]["epic"] * 50000;
   all_money += user["inventory"]["lootboxes"]["legendary"] * 200000;
 
   if (user["inventory"]["key_items"]["bush"]["own"]) {
     all_money += 200000;
   }
-  console.log(all_money);
+
   if (user["inventory"]["key_items"]["safe"]["own"]) {
-    all_money += 200000;
+    all_money += 100000*user["inventory"]["key_items"]["safe"]["capasity"]/1000000;
   }
 
   return all_money;
@@ -1016,7 +1027,7 @@ function fishes_caught(user, _users) {
       user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
         "heaviest"
       ] = user["fishing_boat_timer"][i]["weight"];
-      heaviest = "(Oma enkka)";
+      heaviest = "(Oma enkka)\n";
     }
 
     all_time_heaviest = "Kaikkien aikojen isoin! :trophy:\n";
@@ -1065,7 +1076,7 @@ function fishes_caught(user, _users) {
             name: "***___Tiedot:___***",
             value:
             "***Yhteisumma:*** " + value + emojies["coin"] + "\n" +
-            "***Syöttien määrä:*** " + user["fishing_boat_timer"].length + "\n" +
+            "***Syttien määrä:*** " + user["fishing_boat_timer"].length + "\n" +
               "***Paikka:*** " +
               place +
               "\n***Aika:*** " +
@@ -1093,7 +1104,7 @@ function check_kaladex(user) {
     user["inventory"]["money"] += 100000;
     user["inventory"]["key_items"]["super_rod"] = true;
     client.channels
-      .get("494044533479440384")
+      .get("280272696560975872")
       .send(
         "Onnea <@" +
           user["id"] +
@@ -1111,14 +1122,14 @@ function check_kaladex(user) {
     }
 
     user["game_kalastus"]["tier2_completed"] = true;
-    user["inventory"]["money"] += 200000;
+    user["inventory"]["money"] += 250000;
     user["inventory"]["key_items"]["hyper_rod"] = true;
     client.channels
-      .get("494044533479440384")
+      .get("280272696560975872")
       .send(
         "Onnea <@" +
           user["id"] +
-          "> olet suorittanut KalaDexin toisen osion. Palkinnoksi saat 200000" +
+          "> olet suorittanut KalaDexin toisen osion. Palkinnoksi saat 250000" +
           emojies["coin"] +
           " ja Hyperongen " +
           emojies["hyperonki"]
@@ -1135,7 +1146,7 @@ function check_kaladex(user) {
     user["inventory"]["key_items"]["fishing_boat"] = true;
 
     client.channels
-      .get("494044533479440384")
+      .get("280272696560975872")
       .send(
         "Onnea <@" +
           user["id"] +
@@ -1532,7 +1543,9 @@ const commands = {
 
               var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
               var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
-
+              var mast = (inc*0.5+mon*1.5)/2
+              var th = Math.floor(map(bet, min_bet, mast, 10, 1));
+              draw_lootbox(user["id"], th, true);
               save_user(user);
             });
 
@@ -2142,13 +2155,13 @@ const commands = {
   },
 
   slot: msg => {
-    const ALLOWED_CHANNELS = ["494044533479440384", "280272696560975872"];
+    const ALLOWED_CHANNELS = ["280272696560975872"];
     const SLOTRATE = 30;
+    if (!ALLOWED_CHANNELS.includes(msg.channel.id)) return msg.delete();
 
     check_user_in_database(msg.author.id).then(() => {
-      get_user(msg.author.id).then(user => {
-        if (!ALLOWED_CHANNELS.includes(msg.channel.id)) return msg.delete();
-
+      get_user(msg.author.id).then( u => {
+        var user = u;
         let bet = msg.content.split(" ")[1];
         var starting_money = user["inventory"]["money"];
 
@@ -2316,16 +2329,6 @@ const commands = {
           user["basic_statistics"]["peak_money"] = user["inventory"]["money"];
         }
 
-        print_slot(
-          win_line[0],
-          win_line[1],
-          win_line[2],
-          winnings,
-          user,
-          msg,
-          bet
-        );
-
         var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
         var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
 
@@ -2333,23 +2336,13 @@ const commands = {
         if (bet < 10*user["inventory"]["income"]) {
           weight = 100;
         }
+
+        save_user(user);
         draw_lootbox(user["id"], weight, true);
 
-        firebase
-          .database()
-          .ref("users/" + user["id"])
-          .update(user);
-        msg.delete();
+        print_slot(win_line[0], win_line[1], win_line[2], winnings, user, msg, bet);
 
-        function print_slot(
-          _first_roll,
-          _second_roll,
-          _third_roll,
-          _win_amount,
-          user,
-          msg,
-          _bet
-        ) {
+        function print_slot(_first_roll, _second_roll, _third_roll, _win_amount, user, msg, _bet) {
           // Prints slot results
           var starting_money = user["inventory"]["money"];
           var min_bet = Math.floor(starting_money / (SLOTRATE * 10)) * 10;
@@ -2437,8 +2430,9 @@ const commands = {
             }
           });
         }
-      });
-    });
+      })
+    })
+
   },
 
   harpoon: msg => {
@@ -2447,10 +2441,10 @@ const commands = {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
         let multi = 1;
-        if (user["inventory"]["golden_harpoon"]) {
+        if (user["inventory"]["key_items"]["golden_harpoon"]) {
           multi = 5;
           color = 16093987;
-          icon = emojies["harpoon"];
+          icon = emojies["harpuuna"];
         } else {
           multi = 1;
           color = 1006999;
@@ -2624,7 +2618,7 @@ const commands = {
         harpoon_collectors[user["id"] + ""] = msg.channel.createCollector(
           m => m
         );
-        harpoon_collectors[user["id"] + ""].on("message", m => {
+        harpoon_collectors[user["id"] + ""].on("collect", m => {
           if (
             m.content.startsWith(tokens.prefix + "ammu") &&
             user["id"] == m.author.id
@@ -2663,7 +2657,7 @@ const commands = {
         function shoot_harpoon(_deg, _force, _wind, _field_matrix, user) {
           harpoon_collectors[user["id"]].stop();
           let multi = 1;
-          if (user["inventory"]["golden_harpoon"] == true) {
+          if (user["inventory"]["key_items"]["golden_harpoon"] == true) {
             multi = 5;
           } else {
             multi = 1;
@@ -2775,13 +2769,15 @@ const commands = {
 
           if (multi == 5) {
             color = 16093987;
-            icon = emojies["harpoon"];
+            icon = emojies["harpuuna"];
           } else {
             color = 1006999;
             icon = "";
           }
 
+          save_user(user);
           draw_lootbox(user["id"], 5, true);
+
 
           msg[user["id"]].edit({
             embed: {
@@ -2967,7 +2963,7 @@ const commands = {
     }
   },
 
-  ktem: msg => {
+  kaikkitaieimitään: msg => {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
         const MIN = 500;
@@ -3054,14 +3050,13 @@ const commands = {
         user["game_KTEM"]["games"] += 1;
         user["game_KTEM"]["all_bets"] += user["inventory"]["money"];
 
-        var inc = 1000; /// TODO
-        var weight = map(starting_money, 0, inc,  9, 1);
+        var weight = map(starting_money, 0, user["basic_statistics"]["peak_money"],  9, 1);
         if (starting_money < 10*user["inventory"]["income"]) {
           weight = 100;
         }
 
-        draw_lootbox(user["id"], weight, true);
         save_user(user);
+        draw_lootbox(user["id"], weight, true);
       });
     });
   },
@@ -3084,28 +3079,41 @@ const commands = {
     var hour = date.getHours();
     var part_day = "";
     var time;
-    if (hour > 6 && hour <= 10) {
+    if (hour >= 5 && hour < 10) {
       part_day = "M";
       time = "Aamu";
     }
-    if (hour > 10 && hour <= 18) {
+    if (hour >= 10 && hour < 18) {
       part_day = "A";
       time = "Päivä";
     }
-    if (hour > 18 && hour <= 23) {
+    if (hour >= 18 && hour < 23) {
       part_day = "E";
       time = "Ilta";
     }
-    if (hour > 23 || hour <= 6) {
+    if (hour >= 23 || hour < 5) {
       part_day = "N";
       time = "Yö";
     }
+    if ("timemachine_timer" in user) {
+      part_day = user["timemachine_timer"]["part_day"];
+      time = user["timemachine_timer"]["time"];
+    }
+
     if ("fishing_timer" in user)
       return msg.channel.send("Olet jo kalastamassa!");
     if ("fishing_boat_timer" in user)
       return msg.channel.send("Olet jo kalastamassa!");
     let argument = msg.content.split(" ")[1];
     let depth = msg.content.split(" ")[2];
+
+    if (argument != undefined) {
+      argument = argument.toLowerCase();
+    }
+    if (depth != undefined) {
+      depth = depth.toLowerCase();
+    }
+
     switch (argument) {
       case "su":
         argument = "supersytti";
@@ -3155,7 +3163,7 @@ const commands = {
       return msg.channel.send("Kirjoita paikka tai sytti!");
     if (!arguments.includes(argument))
       return msg.channel.send(
-        "Virheellinen paikka tai syötti! Kirjoita joko joki, meri, järvi tai erikoisyötti."
+        "Virheellinen paikka tai sytti! Kirjoita joko joki, meri, järvi tai erikoisytti."
       );
 
     if (depth == "" || depth == undefined)
@@ -3270,13 +3278,27 @@ const commands = {
       time = "Yö";
     }
 
+    if ("timemachine_timer" in user) {
+      part_day = user["timemachine_timer"]["part_day"];
+      time = user["timemachine_timer"]["time"];
+    }
+
     if ("fishing_timer" in user)
       return msg.channel.send("Olet jo kalastamassa!");
     if ("fishing_boat_timer" in user)
       return msg.channel.send("Olet jo kalastamassa!");
 
     let argument = msg.content.split(" ")[1];
+
+    if (argument != undefined) {
+      argument = argument.toLowerCase();
+    }
+
     var amount = msg.content.split(" ")[2];
+
+    if (amount != undefined) {
+      amount = amount.toLowerCase();
+    }
 
     switch (argument) {
       case "su":
@@ -3302,7 +3324,7 @@ const commands = {
       return msg.channel.send("Kirjoita paikka tai sytti!");
     if (!arguments.includes(argument))
       return msg.channel.send(
-        "Virheellinen paikka tai syötti! Kirjoita joko joki, meri, järvi tai erikoisyötti."
+        "Virheellinen paikka tai sytti! Kirjoita joko joki, meri, järvi tai erikoisytti."
       );
 
     if (amount == "" || amount === undefined) {
@@ -3326,7 +3348,7 @@ const commands = {
     amount = Math.floor(amount);
     if (amount == 0) return msg.channel.send("Tarvitset ainakin yhden syötin!");
     if (amount < 1 || amount > 10) {
-      return msg.channel.send("Syöttien määrä tulee olla 1-10!");
+      return msg.channel.send("Syttien määrä tulee olla 1-10!");
     }
     if (amount == "min") {
       amount = 1;
@@ -3422,6 +3444,249 @@ const commands = {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
         let type = msg.content.split(" ")[1];
+        let all = msg.content.split(" ")[2];
+        if (type != undefined) {
+          type = type.toLowerCase();
+        }
+        let open_all = false;
+        if (all == "kaikki" || all == "k") {
+          open_all = true;
+        }
+
+        var drop_table = {
+          common : {
+            Coins: {
+              path: "user['inventory']['money']",
+              amount: [600, 800, 1000],
+              name: emojies["coin"],
+              rate: 18,
+              real_name: "Coins"
+            },
+            Sytti: {
+              path: "user['inventory']['items']['bait']",
+              amount: [2, 3],
+              name: emojies["sytti"],
+              rate: 12,
+              real_name: "Sytti"
+            },
+            Keppi: {
+              path: "user['inventory']['items']['stick']",
+              amount: [2],
+              name: emojies["keppi"],
+              rate: 10,
+              real_name: "Keppi"
+            },
+            Pronssitulo: {
+              path: "user['inventory']['items']['bronze_income']",
+              amount: [1],
+              name: emojies["perustulo1"],
+              rate: 1,
+              real_name: "Pronssitulo"
+            }
+          },
+          uncommon: {
+              Coins: {
+                path: "user['inventory']['money']",
+                amount: [1200, 1500, 2000],
+                name: emojies["coin"],
+                rate: 10,
+                real_name: "Coins"
+              },
+              Sytti: {
+                path: "user['inventory']['items']['bait']",
+                amount: [4, 5, 6],
+                name: emojies["sytti"],
+                rate: 5,
+                real_name: "Sytti"
+              },
+              Keppi: {
+                path: "user['inventory']['items']['stick']",
+                amount: [5],
+                name: emojies["keppi"],
+                rate: 5,
+                real_name: "Keppi"
+              },
+              Onki: {
+                path: "user['inventory']['key_items']['rod']",
+                amount: true,
+                key: true,
+                name: emojies["onki"],
+                rate: 1,
+                real_name: "Onki"
+              },
+              Supersytti: {
+                path: "user['inventory']['items']['super_bait']",
+                amount: [1],
+                name: emojies["supersytti"],
+                rate: 4,
+                real_name: "Supersytti"
+              },
+              Pommi: {
+                path: "user['inventory']['items']['bomb']",
+                amount: [1],
+                name: emojies["pommi"],
+                rate: 1,
+                real_name: "Pommi"
+              },
+              Kilpi: {
+                path: "user['inventory']['items']['shield']",
+                amount: [1],
+                name: emojies["kilpi"],
+                rate: 1,
+                real_name: "Kilpi"
+              }
+            },
+          rare: {
+            Coins: {
+              path: "user['inventory']['money']",
+              amount: [10000, 12000, 14000],
+              name: emojies["coin"],
+              rate: 5,
+              real_name: "Coins"
+            },
+            Tulokone: {
+              path: "user['inventory']['items']['income_machine']",
+              amount: [1],
+              name: emojies["tulokone"],
+              rate: 5,
+              real_name: "Tulokone"
+            },
+            Valvontakamera: {
+              path: "user['inventory']['items']['security_cam']",
+              amount: [1],
+              name: emojies["valvontakamera"],
+              rate: 2,
+              real_name: "Valvontakamera"
+            },
+            Onki: {
+              path: "user['inventory']['key_items']['rod']",
+              amount: true,
+              key: true,
+              name: emojies["onki"],
+              rate: 5,
+              real_name: "Onki"
+            },
+            Supersytti: {
+              path: "user['inventory']['items']['super_bait']",
+              amount: [12],
+              name: emojies["supersytti"],
+              rate: 5,
+              real_name: "Supersytti"
+            },
+            Hopeatulo: {
+              path: "user['inventory']['items']['silver_income']",
+              amount: [1],
+              name: emojies["perustulo2"],
+              rate: 1,
+              real_name: "Hopeatulo"
+            },
+            Hypersytti: {
+              path: "user['inventory']['items']['hyper_bait']",
+              amount: [1],
+              name: emojies["hypersytti"],
+              rate: 5,
+              real_name: "Hypersytti"
+            }
+          },
+          epic: {
+            Coins: {
+              path: "user['inventory']['money']",
+              amount: [40000],
+              name: emojies["coin"],
+              rate: 3,
+              real_name: "Coins"
+            },
+            "Tulokone-X": {
+              path: "user['inventory']['items']['income_machine_X']",
+              amount: [1],
+              name: emojies["tulokonex"],
+              rate: 5,
+              real_name: "Tulokone-X"
+            },
+            Tuloimu: {
+              path: "user['inventory']['items']['income_absorber']",
+              amount: [1],
+              name: emojies["tuloimu"],
+              rate: 7,
+              real_name: "Tuloimu"
+            },
+            Kultatulo: {
+              path: "user['inventory']['items']['gold_income']",
+              amount: [1],
+              name: emojies["perustulo3"],
+              rate: 2,
+              real_name: "Kultatulo"
+            },
+            Hypersytti: {
+              path: "user['inventory']['items']['hyper_bait']",
+              amount: [5, 6, 10],
+              name: emojies["hypersytti"],
+              rate: 7,
+              real_name: "Hypersytti"
+            },
+            Maski: {
+              path: "user['inventory']['items']['mask']",
+              amount: [5],
+              name: emojies["maski"],
+              rate: 5,
+              real_name: "Maski"
+            }
+          },
+          legendary: {
+            Gem: {
+              path: "user['inventory']['items']['gem']",
+              amount: [1],
+              name: emojies["gem"],
+              rate: 4,
+              real_name: "Gem"
+            },
+            "Kultainen harpuuna": {
+              path: "user['inventory']['key_items']['golden_harpoon']",
+              amount: true,
+              key: true,
+              name: emojies["harpuuna"],
+              rate: 4,
+              real_name: "Kultainen harpuuna"
+            },
+            Tallelokero: {
+              path: "user['inventory']['key_items']['safe']['own']",
+              amount: true,
+              key: true,
+              name: emojies["tallelokero"],
+              rate: 2,
+              real_name: "Tallelokero"
+            },
+            Tulokiihdytin: {
+              path: "user['inventory']['items']['income_accelerator']",
+              amount: [1],
+              name: emojies["tulokiihdytin"],
+              rate: 4,
+              real_name: "Tulokiihdytin"
+            },
+            Glitch: {
+              path: "user['inventory']['items']['glitch']",
+              amount: [1],
+              name: emojies["glitch"],
+              rate: 1,
+              real_name: "Glitch"
+            },
+            Puska: {
+              path: "user['inventory']['key_items']['bush']['own']",
+              amount: true,
+              key: true,
+              name: emojies["puska"],
+              rate: 0,
+              real_name: "Puska"
+            },
+            Hypersytti: {
+              path: "user['inventory']['items']['hyper_bait']",
+              amount: [100],
+              name: emojies["hypersytti"],
+              rate: 4,
+              real_name: "Hypersytti"
+            }
+          }
+        };
 
         if (type == "" || type === undefined) {
           if (user["inventory"]["lootboxes"]["common"] > 0) {
@@ -3455,6 +3720,37 @@ const commands = {
           case "l":
             type = "legendary";
             break;
+          case "k":
+            type = "kaikki";
+            break;
+        }
+
+        if (type == "kaikki") {
+          var opened = false;
+          if (user["inventory"]["lootboxes"]["common"] > 0) {
+            open_all_lootboxes("common", user, drop_table);
+            opened = true;
+          }
+          if (user["inventory"]["lootboxes"]["uncommon"] > 0) {
+            open_all_lootboxes("uncommon", user, drop_table);
+            opened = true;
+          }
+          if (user["inventory"]["lootboxes"]["rare"] > 0) {
+            open_all_lootboxes("rare", user, drop_table);
+            opened = true;
+          }
+          if (user["inventory"]["lootboxes"]["epic"] > 0) {
+            open_all_lootboxes("epic", user, drop_table);
+            opened = true;
+          }
+          if (user["inventory"]["lootboxes"]["legendary"] > 0) {
+            open_all_lootboxes("legendary", user, drop_table);
+            opened = true;
+          }
+          if (!opened) {
+            return msg.channel.send(`Sulla ei ole LootBoxeja...`);
+          }
+          return;
         }
 
         var boxtypes = ["uncommon", "common", "rare", "epic", "legendary"];
@@ -3462,232 +3758,40 @@ const commands = {
           return msg.channel.send(`Ei ole olemassa tuollaista LootBoxia.`);
 
         if (user["inventory"]["lootboxes"][type] > 0) {
+          if (open_all) {
+            return open_all_lootboxes(type, user, drop_table);
+          }
           user["inventory"]["lootboxes"][type] -= 1;
           user["basic_statistics"]["opened_lootboxes"][type] += 1;
-          open_lootbox(type, user);
+          open_lootbox(type, user, drop_table);
           save_user(user);
         } else {
           var type_text = type.charAt(0).toUpperCase() + type.slice(1);
           msg.channel.send(`Sulla ei ole ${type_text} LootBoxia...`);
         }
 
-        function open_lootbox(rarity, user) {
-          var drop_table = {};
+
+        function open_lootbox(rarity, user, drop_table) {
+
           if (rarity == "common") {
             color = 10197915;
-            drop_table = {
-              Coins: {
-                path: "user['inventory']['money']",
-                amount: [600, 800, 1000],
-                name: emojies["coin"],
-                rate: 20
-              },
-              Sytti: {
-                path: "user['inventory']['items']['bait']",
-                amount: [2, 3],
-                name: emojies["sytti"],
-                rate: 10
-              },
-              Keppi: {
-                path: "user['inventory']['items']['stick']",
-                amount: [2],
-                name: emojies["keppi"],
-                rate: 9
-              },
-              Pronssitulo: {
-                path: "user['inventory']['items']['bronze_income']",
-                amount: [1],
-                name: emojies["perustulo1"],
-                rate: 1
-              }
-            };
+            drop_table = drop_table["common"];
           }
           if (rarity == "uncommon") {
             color = 1276418;
-            drop_table = {
-              Coins: {
-                path: "user['inventory']['money']",
-                amount: [1000, 1500, 2000],
-                name: emojies["coin"],
-                rate: 10
-              },
-              Sytti: {
-                path: "user['inventory']['items']['bait']",
-                amount: [4, 5, 6],
-                name: emojies["sytti"],
-                rate: 5
-              },
-              Keppi: {
-                path: "user['inventory']['items']['stick']",
-                amount: [5],
-                name: emojies["keppi"],
-                rate: 5
-              },
-              Onki: {
-                path: "user['inventory']['key_items']['rod']",
-                amount: true,
-                key: true,
-                name: emojies["onki"],
-                rate: 1
-              },
-              Supersytti: {
-                path: "user['inventory']['items']['super_bait']",
-                amount: [1],
-                name: emojies["supersytti"],
-                rate: 4
-              },
-              Pommi: {
-                path: "user['inventory']['items']['bomb']",
-                amount: [1],
-                name: emojies["pommi"],
-                rate: 1
-              },
-              Kilpi: {
-                path: "user['inventory']['items']['shield']",
-                amount: [1],
-                name: emojies["kilpi"],
-                rate: 1
-              }
-            };
+            drop_table = drop_table["uncommon"];
           }
           if (rarity == "rare") {
             color = 1146367;
-            drop_table = {
-              Coins: {
-                path: "user['inventory']['money']",
-                amount: [10000, 12000, 14000],
-                name: emojies["coin"],
-                rate: 7
-              },
-              Tulokone: {
-                path: "user['inventory']['items']['income_machine']",
-                amount: [1],
-                name: emojies["tulokone"],
-                rate: 5
-              },
-              Valvontakamera: {
-                path: "user['inventory']['items']['security_cam']",
-                amount: [1],
-                name: emojies["valvontakamera"],
-                rate: 5
-              },
-              Onki: {
-                path: "user['inventory']['key_items']['rod']",
-                amount: true,
-                key: true,
-                name: emojies["onki"],
-                rate: 2
-              },
-              Supersytti: {
-                path: "user['inventory']['items']['super_bait']",
-                amount: [6],
-                name: emojies["supersytti"],
-                rate: 3
-              },
-              Hopeatulo: {
-                path: "user['inventory']['items']['silver_income']",
-                amount: [1],
-                name: emojies["perustulo2"],
-                rate: 1
-              },
-              Hypersytti: {
-                path: "user['inventory']['items']['hyper_bait']",
-                amount: [1],
-                name: emojies["hypersytti"],
-                rate: 2
-              }
-            };
+            drop_table = drop_table["rare"];
           }
           if (rarity == "epic") {
             color = 12390624;
-            drop_table = {
-              Coins: {
-                path: "user['inventory']['money']",
-                amount: [40000],
-                name: emojies["coin"],
-                rate: 8
-              },
-              "Tulokone-X": {
-                path: "user['inventory']['items']['income_machine_X']",
-                amount: [1],
-                name: emojies["tulokonex"],
-                rate: 5
-              },
-              Tuloimu: {
-                path: "user['inventory']['items']['income_absorber']",
-                amount: [1],
-                name: emojies["tuloimu"],
-                rate: 3
-              },
-              Kultatulo: {
-                path: "user['inventory']['items']['gold_income']",
-                amount: [1],
-                name: emojies["perustulo3"],
-                rate: 2
-              },
-              Hypersytti: {
-                path: "user['inventory']['items']['hyper_bait']",
-                amount: [5, 6, 7],
-                name: emojies["hypersytti"],
-                rate: 5
-              },
-              Maski: {
-                path: "user['inventory']['items']['mask']",
-                amount: [5],
-                name: emojies["maski"],
-                rate: 5
-              }
-            };
+            drop_table = drop_table["epic"];
           }
           if (rarity == "legendary") {
             color = 16098851;
-            drop_table = {
-              Gem: {
-                path: "user['inventory']['items']['gem']",
-                amount: [1],
-                name: emojies["gem"],
-                rate: 4
-              },
-              "Kultainen harpuuna": {
-                path: "user['inventory']['key_items']['golden_harpoon']",
-                amount: true,
-                key: true,
-                name: emojies["harpuuna"],
-                rate: 4
-              },
-              Tallelokero: {
-                path: "user['inventory']['key_items']['safe']['own']",
-                amount: true,
-                key: true,
-                name: emojies["tallelokero"],
-                rate: 2
-              },
-              Tulokiihdytin: {
-                path: "user['inventory']['items']['income_accelerator']",
-                amount: [1],
-                name: emojies["tulokiihdytin"],
-                rate: 4
-              },
-              Glitch: {
-                path: "user['inventory']['items']['glitch']",
-                amount: [1],
-                name: emojies["glitch"],
-                rate: 1
-              },
-              Puska: {
-                path: "user['inventory']['key_items']['bush']['own']",
-                amount: true,
-                key: true,
-                name: emojies["puska"],
-                rate: 3
-              },
-              Hypersytti: {
-                path: "user['inventory']['items']['hyper_bait']",
-                amount: [100],
-                name: emojies["hypersytti"],
-                rate: 4
-              }
-            };
+            drop_table = drop_table["legendary"];
           }
 
           var bucket = [];
@@ -3762,6 +3866,170 @@ const commands = {
             });
           }
         }
+
+        function clone(hash) {
+          var json = JSON.stringify(hash);
+          var object = JSON.parse(json);
+
+          return object;
+        }
+
+        function open_all_lootboxes(rarity, user, drop_table) {
+
+          if (rarity == "common") {
+            color = 10197915;
+            drop_table = drop_table["common"];
+          }
+          if (rarity == "uncommon") {
+            color = 1276418;
+            drop_table = drop_table["uncommon"];
+          }
+          if (rarity == "rare") {
+            color = 1146367;
+            drop_table = drop_table["rare"];
+          }
+          if (rarity == "epic") {
+            color = 12390624;
+            drop_table = drop_table["epic"];
+          }
+          if (rarity == "legendary") {
+            color = 16098851;
+            drop_table = drop_table["legendary"];
+          }
+
+          var amount_lootboxes = user["inventory"]["lootboxes"][rarity];
+
+          var bucket = [];
+          for (let item in drop_table) {
+            for (let x = 0; x < drop_table[item]["rate"]; x++) {
+
+              bucket.push(item);
+            }
+          }
+
+          var items_got = {};
+          for (let i = 0; i < amount_lootboxes; i++) {
+            let rnd = Math.floor(Math.random() * Math.floor(bucket.length));
+
+
+            if (eval(drop_table[bucket[rnd]]["path"] + " == true")) {
+              i -= 1;
+              continue;
+            }
+
+            if ( bucket[rnd] in items_got) {
+
+              if ("key" in drop_table[bucket[rnd]]) {
+                i -= 1;
+                continue;
+              }
+
+              else {
+
+                for (var k in items_got) {
+
+
+                  if (items_got[k]["path"] == drop_table[bucket[rnd]]["path"]) {
+
+                    var am;
+                    let _x;
+                    if (Array.isArray(drop_table[bucket[rnd]]["amount"])) {
+                      _x = Math.floor(Math.random() * Math.floor(drop_table[bucket[rnd]]["amount"].length));
+                      am = drop_table[bucket[rnd]]["amount"][_x];
+                    } else {
+                      am = drop_table[bucket[rnd]]["amount"];
+                    }
+
+                    items_got[k]["amount"] = items_got[k]["amount"] + parseInt(am);
+
+                    break;
+                  }
+                }
+
+
+              }
+
+            } else {
+
+              var c_item = clone(drop_table);
+
+              if (!("key" in drop_table[bucket[rnd]])) {
+                var _x = Math.floor(Math.random() * Math.floor(drop_table[bucket[rnd]]["amount"].length));
+                c_item[bucket[rnd]]["amount"] = c_item[bucket[rnd]]["amount"][_x];
+              }
+
+              items_got[bucket[rnd]] = c_item[bucket[rnd]];
+            }
+
+
+          }
+
+
+          user["inventory"]["lootboxes"][rarity] -= amount_lootboxes;
+          user["basic_statistics"]["opened_lootboxes"][rarity] += amount_lootboxes;
+
+
+          var item_list = "";
+          for (var h in items_got) {
+            var item_got = items_got[h];
+            if ("key" in item_got) {
+
+                eval(item_got["path"] + " = true;");
+
+                var emoji = emojies["chest_" + rarity];
+                var user_name = user["name"];
+                var item_emoji = emojies[item_got["name"]["name"]];
+                save_user(user);
+
+                item_list += ("- Avaintavara: " +
+                item_emoji +
+                " " +
+                item_got["real_name"] +
+                " (Saatavilla vain kerran!)\n");
+
+            } else {
+
+              eval(
+                item_got["path"] +
+                  "+= item_got['amount'];"
+              );
+
+              var emoji = emojies["chest_" + rarity];
+              var user_name = user["name"];
+              var item_emoji = emojies[item_got["name"]["name"]];
+              var item_amount = item_got["amount"];
+              if (item_got["path"] == "user['inventory']['money']") {
+                user["basic_statistics"]["money_from_opening_lootboxes"] +=
+                  item_got["amount"];
+              }
+              var rest = "";
+              if (item_amount > 1) {
+                rest = " x " + item_amount;
+              }
+
+
+
+              save_user(user);
+              item_list += ("- " + item_emoji + " " + item_got["real_name"] + rest + "\n");
+            }
+          }
+
+
+          return msg.channel.send(
+            {
+              embed: {
+                title: "***" + user_name + ", Avasit: " + amount_lootboxes + " x "+ emoji + "***",
+                color: color,
+                fields: [
+                  {
+                    name: "***___Loot:___***",
+                    value: item_list
+                  }
+                ]
+              }
+            }
+          );
+        }
       });
     });
   },
@@ -3773,12 +4041,21 @@ const commands = {
         let name = msg.content.split(" ")[2];
         let second = msg.content.split(" ")[2];
 
-        if (item != "tallelokero") {
-          if (name == "" || name === undefined) {
+        if (item != undefined) {
+          item = item.toLowerCase();
+        }
+
+        if (second != undefined) {
+          second = second.toLowerCase();
+        }
+
+        const exclude = ["tallelokero", "aikakone"];
+        if (!exclude.includes(item)) {
+          if (name == "" || name == undefined) {
             name = user["id"];
           }
 
-          if (item == "" || item === undefined) {
+          if (item == "" || item == undefined) {
             return msg.channel.send(
               `Valitse aktivoitava tavara ja mahdollinen kohde!`
             );
@@ -3809,16 +4086,16 @@ const commands = {
                 return msg.channel.send(`Sulla ei ole Tulokonetta`);
               if ("income_machine" in user)
                 return msg.channel.send(`Sulla on jo Tulokone päällä!`);
-              user["income_machine"] = {
-                multi: 10,
-                timer: 60,
-                sum: 0
-              };
+                user["income_machine"] = {
+                  multi: 10,
+                  timer: 60,
+                  sum: 0
+                };
 
-              user["inventory"]["items"]["income_machine"] -= 1;
-              msg.channel.send(`Hurraa! Tulokone hurraa!`);
-              save_user(user);
-              return;
+                user["inventory"]["items"]["income_machine"] -= 1;
+                msg.channel.send(`Hurraa! Tulokone hurraa!`);
+                save_user(user);
+                return;
             }
             else if (item == "tulokone-x") {
               if (!("income_machine_X" in user["inventory"]["items"]))
@@ -3861,6 +4138,51 @@ const commands = {
               save_user(user);
               return msg.channel.send(
                 `Hehkuva kivi imeytyy aikaavaruuteen, tunnet taskujesi täyttyvän!`
+              );
+            }
+            else if (item == "aikakone") {
+              if (user["inventory"]["items"]["timemachine"] < 1)
+                return msg.channel.send(`Sulla ei ole aikakonetta...`);
+
+              if (second == "" || second == undefined)
+                return msg.channel.send(`Laita jokin aika! (Aamu, Päivä, Ilta tai Yö)`);
+
+              var _time = "";
+              var _part_day = "";
+
+              if (second == "yö") {
+                _time = "Yö";
+                _part_day = "N";
+              }
+
+              else if (second == "päivä") {
+                _time = "Päivä";
+                _part_day = "A";
+              }
+
+              else if (second == "ilta") {
+                _time = "Ilta";
+                _part_day = "E";
+              }
+
+              else if (second == "aamu") {
+                _time = "Aamu";
+                _part_day = "M";
+              }
+              else {
+                return msg.channel.send(`Valitse sopiva aika!`);
+              }
+
+              user["inventory"]["items"]["timemachine"] -= 1;
+              user["timemachine_timer"] = {
+                "time" : _time,
+                "part_day" : _part_day,
+                "timer" : 60
+              }
+
+              save_user(user);
+              return msg.channel.send(
+                `Aikakoneen mukaan sulla on tunti aikaa tällä aikaulottuvuudella. Näyttäisi, että on: ***${_time}***`
               );
             }
             else if (item == "kultatulo") {
@@ -3935,7 +4257,7 @@ const commands = {
               if ("security_cam" in user)
                 return msg.channel.send(`Sulla on jo valvonta päällä!`);
               user["security_cam"] = {
-                timer: 1440,
+                timer: 120,
                 protected: 0
               };
 
@@ -3950,15 +4272,18 @@ const commands = {
               if (second == "" || second == undefined)
                 return msg.channel.send(`Laita summa!`);
 
+              second = second.replace(",", "");
+
               if (second.slice(-1) == "k") {
                 var price = Math.floor(1000*parseFloat(second));
               }
               else if (second.slice(-1) == "m") {
                 var price = Math.floor(1000000*parseFloat(second));
+              } else {
+                var price = Math.floor(second);
               }
 
-              if (price == "" || price == undefined)
-                return msg.channel.send(`Laita summa!`);
+              if (isNaN(price)) return msg.channel.send(`Laita summa!`);
 
               if (second.startsWith("-")) {
                 price = price*-1;
@@ -3994,6 +4319,21 @@ const commands = {
               save_user(user);
               return;
             }
+            else if (item == "puska") {
+              if (user["inventory"]["key_items"]["bush"]["own"] == false)
+                return msg.channel.send(`Sulla ei ole puskaa!`);
+
+
+              if (user["inventory"]["key_items"]["bush"]["on"]) {
+                user["inventory"]["key_items"]["bush"]["on"] = false;
+                msg.channel.send(`Puska pois päältä!`);
+              } else {
+                user["inventory"]["key_items"]["bush"]["on"] = true;
+                msg.channel.send(`Puska päällä!`);
+              }
+              save_user(user);
+              return;
+            }
 
             if (user["ironman"]) return msg.channel.send(`Olet Ironman...`);
             if (target_user["ironman"])
@@ -4012,21 +4352,32 @@ const commands = {
                   `Hän huomasi sinut ennalta, et päässyt käsiksi häneen...`
                 );
               }
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
+                `Et löydä häntä mistään!?...`
+              );
 
               if (target_user["inventory"]["items"]["shield"] > 0) {
                 msg.channel.send(
                   `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
                 );
-                target_user["inventory"]["items"]["shield"] -= 1;
+                var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
+                if (rnd == 3) {
+                  target_user["inventory"]["items"]["shield"] -= 1;
+                  msg.channel.send(
+                    `Kilpi meni kuitenkin rikki...`
+                  );
+                }
+
                 user["basic_statistics"]["stick_used"] += 1;
                 user["inventory"]["items"]["stick"] -= 1;
                 save_user(user);
                 save_user(target_user);
                 return;
               }
+
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
               var amount = Math.floor(Math.random() * Math.floor(300 + 1));
-              if (rnd > 3 && user["inventory"]["money"] > amount) {
+              if (rnd > 3 && target_user["inventory"]["money"] > amount) {
                 msg.channel.send(
                   "Löit jäbää <@" +
                     name +
@@ -4043,7 +4394,9 @@ const commands = {
               }
               user["inventory"]["items"]["stick"] -= 1;
               user["basic_statistics"]["stick_used"] += 1;
+              user["basic_statistics"]["sticked_money"] += amount;
               target_user["basic_statistics"]["hit"] += 1;
+              target_user["basic_statistics"]["sticked_money_from_you"] += amount;
               save_user(user);
               save_user(target_user);
             }
@@ -4052,7 +4405,7 @@ const commands = {
                 return msg.channel.send(`Et voi varastaa omaa rahaa, lol!`);
               if (user["inventory"]["items"]["mask"] < 1)
                 return msg.channel.send(`Sulla ei ole maskeja`);
-              if (user["inventory"]["money"] <= 0)
+              if (target_user["inventory"]["money"] <= 0)
                 return msg.channel.send(`Kohteella ei ole oikein rahaa...`);
               var multi = (48978*target_user["inventory"]["money"]**(-0.67)) / 100;
               if (multi > 1) {
@@ -4065,6 +4418,10 @@ const commands = {
 
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
               var sum = Math.floor(Math.random() * Math.floor(multi*target_user["inventory"]["money"] + 1));
+
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
+                `Et löydä häntä mistään!?...`
+              );
 
               if ("security_cam" in target_user) {
                 msg.channel.send("Valvontakamera osoittaa sinuun!");
@@ -4097,7 +4454,7 @@ const commands = {
                     emojies["coin"]
                 );
                 user["inventory"]["money"] -= sum;
-                user["basic_statistics"]["sakot"] += sum;
+                user["basic_statistics"]["fines"] += sum;
                 target_user["inventory"]["money"] += Math.floor(sum / 4);
                 target_user["basic_statistics"]["compensations"] += Math.floor(
                   sum / 4
@@ -4105,8 +4462,10 @@ const commands = {
               }
               user["inventory"]["items"]["mask"] -= 1;
               save_user(target_user);
+              save_user(user);
             }
             if (item == "tuloimu") {
+              if (target_user["id"] == user["id"]) return msg.channel.send(`Et voi imeä itteltäs, tirsk`);
               if (!("income_absorber" in user["inventory"]["items"]))
                 return msg.channel.send(`Sulla ei ole Tuloimua`);
               if ("income_absorb" in user)
@@ -4117,6 +4476,10 @@ const commands = {
                     `Et voi imeä häneltä koska hän imee jo sinulta ;)`
                   );
               }
+
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
+                `Et löydä häntä mistään!?...`
+              );
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
@@ -4151,6 +4514,10 @@ const commands = {
                 Math.random() * Math.floor(2000 + 1) + 500
               );
 
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
+                `Et löydä häntä mistään!?...`
+              );
+
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
                 save_user(target_user);
@@ -4163,7 +4530,13 @@ const commands = {
                 msg.channel.send(
                   `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
                 );
-                target_user["inventory"]["items"]["shield"] -= 1;
+                var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
+                if (rnd == 3) {
+                  target_user["inventory"]["items"]["shield"] -= 1;
+                  msg.channel.send(
+                    `Kilpi meni kuitenkin rikki...`
+                  );
+                }
                 user["basic_statistics"]["bomb_used"] += 1;
                 user["inventory"]["items"]["bomb"] -= 1;
                 save_user(user);
@@ -4181,7 +4554,9 @@ const commands = {
 
               user["inventory"]["items"]["bomb"] -= 1;
               user["basic_statistics"]["bomb_used"] += 1;
+              user["basic_statistics"]["bombed_money"] += amount;
               target_user["basic_statistics"]["bombed"] += 1;
+              target_user["basic_statistics"]["bombed_money_from_you"] += amount;
               save_user(user);
               save_user(target_user);
             }
@@ -4308,6 +4683,9 @@ const commands = {
                 ite["hyper_bait"]
               }\n`;
             }
+            if (ite["timemachine"] > 0) {
+              items += `${emojies["aikakone"]} Aikakone: ${ite["timemachine"]}\n`;
+            }
             if (ite["shield"] > 0) {
               items += `${emojies["kilpi"]} Kilpi: ${ite["shield"]}\n`;
             }
@@ -4341,9 +4719,6 @@ const commands = {
             }
             if (ite["mask"] > 0) {
               items += `${emojies["maski"]} Maski: ${ite["mask"]}\n`;
-            }
-            if (ite["copygun"] > 0) {
-              items += `${emojies["dupepyssy"]} Dupepyssy: ${ite["copygun"]}\n`;
             }
             if (ite["gem"] > 0) {
               items += `${emojies["gem"]} Gem: ${ite["gem"]}\n`;
@@ -4480,6 +4855,11 @@ const commands = {
                   "___Hinta:___ 10k" + emojies["coin"]
               },
               {
+                name: "***___" + emojies["aikakone"] + " Aikakone:___*** [aikakone]",
+                value:
+                  "___Hinta:___ 10k" + emojies["coin"] + "\nMahdollistaa kalastamisen eri aikaulottuvuudessa tunnin ajan."
+              },
+              {
                 name: "***___" + emojies["supersytti"] + " Supersytti:___*** [supersytti]",
                 value:
                   "___Hinta:___ 10 Syttiä"
@@ -4500,9 +4880,17 @@ const commands = {
   osta: msg => {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
-        let purchase = msg.content.split(" ")[1].toLowerCase();
+        let purchase = msg.content.split(" ")[1];
         let amount = msg.content.split(" ")[2];
         var customer = msg.author.id;
+
+        if (purchase != undefined) {
+          purchase = purchase.toLowerCase();
+        }
+
+        if (amount != undefined) {
+          amount = amount.toLowerCase();
+        }
 
         if (amount == "" || amount === undefined) {
           amount = "1";
@@ -4625,6 +5013,14 @@ const commands = {
 
         msg.channel.send(`Ostit ${amount} Tallelokero Upgradea!`);
       }
+      else if (purchase == "aikakone") {
+        if (user["inventory"]["money"] < 10000*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi rahaa.");
+
+        user["inventory"]["items"]["timemachine"] += amount;
+        user["inventory"]["money"] -= amount*10000;
+
+        msg.channel.send(`Ostit ${amount} aikakonetta!`);
+      }
       else {
           msg.channel.send(
             "Et voi ostaa mitään ihme " + purchase + " -juttua..."
@@ -4687,11 +5083,11 @@ const commands = {
       glitch: "glitch",
       bomb: "pommi",
       shield: "kilpi",
-      copygun: "dupepyssy",
       security_cam: "valvontakamera",
       bronze_income: "pronssitulo",
       silver_income: "hopeatulo",
-      gold_income: "kultatulo"
+      gold_income: "kultatulo",
+      timemachine: "aikakone"
     };
 
     var emo = {
@@ -4709,11 +5105,11 @@ const commands = {
       glitch: emojies["glitch"],
       bomb: emojies["pommi"],
       shield: emojies["kilpi"],
-      copygun: emojies["dupepyssy"],
       security_cam: emojies["valvontakamera"],
       bronze_income: emojies["perustulo1"],
       silver_income: emojies["perustulo2"],
-      gold_income: emojies["perustulo3"]
+      gold_income: emojies["perustulo3"],
+      timemachine: emojies["aikakone"]
     };
 
     var trade_message;
@@ -4740,6 +5136,15 @@ const commands = {
         accepted = [];
         let item = m.content.split(" ")[1];
         var amount = m.content.split(" ")[2];
+        if (amount != undefined) {
+          amount = amount.toLowerCase();
+        }
+
+
+        if (item != undefined) {
+          item = item.toLowerCase();
+        }
+
         if (amount == "" || amount == undefined) {
           amount = "1";
         }
@@ -4767,36 +5172,51 @@ const commands = {
           for (var key in items) {
             ret[items[key]] = key;
           }
-          console.log(current_trades[item]);
+
           if (!(item in ret)) return trade_message.edit(
             print_trade_window(items, emo, "Virheellinen tavara!")
           );
 
+          var helper_amount = 0;
+          if (current_trades[item] == undefined || current_trades[item] == null || current_trades[item] == "") {
+            helper_amount = 0;
+          } else {
+            helper_amount = current_trades[item];
+          }
+
+
           if (amount == "max") {
-            amount = Math.floor(current_user["inventory"]["items"][ret[item]] - current_trades[item]);
+            amount = Math.floor(current_user["inventory"]["items"][ret[item]] - helper_amount);
           }
 
           else if (amount == "puolet") {
-            amount = Math.floor(current_user["inventory"]["items"][ret[item]]/2 - current_trades[item]);
+            amount = Math.floor(current_user["inventory"]["items"][ret[item]]/2 - helper_amount);
           }
 
           else if (amount == "min") {
             amount = 1;
           }
         } else {
+
+          if (current_trades["money"] == undefined || current_trades["money"] == null || current_trades["money"] == "") {
+            helper_amount = 0;
+          } else {
+            helper_amount = current_trades["money"];
+          }
+
+
           if (amount == "max") {
-            amount = Math.floor(current_user["inventory"]["money"] - current_trades["money"]);
+            amount = Math.floor(current_user["inventory"]["money"] - helper_amount);
           }
 
           else if (amount == "puolet") {
-            amount = Math.floor(current_user["inventory"]["money"]/2 - current_trades["money"]);
+            amount = Math.floor(current_user["inventory"]["money"]/2 - helper_amount);
           }
 
           else if (amount == "min") {
             amount = 1;
           }
         }
-
 
         if (isNaN(amount))
           return trade_message.edit(
@@ -4839,6 +5259,16 @@ const commands = {
         let item = m.content.split(" ")[1];
         var amount = m.content.split(" ")[2];
 
+        if (amount != undefined) {
+          amount = amount.toLowerCase();
+        }
+
+
+        if (item != undefined) {
+          item = item.toLowerCase();
+        }
+
+
         if (amount.slice(-1) == "k") {
           amount = Math.floor(1000*parseFloat(amount));
         }
@@ -4867,10 +5297,18 @@ const commands = {
           for (var key in items) {
             ret[items[key]] = key;
           }
-          console.log(current_trades[item]);
+
           if (!(item in ret)) return trade_message.edit(
             print_trade_window(items, emo, "Virheellinen tavara!")
           );
+
+          if (current_trades[item] == undefined) {
+            current_trades[item] = 0;
+          }
+          if (current_trades["money"] == undefined) {
+            current_trades["money"] = 0;
+          }
+
 
           if (amount == "max") {
             amount = Math.floor(current_trades[item]);
@@ -4938,21 +5376,27 @@ const commands = {
         time: 10 * 60 * 1000
       }
     );
+
+    function removeDuplicateUsingFilter(arr){
+        let unique_array = arr.filter(function(elem, index, self) {
+            return index == self.indexOf(elem);
+        });
+        return unique_array
+    }
+
     em.on("collect", (reaction, _user) => {
       if (reaction.emoji == "✅") {
         accepted.push(_user.id);
+        //accepted = removeDuplicateUsingFilter(accepted);
         if (accepted.length == 2) {
-          trade_items(
-            user,
-            target_user,
+          trade_items(msg.author.id, target_id,
             user_trades,
             target_user_trades,
             items
           );
+
           em.stop();
-          return msg.channel.send(
-            print_trade_window(items, emo, "Vaihto suoritettu!")
-          );
+
         }
       } else if (reaction.emoji == "❎") {
         em.stop();
@@ -5135,13 +5579,15 @@ const commands = {
       }
     }
 
-    function trade_items(
-      _user,
-      _target_user,
-      _user_trades,
+    async function trade_items(
+      user_id, target_user_id,_user_trades,
       _target_user_trades,
       itemsx
     ) {
+
+      var _user = await get_user(user_id);
+      var _target_user = await get_user(target_user_id);
+
       var ret = {};
       for (var key in itemsx) {
         ret[itemsx[key]] = key;
@@ -5149,27 +5595,47 @@ const commands = {
 
       for (item in _user_trades) {
         if (item == "money") {
+
+          if (_user_trades["money"] > _user["inventory"]["money"]) return msg.channel.send("Vaihtoa ei suoritettu, rahaa liian vähän...");
+
           _target_user["inventory"]["money"] += _user_trades["money"];
           _user["inventory"]["money"] -= _user_trades["money"];
         } else {
+
+          if (_user_trades[item] > _user["inventory"]["items"][ret[item]]) return msg.channel.send("Vaihtoa ei suoritettu, liia vähän jotain tavaroista...");
+
           _target_user["inventory"]["items"][ret[item]] += _user_trades[item];
           _user["inventory"]["items"][ret[item]] -= _user_trades[item];
         }
       }
 
       for (item in _target_user_trades) {
+
         if (item == "money") {
+          if (_target_user_trades["money"] > _target_user["inventory"]["money"]) return msg.channel.send("Vaihtoa ei suoritettu, rahaa liian vähän...");
+
           _user["inventory"]["money"] += _target_user_trades["money"];
           _target_user["inventory"]["money"] -= _target_user_trades["money"];
+
         } else {
+
+          if (_target_user_trades[item] > _target_user["inventory"]["items"][ret[item]]) return msg.channel.send("Vaihtoa ei suoritettu, liia vähän jotain tavaroista...");
+
           _user["inventory"]["items"][ret[item]] += _target_user_trades[item];
           _target_user["inventory"]["items"][ret[item]] -=
             _target_user_trades[item];
         }
       }
 
+
+
       save_user(_user);
       save_user(_target_user);
+
+      return msg.channel.send(
+        print_trade_window(items, emo, "Vaihto suoritettu!")
+
+      );
     }
   },
 
@@ -5237,6 +5703,16 @@ const commands = {
     let category = msg.content.split(" ")[2];
     let thrd = msg.content.split(" ")[3];
     let all = msg.content.split(" ");
+
+    if (category != undefined) {
+      category = category.toLowerCase();
+    }
+
+
+    if (thrd != undefined) {
+      thrd = thrd.toLowerCase();
+    }
+
     let edit = "";
     if (name == "väri") {
       all = "- - - " + category;
@@ -5822,14 +6298,7 @@ const commands = {
 
   pelidata: async msg => {
     let name = msg.content.split(" ")[1];
-    let category = msg.content.split(" ")[2];
-    let thrd = msg.content.split(" ")[3];
-    let all = msg.content.split(" ");
     let edit = "";
-
-    for (var i = 3; i < all.length; i++) {
-      edit += all[i] + " ";
-    }
 
     if (name == "" || name === undefined) {
       name = msg.author.id;
@@ -6424,14 +6893,7 @@ const commands = {
 
   data: async msg => {
     let name = msg.content.split(" ")[1];
-    let category = msg.content.split(" ")[2];
-    let thrd = msg.content.split(" ")[3];
-    let all = msg.content.split(" ");
     let edit = "";
-
-    for (var i = 3; i < all.length; i++) {
-      edit += all[i] + " ";
-    }
 
     if (name == "" || name === undefined) {
       name = msg.author.id;
@@ -6476,6 +6938,8 @@ const commands = {
         emojies["coin"] +
         "\n";
       // Omaisuus
+      var solo_minutes =
+        "`Solo minuutit:` " + user["basic_statistics"]["solo_minutes"]+ "\n";
       var wealth =
         "`Omaisuus:` " + calculate_wealth(user) + emojies["coin"] + "\n";
       // Ostetut perustulot
@@ -6530,12 +6994,12 @@ const commands = {
       // Lootboxit afkaamalla
       var loot_afk =
         "`LootBoxit Afkaamalla:` " +
-        user["basic_statistics"]["lootboxes_by_afking"] +
+        (user["basic_statistics"]["lootboxes_by_afking_common"] + user["basic_statistics"]["lootboxes_by_afking_uncommon"] + user["basic_statistics"]["lootboxes_by_afking_rare"] + user["basic_statistics"]["lootboxes_by_afking_epic"] + user["basic_statistics"]["lootboxes_by_afking_legendary"] ) +
         "\n";
       // Lootboxit pelaamalla
       var loot_game =
         "`LootBoxit Pelaamalla:` " +
-        user["basic_statistics"]["lootboxes_by_playing"] +
+        (user["basic_statistics"]["lootboxes_by_playing_common"] + user["basic_statistics"]["lootboxes_by_playing_uncommon"] + user["basic_statistics"]["lootboxes_by_playing_rare"] + user["basic_statistics"]["lootboxes_by_playing_epic"] + user["basic_statistics"]["lootboxes_by_playing_legendary"] ) +
         "\n";
       // common / minuutti
       var common_min =
@@ -6590,7 +7054,7 @@ const commands = {
       // Rahat lootboxeista
       var money_from_boxes =
         "`Rahat LootBoxeista:` " +
-        user["basic_statistics"]["money_from_lootboxes"] +
+        user["basic_statistics"]["money_from_opening_lootboxes"] +
         emojies["coin"] +
         "\n";
 
@@ -6613,6 +7077,27 @@ const commands = {
         emojies["coin"] +
         "\n";
 
+      var sticked_money =
+        "`Kepillä poistetut rahat:` " +
+        user["basic_statistics"]["sticked_money"] +
+        emojies["coin"] +
+        "\n";
+      var sticked_money_y =
+        "`Sulta kepitetyt rahat:` " +
+        user["basic_statistics"]["sticked_money_from_you"] +
+        emojies["coin"] +
+        "\n";
+      var bombed_money =
+        "`Sun pommittamat rahat:` " +
+        user["basic_statistics"]["bombed_money"] +
+        emojies["coin"] +
+        "\n";
+      var bombed_money_y =
+        "`Sulta pommitetut rahat:` " +
+        user["basic_statistics"]["bombed_money_from_you"] +
+        emojies["coin"] +
+        "\n";
+
       var uz = client.users.get(user["id"]);
       var avatar = uz.avatarURL;
 
@@ -6632,6 +7117,7 @@ const commands = {
                 activity +
                 income +
                 peak_money +
+                solo_minutes +
                 wealth +
                 income_bought +
                 money_from_incomes
@@ -6643,10 +7129,10 @@ const commands = {
                 compensations +
                 money_stolen +
                 money_stolen_from_you +
-                stick_used +
-                hit +
-                bomb_used +
-                bombed
+                stick_used + sticked_money +
+                hit + sticked_money_y +
+                bomb_used + bombed_money +
+                bombed + bombed_money_y
             },
             {
               name: "***___LootBoxit:___***",
@@ -6682,7 +7168,7 @@ const commands = {
         await message.react("2⃣");
         await message.react("3⃣");
         await message.react("4⃣");
-        //await message.react("5⃣");
+        await message.react("5⃣");
       });
 
       let co = message.createReactionCollector(
@@ -6708,9 +7194,9 @@ const commands = {
         } else if (reaction.emoji == "4⃣") {
           message.edit(await owns(users));
         }
-        //else if (reaction.emoji == "5⃣") {
-        //  message.edit(await money(users));
-        //}
+        else if (reaction.emoji == "5⃣") {
+          message.edit(await solo(users));
+        }
       });
 
       co.on("end", () => {
@@ -6742,8 +7228,8 @@ const commands = {
         most_active_list = "";
 
         var len = items.length;
-        if (items.length > 25) {
-          len = 25;
+        if (items.length > 20) {
+          len = 20;
         }
 
         for (var i = 0; i < len; i++) {
@@ -6757,7 +7243,7 @@ const commands = {
             color: users[msg.author.id]["info"]["color"],
             description: most_active_list,
             footer: {
-              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus, 5. Solominuutit"
             }
           }
         };
@@ -6787,8 +7273,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 25) {
-          len = 25;
+        if (items.length > 20) {
+          len = 20;
         }
 
         for (var i = 0; i < len; i++) {
@@ -6812,7 +7298,7 @@ const commands = {
             color: users[msg.author.id]["info"]["color"],
             description: list,
             footer: {
-              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus, 5. Solominuutit"
             }
           }
         };
@@ -6842,8 +7328,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 25) {
-          len = 25;
+        if (items.length > 20) {
+          len = 20;
         }
 
         for (var i = 0; i < len; i++) {
@@ -6864,7 +7350,59 @@ const commands = {
             color: users[msg.author.id]["info"]["color"],
             description: list,
             footer: {
-              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus, 5. Solominuutit"
+            }
+          }
+        };
+      }
+
+      async function solo(users) {
+        var w_l = {};
+        for (var id in users) {
+          await check_user_in_database(id);
+
+          key = id;
+          value = users[id]["basic_statistics"]["solo_minutes"];
+          w_l[key] = value;
+        }
+
+        var items = Object.keys(w_l).map(function(key) {
+          return {
+            id: key,
+            val: w_l[key]
+          };
+        });
+
+        items = items.sort(function(a, b) {
+          return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
+        });
+
+        list = "";
+
+        var len = items.length;
+        if (items.length > 20) {
+          len = 20;
+        }
+
+        for (var i = 0; i < len; i++) {
+          list +=
+            i +
+            1 +
+            ". <@" +
+            items[i].id +
+            "> : " +
+            items[i].val +
+            " mins" +
+            "\n";
+        }
+
+        return {
+          embed: {
+            title: "***SOLOMINUUTIT***",
+            color: users[msg.author.id]["info"]["color"],
+            description: list,
+            footer: {
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus, 5. Solominuutit"
             }
           }
         };
@@ -6894,8 +7432,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 25) {
-          len = 25;
+        if (items.length > 20) {
+          len = 20;
         }
 
         for (var i = 0; i < len; i++) {
@@ -6916,7 +7454,7 @@ const commands = {
             color: users[msg.author.id]["info"]["color"],
             description: list,
             footer: {
-              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus"
+              text: "1. Aktiivisimmat, 2. Rikkaimmat, 3. Peakrahat, 4. Omaisuus, 5. Solominuutit"
             }
           }
         };
@@ -6934,6 +7472,9 @@ const commands = {
 
     let second = msg.content.split(" ")[1];
 
+    if (second != undefined) {
+      second = second.toLowerCase();
+    }
     var pp = firebase
       .database()
       .ref("global_data/pääpäivä")
@@ -7115,22 +7656,22 @@ const commands = {
           {
             name: "***___Komennot:___***",
             value:
-              "Kaikki käytössä olevat komennot löytyvät tältä sivulta:\nLinkki"
+              "Kaikki käytössä olevat komennot löytyvät tältä sivulta:\n[Linkki](https://docs.google.com/document/d/1f35NFVZqeKubRP8YN2J7rou6528KLV289mxgtA6CcrI/edit)"
           },
           {
             name: "***___Ohjeet:___***",
             value:
-              "Täältä löydät pelien ohjeet, todennäköisyyksiä ja muuta nippelitietoa.\nlinkki"
+              "Täältä löydät pelien ohjeet, todennäköisyyksiä ja muuta nippelitietoa.\nTulossa!"
           },
           {
             name: "***___BotterData:___***",
             value:
-              "Täältä löydät tilastoja ja dataa bOtterin peleihin ja kaikkeen liittyen.\nlinkki"
+              "Täältä löydät tilastoja ja dataa bOtterin peleihin ja kaikkeen liittyen.\nTulossa!"
           },
           {
             name: "***___Patchnotet:___***",
             value:
-              "Täällä on kirjattu kaikki bOtteriin tehdyt muutokset.\nlinkki"
+              "Täällä on kirjattu kaikki bOtteriin tehdyt muutokset.\nTulossa!"
           }
         ]
       }
@@ -7265,7 +7806,7 @@ const commands = {
   },
 
   sano: msg => {
-    if (user["id"] != "247754056804728832") return msg.delete();
+    if (msg.author.id != "247754056804728832") return msg.delete();
     let text_parts = msg.content.split(" ");
     str = "";
     for (var i = 1; i < text_parts.length; i++) {
@@ -7277,7 +7818,7 @@ const commands = {
 
   purge: msg => {
     // This command removes all messages from all users in the channel, up to 100.
-    if (user["id"] != "247754056804728832") return msg.delete();
+    if (msg.author.id != "247754056804728832") return msg.delete();
     let amount = msg.content.split(" ")[1];
     // get the delete count, as an actual number.
     if (amount == "" || amount === undefined) {
@@ -7287,7 +7828,7 @@ const commands = {
 
     if (isNaN(amount))
       return msg.channel.send("Purge tarvitsee olla positiivinen luku");
-    if (amount < 2) return msg.channel.send(`Purge pitää olla vähintään 2 `);
+    if (amount < 1) return msg.channel.send(`Purge pitää olla vähintään 1 `);
 
     amount = Math.floor(amount);
 
@@ -7339,7 +7880,6 @@ client.on("ready", () => {
   var day = date.getDay();
 
   check_pääpäivä().then( v => {
-    console.log(v);
     if (v) {
       change_title("PÄÄPÄIVÄ");
     } else if (day === 3) {
@@ -7351,16 +7891,24 @@ client.on("ready", () => {
 });
 
 // When message is recieved
+const banned_textchannels = ["442466922831806475"];
 client.on("message", async msg => {
   if (msg.author.bot) return;
   if (msg.content.indexOf(tokens.prefix) !== 0) return;
   if (!msg.content.startsWith(tokens.prefix)) return;
 
-  if(msg.content == tokens.prefix + "r") {
-    msg.content = tokens.prefix + "rahat";
+  if (!(msg.content).includes("purge")) {
+    if (banned_textchannels.includes(msg.channel.id)) {
+      msg.delete();
+      return;
+    }
   }
-  if(msg.content == tokens.prefix + "i") {
-    msg.content = tokens.prefix + "inv";
+
+  if (!(msg.content).includes("rahat")) {
+    msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "r", tokens.prefix + "rahat");
+  }
+  if (!(msg.content).includes("inv") && !(msg.content).includes("ilmoitukset")) {
+    msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "i", tokens.prefix + "inv");
   }
 
   if (
@@ -7383,7 +7931,7 @@ client.on("error", e => {
   console.log(e);
 });
 
-const banned_channels = ["", ""];
+const banned_channels = ["300242143702679552"];
 
 var minute_count = 0;
 setInterval(async function() {
@@ -7402,12 +7950,29 @@ setInterval(async function() {
     var channel = client.channels.get(i);
     if (channel.type == "voice" && !banned_channels.includes(channel.id)) {
       var channel_members = channel.members.keyArray();
+      for (var n = 0; n < channel_members.length; n++) {
+        var memb = channel.members.get(channel_members[n]);
+        if (memb.user.bot) {
+          console.log("Botti kannulla!");
+          channel_members.splice(n, 1);
+
+        }
+      }
+
+      var temp_len = channel_members.length;
       for (var m of channel_members) {
         var usr = channel.members.get(m);
-        if (!usr.deaf) {
+        if (!usr.deaf && !usr.user.bot) {
+
           await check_user_in_database(usr.id);
+          if (temp_len == 1) {
+            console.log("Solojäbä: " + m);
+            await add_solo(m);
+          }
           await add_income(usr.id);
           await draw_lootbox(usr.id, 45, false);
+
+
         }
       }
     }
@@ -7423,13 +7988,11 @@ setInterval(async function() {
     if (m in users) {
       // Absorber
       if ("income_absorb" in users[m]) {
-        console.log(
-          users[m]["name"] + " : " + users[m]["income_absorb"]["timer"]
-        );
+
         users[m]["income_absorb"]["timer"] -= 1;
         if (users[m]["income_absorb"]["timer"] == 0) {
           client.channels
-            .get("494044533479440384")
+            .get("280272696560975872")
             .send(
               "Tuloimusi loppui, <@" +
                 m +
@@ -7449,7 +8012,7 @@ setInterval(async function() {
         users[m]["absorb_target"]["timer"] -= 1;
         if (users[m]["absorb_target"]["timer"] == 0) {
           client.channels
-            .get("494044533479440384")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -7471,18 +8034,18 @@ setInterval(async function() {
           users[m]["inventory"]["money"] +=
             users[m]["income_machine"]["multi"] *
               users[m]["inventory"]["income"] -
-            users[m]["inventory"]["income"];
+            users[m]["inventory"]["income"]; // laittaa pelkät income rahat
           users[m]["income_machine"]["sum"] +=
             users[m]["income_machine"]["multi"] *
               users[m]["inventory"]["income"] -
             users[m]["inventory"]["income"];
 
           if ("absorb_target" in users[m]) {
-            if (user_under_income(users[m]["absorb_target"]["absorber"])) {
+            if (user_under_income(users["absorb_target"]["absorber"])) {
               users[m]["basic_statistics"]["money_from_income_machines"] -=
                 users[m]["income_machine"]["multi"] *
                   users[m]["inventory"]["income"] -
-                users[m]["inventory"]["income"];
+                users[m]["inventory"]["income"]; // poistaa incomerahat jos joku
               users[m]["inventory"]["money"] -=
                 users[m]["income_machine"]["multi"] *
                   users[m]["inventory"]["income"] -
@@ -7498,7 +8061,7 @@ setInterval(async function() {
         users[m]["income_machine"]["timer"] -= 1;
         if (users[m]["income_machine"]["timer"] == 0) {
           client.channels
-            .get("494044533479440384")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -7518,7 +8081,7 @@ setInterval(async function() {
         users[m]["security_cam"]["timer"] -= 1;
         if (users[m]["security_cam"]["timer"] == 0) {
           client.channels
-            .get("494044533479440384")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -7534,14 +8097,47 @@ setInterval(async function() {
         }
       }
 
+      if ("timemachine_timer" in users[m]) {
+        users[m]["timemachine_timer"]["timer"] -= 1;
+        if (users[m]["timemachine_timer"]["timer"] == 0) {
+          client.channels
+            .get("280272696560975872")
+            .send(
+              "<@" +
+                m +
+                ">, Aikakone palautti sinut taas normaaliin ulottuvuuteen..."
+            );
+          delete users[m].timemachine_timer;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/timemachine_timer")
+            .set(null);
+        }
+      }
+
+      if (users[m]["inventory"]["key_items"]["bush"]["on"]) {
+        users[m]["inventory"]["key_items"]["bush"]["timer"] -= 1;
+        if (users[m]["inventory"]["key_items"]["bush"]["timer"] == 0) {
+          client.channels
+            .get("280272696560975872")
+            .send(
+              "<@" +
+                m +
+                ">, Puska kuihtui ajan myötä... ");
+        users[m]["inventory"]["key_items"]["bush"]["timer"] = 10080;
+        users[m]["inventory"]["key_items"]["bush"]["on"] = false;
+        users[m]["inventory"]["key_items"]["bush"]["own"] = false;
+        }
+      }
+
       if ("fishing_timer" in users[m]) {
         users[m]["fishing_timer"]["timer"] -= 1;
         if (users[m]["fishing_timer"]["timer"] == 0) {
           client.channels
-            .get("494044533479440384")
+            .get("280272696560975872")
             .send(fish_caught(users[m], users));
-          check_kaladex(users[m]);
-          delete users[m].fishing_timer;
+          await check_kaladex(users[m]);
+          await delete users[m].fishing_timer;
           await firebase
             .database()
             .ref("users/" + users[m]["id"] + "/fishing_timer")
@@ -7560,7 +8156,7 @@ setInterval(async function() {
         users[m]["boat_timer"] -= 1;
         if (users[m]["boat_timer"] == 0) {
           client.channels
-            .get("494044533479440384")
+            .get("280272696560975872")
             .send(fishes_caught(users[m], users));
           check_kaladex(users[m]);
           delete users[m].fishing_boat_timer;
@@ -7575,6 +8171,7 @@ setInterval(async function() {
             .set(null);
         }
       }
+
       await check_kaladex(users[m]);
 
       // Check if peak
@@ -7590,16 +8187,13 @@ setInterval(async function() {
   var day = date.getDay();
 
   // Setting up "Title"
-
-  check_pääpäivä().then( v => {
-    if (v) {
-      change_title("PÄÄPÄIVÄ");
-    } else if (day === 3) {
-      change_title("Wednesday");
-    } else {
-      change_title("ttunes");
-    }
-  });
+  if (global["pääpäivä"]["on"]) {
+    change_title("PÄÄPÄIVÄ");
+  } else if (day === 3) {
+    change_title("Wednesday");
+  } else {
+    change_title("ttunes");
+  }
 
 
   // Next day
@@ -7615,7 +8209,7 @@ setInterval(async function() {
 
   minute_count += 1;
   console.log("Intervalli meni! (" + minute_count + ")");
-}, 10000);
+}, 60000);
 
 // Bot login
 client.login(tokens.d_token);
