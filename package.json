@@ -10,7 +10,8 @@
   "dependencies": {
     "discord.js": "^11.4.2",
     "ffmpeg": "0.0.4",
-    "firebase": "^5.5.4"
+    "firebase": "^5.5.4",
+    "pm2": "^3.4.0"
   },
   "author": "Kart5a",
   "license": ""

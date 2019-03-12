@@ -7875,6 +7875,10 @@ client.on("ready", () => {
     } channels of ${client.guilds.size} guilds.`
   );
 
+  setTimeout(function(){
+    process.exit(0);
+  }, 60 * 60 * 1000);
+
   var date = new Date();
   var date_array = [date.getDate(), date.getMonth(), date.getYear()];
   var day = date.getDay();
