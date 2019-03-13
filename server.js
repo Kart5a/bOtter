@@ -7910,12 +7910,15 @@ client.on("message", async msg => {
     }
   }
 
-  if (!(msg.content).includes("rahat")) {
-    msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "r", tokens.prefix + "rahat");
+  if (!(msg.content).includes("sano")) {
+    if (!(msg.content).includes("rahat")) {
+      msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "r", tokens.prefix + "rahat");
+    }
+    if (!(msg.content).includes("inv") && !(msg.content).includes("ilmoitukset")) {
+      msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "i", tokens.prefix + "inv");
+    }
   }
-  if (!(msg.content).includes("inv") && !(msg.content).includes("ilmoitukset")) {
-    msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "i", tokens.prefix + "inv");
-  }
+
 
   if (
     commands.hasOwnProperty(
