@@ -7593,13 +7593,9 @@ const commands = {
     let day = this_date.getDay();
 
     if (day == 3) {
-      msg.channel.send(
-        "IT IS WEDNESDAY MY DUDES"
-      );
+      msg.channel.send("", {file: "https://i.imgur.com/NcE2HFK.jpg"});
     } else {
-      msg.channel.send(
-        ":("
-      );
+      msg.channel.send("", {file: "https://i.imgur.com/hlNUbYt.jpg"});
     }
   },
 
