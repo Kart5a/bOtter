@@ -601,12 +601,13 @@ function check_user_in_database(_id) {
     });
 }
 
-function check_income_absorbtion() {
-  var users = get_all_users();
+async function check_income_absorbtion() {
+  var users = await get_all_users();
   var already_checked = [];
   var end_chain_user;
 
   // Finding user on "top of the chain"
+  console.log(users);
   for (let u in users) {
     if ("income_absorb" in users[u] && !already_checked.includes(u)) {
       while (true) {
@@ -666,7 +667,6 @@ function check_income_absorbtion() {
             users[id]["inventory"]["income"];
         }
 
-        save_user(users[id]);
         console.log("Imetty: " + id);
         id = users[id]["absorb_target"]["absorber"];
         continue;
@@ -674,11 +674,13 @@ function check_income_absorbtion() {
         users[id]["inventory"]["money"] += all_money;
         users[id]["basic_statistics"]["money_absorbed_to_you"] += all_money;
         users[id]["income_absorb"]["sum"] += all_money;
-        save_user(users[id]);
         console.log("Imi kaikki: " + id);
+        console.log(all_money);
+        await save_all_users(users);
         return;
       }
     }
+
   }
 }
 
@@ -8038,7 +8040,7 @@ setInterval(async function() {
           users[m]["inventory"]["money"] +=
             users[m]["income_machine"]["multi"] *
               users[m]["inventory"]["income"] -
-            users[m]["inventory"]["income"]; // laittaa pelkät income rahat
+            users[m]["inventory"]["income"]; // laittaa pelkät tulokone rahat
           users[m]["income_machine"]["sum"] +=
             users[m]["income_machine"]["multi"] *
               users[m]["inventory"]["income"] -
@@ -8183,8 +8185,9 @@ setInterval(async function() {
     }
   }
 
-  await check_income_absorbtion();
   await save_all_users(users);
+  await check_income_absorbtion();
+
 
   var date = new Date();
   var date_array = [date.getDate(), date.getMonth(), date.getYear()];
