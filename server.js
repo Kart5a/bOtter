@@ -297,16 +297,16 @@ function check_user_in_database(_id) {
 
       var name;
       try {
-        name = all_users.get(_id).username;
+        name = (all_users.get(_id)).username;
       } catch (err) {
         name = "<@" + _id + ">";
       }
 
-      if (all_users.get(_id).bot) return;
+      if ((all_users.get(_id)).bot) return;
 
       var new_user_users = {
         id: _id,
-        name: client.users.get(_id).username,
+        name: (client.users.get(_id)).username,
         info: {
           description: "-",
           motto: "-",
@@ -607,7 +607,6 @@ async function check_income_absorbtion() {
   var end_chain_user;
 
   // Finding user on "top of the chain"
-  console.log(users);
   for (let u in users) {
     if ("income_absorb" in users[u] && !already_checked.includes(u)) {
       while (true) {
@@ -1245,8 +1244,8 @@ function start_fishing(user, _part_day, _bait, _place, _depth, _rod_tier) {
   var cost = Math.floor((weight * fishes[caught_fish]["price"]) / 10) * 10;
 
   var time = Math.floor(Math.random() * Math.floor(3)) + 1;
-  var rng_chest = Math.floor(Math.random() * Math.floor(250)) + 1;
-  if (depth == "B" && rng_chest == 400) {
+  var rng_chest = Math.floor(Math.random() * Math.floor(300)) + 1;
+  if (depth == "B" && rng_chest == 0) {
     var _fish = {"Aarrearkku" : {
       "index" : 100,
       "weight": 100,
@@ -8050,7 +8049,7 @@ setInterval(async function() {
             users[m]["inventory"]["income"];
 
           if ("absorb_target" in users[m]) {
-            if (user_under_income(users["absorb_target"]["absorber"])) {
+            if (user_under_income(users[m]["absorb_target"]["absorber"])) {
               users[m]["basic_statistics"]["money_from_income_machines"] -=
                 users[m]["income_machine"]["multi"] *
                   users[m]["inventory"]["income"] -
