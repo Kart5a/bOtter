@@ -4431,7 +4431,7 @@ const commands = {
 
               }
 
-              if (rnd > 4) {
+              if (rnd > 2) {
                 msg.channel.send(
                   "Varastit jäbältä <@" +
                     name +
