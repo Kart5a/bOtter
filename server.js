@@ -4747,6 +4747,62 @@ const commands = {
               items = "Ei mitään";
             }
 
+            var status = "\n";
+
+            if ("income_machine" in user) { // multi timer sum
+              var multi = user["income_machine"]["multi"];
+              var emoji;
+              var name;
+              if (multi == 10) {
+                emoji = emojies["tulokone"];
+                name = "Tulokone";
+              }
+              else if (multi == 20) {
+                emoji = emojies["tulokonex"];
+                name = "Tulokone-X";
+              }
+              else if (multi == 40) {
+                emoji = emojies["tulokiihdytin"];
+                name = "Tulokiihdytin";
+              }
+              status += emoji + " " + name + ": Rahaa saatu " + user["income_machine"]["sum"] + emojies["coin"] + " (" + user["income_machine"]["timer"] + " mins jäljellä)\n";
+
+
+
+            }
+
+            if ("income_absorb" in user) {
+              status += emojies["tuloimu"] + " Imet tuloa jäbältä <@" + user["income_absorb"]["target"] + ">: Rahaa saatu " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+            }
+
+            if ("absorb_target" in user) {
+              status += emojies["tuloimu"] + " <@" + user["income_absorb"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+            }
+
+            if ("time_machine" in user) {
+              var time = user["time_machine"]["time"];
+              var time_left = user["time_machine"]["timer"];
+              status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
+            }
+
+            if ("fishing_timer" in user) {
+              var emoji;
+              if (user["inventory"]["key_items"]["hyper_rod"]) {
+                emoji = emojies["hyperonki"];
+              }
+              else if (user["inventory"]["key_items"]["hyper_rod"]) {
+                emoji = emojies["superonki"];
+              }
+              else {
+                emoji = emojies["onki"];
+              }
+              status += emoji + " Olet kalastamassa!"
+            }
+
+            if ("boat_timer" in user) {
+              status += emojies["kalastusvene"] + " Olet kalastusreissulla!"
+            }
+
             msg.channel.send({
               embed: {
                 title: `***INVENTORY (${user["name"]})***`,
@@ -4758,7 +4814,7 @@ const commands = {
                   emojies["coin"]
                 }, ***Perustulo:*** ${user["inventory"]["income"]}${
                   emojies["coin"]
-                }${safe_t}`,
+                }${safe_t}${status}`,
                 fields: [
                   {
                     name: "***___Tavarat:___***",
@@ -4776,6 +4832,109 @@ const commands = {
               }
             });
           }
+        }
+      });
+    });
+  },
+
+  status: msg => {
+    let name = msg.content.split(" ")[1];
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        if (name == "" || name === undefined)
+          return print_status(user["id"]);
+
+        name = name.replace(/\D/g, "");
+
+        var target_id = name;
+
+        var u;
+        var flag = false;
+        for (u in client.users.array()) {
+          var User = client.users.array()[u];
+          if (User.id == name) {
+            flag = true;
+          }
+        }
+
+        if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+        check_user_in_database(name).then(() => {
+          get_user(name).then(_user => {
+            user = _user;
+            print_status(user["id"]);
+          });
+        });
+
+        function print_status(_id) {
+
+            var status = "";
+
+            if ("income_machine" in user) { // multi timer sum
+              var multi = user["income_machine"]["multi"];
+              var emoji;
+              var name;
+              if (multi == 10) {
+                emoji = emojies["tulokone"];
+                name = "Tulokone";
+              }
+              else if (multi == 20) {
+                emoji = emojies["tulokonex"];
+                name = "Tulokone-X";
+              }
+              else if (multi == 40) {
+                emoji = emojies["tulokiihdytin"];
+                name = "Tulokiihdytin";
+              }
+
+              status += emoji + " " + name + ": Rahaa saatu " + user["income_machine"]["sum"] + emojies["coin"] + " (" + user["income_machine"]["timer"] + " mins jäljellä)\n";
+
+
+            }
+
+            if ("income_absorb" in user) {
+              status += emojies["tuloimu"] + " Imet tuloa jäbältä <@" + user["income_absorb"]["target"] + ">: Rahaa saatu " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+            }
+
+            if ("absorb_target" in user) {
+              status += emojies["tuloimu"] + " <@" + user["income_absorb"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+            }
+
+            if ("time_machine" in user) {
+              var time = user["time_machine"]["time"];
+              var time_left = user["time_machine"]["timer"];
+              status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
+            }
+
+            if ("fishing_timer" in user) {
+              var emoji;
+              if (user["inventory"]["key_items"]["hyper_rod"]) {
+                emoji = emojies["hyperonki"];
+              }
+              else if (user["inventory"]["key_items"]["hyper_rod"]) {
+                emoji = emojies["superonki"];
+              }
+              else {
+                emoji = emojies["onki"];
+              }
+              status += emoji + " Olet kalastamassa!"
+            }
+
+            if ("fishing_boat_timer" in user) {
+              status += emojies["kalastusvene"] + " Olet kalastusreissulla!"
+            }
+
+            if (status == "") {
+              status = "Ei mitään!";
+            }
+
+            msg.channel.send({
+              embed: {
+                title: `***STATUS (${user["name"]})***`,
+                color: user["info"]["color"],
+                description: `${status}`
+              }
+            });
         }
       });
     });
@@ -5842,9 +6001,11 @@ const commands = {
       }
       else if (reaction.emoji == emojies["taskurapu"]) {
         message.edit(await sea(user, _all_users));
-      }else if (reaction.emoji == "2⃣") {
+      }
+      else if (reaction.emoji == "2⃣") {
         message.edit(await tier2(user, _all_users));
-      } else if (reaction.emoji == "3⃣") {
+      }
+      else if (reaction.emoji == "3⃣") {
         message.edit(await tier3(user, _all_users));
       }
     });
@@ -7911,6 +8072,9 @@ client.on("message", async msg => {
     }
     if (!(msg.content).includes("inv") && !(msg.content).includes("ilmoitukset")) {
       msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "i", tokens.prefix + "inv");
+    }
+    if ((msg.content.split(" ")[0]) == "!s") {
+      msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "s", tokens.prefix + "status");
     }
   }
 
