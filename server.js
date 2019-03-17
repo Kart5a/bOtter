@@ -4779,7 +4779,7 @@ const commands = {
               status += emojies["tuloimu"] + " <@" + user["income_absorb"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
             }
 
-            if ("time_machine" in user) {
+            if ("timemachine_timer" in user) {
               var time = user["time_machine"]["time"];
               var time_left = user["time_machine"]["timer"];
               status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
@@ -4900,7 +4900,7 @@ const commands = {
               status += emojies["tuloimu"] + " <@" + user["income_absorb"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
             }
 
-            if ("time_machine" in user) {
+            if ("timemachine_timer" in user) {
               var time = user["time_machine"]["time"];
               var time_left = user["time_machine"]["timer"];
               status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
@@ -5080,12 +5080,7 @@ const commands = {
         if (purchase == "perustulo") {
           var basic_income = user["inventory"]["income"];
           var basic_income_price =
-            Math.floor(
-              (1000 *
-                Math.pow(1.08, user["basic_statistics"]["income_bought"]) *
-                (10 + 5 * user["basic_statistics"]["income_bought"])) /
-                100
-            ) * 100;
+            Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
           if (money < basic_income_price)
             return msg.channel.send(
               "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
@@ -8378,7 +8373,7 @@ setInterval(async function() {
 
   minute_count += 1;
   console.log("Intervalli meni! (" + minute_count + ")");
-}, 60000);
+}, 60000 / 10);
 
 // Bot login
 client.login(tokens.d_token);
