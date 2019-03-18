@@ -4477,6 +4477,40 @@ const commands = {
                     `Et voi imeä häneltä koska hän imee jo sinulta ;)`
                   );
               }
+              /*
+              if (!check_if_absorb(target_user)) {
+                return msg.channel.send(
+                  `Et voi imeä häneltä koska olet pohjalla :(`
+                );
+              }*/
+
+
+              async function check_if_absorb(target_user) {
+                var users = await get_all_users();
+                var already_checked = [];
+                var end_chain_user;
+
+                // Finding user on "top of the chain"
+                for (let u in users) {
+                  if ("income_absorb" in users[u] && !already_checked.includes(u)) {
+                    while (true) {
+                      var temp_id = users[u].income_absorb.target;
+
+                      if ("income_absorb" in users[temp_id]) {
+                        u = users[u]["income_absorb"]["target"];
+                      } else {
+                        end_chain_user = users[u].income_absorb.target;
+                        if (end_chain_user == target_user) {
+                          return false;
+                        }
+                      }
+                    }
+                  }
+                  return true;
+                }
+              }
+
+
 
               if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
                 `Et löydä häntä mistään!?...`
@@ -4489,11 +4523,13 @@ const commands = {
                   `Hän näki sinut ennelta...Et päässyt käsiksi häneen!`
                 );
               }
+
               user["income_absorb"] = {
                 target: target_id,
                 timer: 480,
                 sum: 0
               };
+
               target_user["absorb_target"] = {
                 absorber: user["id"],
                 timer: 480,
