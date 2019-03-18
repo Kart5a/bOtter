@@ -4776,7 +4776,7 @@ const commands = {
             }
 
             if ("absorb_target" in user) {
-              status += emojies["tuloimu"] + " <@" + user["income_absorb"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+              status += emojies["tuloimu"] + " <@" + user["absorb_target"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["absorb_target"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
             }
 
             if ("timemachine_timer" in user) {
