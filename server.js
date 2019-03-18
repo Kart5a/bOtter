@@ -8130,7 +8130,7 @@ client.on("error", e => {
   console.log(e);
 });
 
-const banned_channels = ["300242143702679552"];
+const banned_channels = ["300242143702679552", "404378873380470786"];
 
 var minute_count = 0;
 setInterval(async function() {
