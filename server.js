@@ -4816,8 +4816,8 @@ const commands = {
             }
 
             if ("timemachine_timer" in user) {
-              var time = user["time_machine"]["time"];
-              var time_left = user["time_machine"]["timer"];
+              var time = user["timemachine_timer"]["time"];
+              var time_left = user["timemachine_timer"]["timer"];
               status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
             }
 
