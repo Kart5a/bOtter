@@ -338,7 +338,10 @@ function check_user_in_database(_id) {
             bronze_income: 0,
             silver_income: 0,
             gold_income: 0,
-            timemachine : 0
+            timemachine : 0,
+            prankster: 0,
+            grabber: 0,
+            stunner: 0
           },
           key_items: {
             rod: false,
@@ -372,6 +375,8 @@ function check_user_in_database(_id) {
           income_bought: 0,
           money_from_incomes: 0,
           solo_minutes : 0,
+          stunned: 0,
+          you_stunned: 0,
           money_from_opening_lootboxes: 0,
           money_from_lootboxes: 0,
           money_from_income_machines: 0,
@@ -393,6 +398,10 @@ function check_user_in_database(_id) {
           bombed_money : 0,
           bombed: 0,
           bombed_money_from_you: 0,
+          pranked: 0,
+          got_pranked: 0,
+          pranked_money: 0,
+          pranked_from_you: 0,
           opened_lootboxes: {
             common: 0,
             uncommon: 0,
@@ -1285,6 +1294,34 @@ function start_fishing(user, _part_day, _bait, _place, _depth, _rod_tier) {
 
 
 }
+
+function check_stun() {
+  var stunned;
+  var stun = firebase.database().ref("global_data/stunned");
+  stun.on("value", function(d) {
+    stunned = d.val();
+    if (stunned == undefined) {
+      stunned = ["id"];
+    }
+
+    firebase
+      .database()
+      .ref("global_data/stunned")
+      .set(stunned);
+
+  });
+}
+
+function get_stun() {
+  var stunned;
+  var stun = firebase.database().ref("global_data/stunned");
+  stun.on("value", function(d) {
+    stunned = d.val();
+  });
+
+  return stunned;
+}
+
 
 // All commands
 const commands = {
@@ -3620,7 +3657,7 @@ const commands = {
             },
             Hypersytti: {
               path: "user['inventory']['items']['hyper_bait']",
-              amount: [5, 6, 10],
+              amount: [16, 18, 20],
               name: emojies["hypersytti"],
               rate: 7,
               real_name: "Hypersytti"
@@ -3631,6 +3668,20 @@ const commands = {
               name: emojies["maski"],
               rate: 5,
               real_name: "Maski"
+            },
+            Stunner: {
+              path: "user['inventory']['items']['stunner']",
+              amount: [1],
+              name: emojies["stunner"],
+              rate: 0, // 5
+              real_name: "Stunner"
+            },
+            Grabber: {
+              path: "user['inventory']['items']['grabber']",
+              amount: [1],
+              name: emojies["grabber"],
+              rate: 0, // 5
+              real_name: "grabber"
             }
           },
           legendary: {
@@ -3641,13 +3692,12 @@ const commands = {
               rate: 4,
               real_name: "Gem"
             },
-            "Kultainen harpuuna": {
-              path: "user['inventory']['key_items']['golden_harpoon']",
-              amount: true,
-              key: true,
-              name: emojies["harpuuna"],
-              rate: 4,
-              real_name: "Kultainen harpuuna"
+            Prankster: {
+              path: "user['inventory']['items']['prankster']",
+              amount: [1],
+              name: emojies["prankster"],
+              rate: 0, // 1.2
+              real_name: "Prankster"
             },
             Tallelokero: {
               path: "user['inventory']['key_items']['safe']['own']",
@@ -3661,29 +3711,28 @@ const commands = {
               path: "user['inventory']['items']['income_accelerator']",
               amount: [1],
               name: emojies["tulokiihdytin"],
-              rate: 4,
+              rate: 3.8,
               real_name: "Tulokiihdytin"
             },
             Glitch: {
               path: "user['inventory']['items']['glitch']",
               amount: [1],
               name: emojies["glitch"],
-              rate: 1,
+              rate: 1.2,
               real_name: "Glitch"
             },
-            Puska: {
-              path: "user['inventory']['key_items']['bush']['own']",
-              amount: true,
-              key: true,
-              name: emojies["puska"],
-              rate: 0,
-              real_name: "Puska"
+            Grabber: {
+              path: "user['inventory']['items']['grabber']",
+              amount: [10],
+              name: emojies["grabber"],
+              rate: 0, // 5
+              real_name: "grabber"
             },
             Hypersytti: {
               path: "user['inventory']['items']['hyper_bait']",
               amount: [100],
               name: emojies["hypersytti"],
-              rate: 4,
+              rate: 5, // 5
               real_name: "Hypersytti"
             }
           }
@@ -4597,6 +4646,197 @@ const commands = {
               save_user(user);
               save_user(target_user);
             }
+            if (item == "prankster") {
+
+              if (name == sender_id)
+                return msg.channel.send(`Et voi pränkätä omaa rahaa, lol!`);
+              if (user["inventory"]["items"]["prankster"] < 1)
+                return msg.channel.send(`Sulla ei ole pranksteriä`);
+              if (user["inventory"]["money"] <= 0)
+                return msg.channel.send(`Et voi pränkätä ilman rahaa...`);
+
+
+              if ("security_cam" in target_user) {
+                msg.channel.send("Valvontakamera osoittaa sinuun!");
+                rnd = 1;
+                target_user["security_cam"]["protected"] += 1;
+
+              }
+
+              var target_money = target_user["inventory"]["money"];
+              var user_money = user["inventory"]["money"];
+
+              user["inventory"]["money"] = target_money;
+              target_user["inventory"]["money"] = user_money;
+
+
+
+              msg.channel.send(
+                  "Pränkkäsit jäbältä <@" +
+                    name +
+                    "> rahat. Sait hänen: " +
+                    target_money +
+                    emojies["coin"] + " ja hän säi sinun " + user_money + emojies["coin"]
+                );
+
+              user["basic_statistics"]["pranked"] += 1;
+              target_user["basic_statistics"]["got_pranked"] += 1;
+              user["basic_statistics"]["pranked_money"] += target_money;
+              target_user["basic_statistics"]["pranked_from_you"] += user_money;
+              user["inventory"]["items"]["prankster"] -= 1;
+              save_user(target_user);
+              save_user(user);
+
+            }
+            if (item == "stunner") {
+              if (name == sender_id)
+                return msg.channel.send(`Et voi stunnaa itseäsi, lol!`);
+              if (user["inventory"]["items"]["stunner"] < 1)
+                return msg.channel.send(`Sulla ei ole stunnereitä`);
+              if ("stun_timer" in target_user)
+                return msg.channel.send(`Kohde on jo kanttuvei...`);
+
+              target_user["stun_timer"] = {
+                timer: 45
+              }
+
+              var stun = firebase.database().ref("global_data/stunned");
+              stun.on("value", function(d) {
+                stunned = d.val();
+              });
+
+              stunned.push(target_user["id"]);
+
+              firebase
+                .database()
+                .ref("global_data/stunned")
+                .set(stunned);
+
+              user["inventory"]["items"]["stunner"] -= 1;
+              user["basic_statistics"]["you_stunned"] += 1;
+              target_user["basic_statistics"]["stunned"] += 1;
+
+              save_user(target_user);
+              save_user(user);
+              return msg.channel.send("Löit iha vitun kovaa, hän on stunneissa!");
+
+
+            }
+            if (item == "grabber") {
+              if (name == sender_id)
+                return msg.channel.send(`Et voi varastaa omaa tavaraa, lol!`);
+              if (user["inventory"]["items"]["grabber"] < 1)
+                return msg.channel.send(`Sulla ei ole grabbereitä`);
+
+              if ("security_cam" in target_user) {
+                msg.channel.send("Valvontakamera osoittaa sinuun!");
+                rnd = 1;
+                target_user["security_cam"]["protected"] += 1;
+
+              }
+
+              var inv = target_user["inventory"]["items"];
+              var amount = 0;
+              var item_list = [];
+              for (item in inv) {
+                if (inv[item] > 0) {
+                  amount += 1;
+                  item_list.push(item);
+                }
+              }
+              if (amount == 0) {
+                return msg.channel.send(`Kohteella ei ole tavaraa!`);
+              }
+
+              var rnd = Math.floor(Math.random() * Math.floor(amount));
+              var chosen_item = item_list[rnd];
+              console.log(chosen_item);
+
+              var items;
+
+              if (chosen_item == "ES") {
+                items = `${emojies["ES"]} ES\n`;
+              }
+              if (chosen_item == "stick") {
+                items = `${emojies["keppi"]} Keppi\n`;
+              }
+              if (chosen_item == "bait") {
+                items = `${emojies["sytti"]} Sytti\n`;
+              }
+              if (chosen_item == "super_bait") {
+                items = `${emojies["supersytti"]} Supersytti\n`;
+              }
+              if (chosen_item == "hyper_bait") {
+                items = `${emojies["hypersytti"]} Hypersytti\n`;
+              }
+              if (chosen_item == "timemachine") {
+                items = `${emojies["aikakone"]} Aikakone\n`;
+              }
+              if (chosen_item == "shield") {
+                items = `${emojies["kilpi"]} Kilpi\n`;
+              }
+              if (chosen_item == "bomb") {
+                items = `${emojies["pommi"]} Pommi\n`;
+              }
+              if (chosen_item == "security_cam") {
+                items = `${emojies["valvontakamera"]} Valvontakamera\n`;
+              }
+              if (chosen_item == "income_machine") {
+                items = `${emojies["tulokone"]} Tulokone`;
+              }
+              if (chosen_item == "income_machine_X") {
+                items = `${emojies["tulokonex"]} Tulokone-X\n`;
+              }
+              if (chosen_item == "income_accelerator") {
+                items = `${emojies["tulokiihdytin"]} Tulokiihdytin`;
+              }
+              if (chosen_item == "income_absorber") {
+                items = `${emojies["tuloimu"]} Tuloimu\n`;
+              }
+              if (chosen_item == "mask") {
+                items = `${emojies["maski"]} Maski`;
+              }
+              if (chosen_item == "stunner") {
+                items = `${emojies["stunner"]} Stunner\n`;
+              }
+              if (chosen_item == "grabber") {
+                items = `${emojies["grabber"]} Grabber\n`;
+              }
+              if (chosen_item == "gem") {
+                items = `${emojies["gem"]} Gem\n`;
+              }
+              if (chosen_item == "prankster") {
+                items = `${emojies["prankster"]} Prankster\n`;
+              }
+              if (chosen_item == "glitch") {
+                items = `${emojies["glitch"]} Glitch\n`;
+              }
+              if (chosen_item == "bronze_income") {
+                items = `${emojies["perustulo1"]} Pronssitulo\n`;
+              }
+              if (chosen_item == "silver_income") {
+                items = `${emojies["perustulo2"]} Hopeatulo\n`;
+              }
+              if (chosen_item == "gold_income") {
+                items = `${emojies["perustulo3"]} Kultatulo\n`;
+              }
+
+              msg.channel.send(
+                  "Varastit jäbältä <@" +
+                    name +
+                    ">! Sait: " +
+                    items
+                );
+
+              user["inventory"]["items"]["grabber"] -= 1;
+              user["inventory"]["items"][chosen_item] += 1;
+              target_user["inventory"]["items"][chosen_item] -= 1;
+              save_user(target_user);
+              save_user(user);
+
+
+            }
+
           });
         });
       });
@@ -4757,8 +4997,17 @@ const commands = {
             if (ite["mask"] > 0) {
               items += `${emojies["maski"]} Maski: ${ite["mask"]}\n`;
             }
+            if (ite["stunner"] > 0) {
+              items += `${emojies["stunner"]} Stunner: ${ite["stunner"]}\n`;
+            }
+            if (ite["grabber"] > 0) {
+              items += `${emojies["grabber"]} Grabber: ${ite["grabber"]}\n`;
+            }
             if (ite["gem"] > 0) {
               items += `${emojies["gem"]} Gem: ${ite["gem"]}\n`;
+            }
+            if (ite["prankster"] > 0) {
+              items += `${emojies["prankster"]} Prankster: ${ite["prankster"]}\n`;
             }
             if (ite["glitch"] > 0) {
               items += `${emojies["glitch"]} Glitch: ${ite["glitch"]}\n`;
@@ -8058,6 +8307,7 @@ function loadEmojies() {
 // When bot is ready
 client.on("ready", () => {
   loadEmojies();
+  check_stun();
   console.log(
     `Bot has started, with ${client.users.size} users, in ${
       client.channels.size
@@ -8087,8 +8337,12 @@ client.on("ready", () => {
 const banned_textchannels = ["442466922831806475"];
 client.on("message", async msg => {
   if (msg.author.bot) return;
+  console.log(get_stun());
+
   if (msg.content.indexOf(tokens.prefix) !== 0) return;
   if (!msg.content.startsWith(tokens.prefix)) return;
+
+  if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
 
   if (!(msg.content).includes("purge")) {
     if (banned_textchannels.includes(msg.channel.id)) {
@@ -8204,6 +8458,27 @@ setInterval(async function() {
             .database()
             .ref("users/" + users[m]["id"] + "/income_absorb")
             .set(null);
+        }
+      }
+
+      if ("stun_timer" in users[m]) {
+        users[m]["stun_timer"]["timer"] -= 1;
+        if (users[m]["stun_timer"]["timer"] == 0) {
+          (global["stunned"]).splice( (global["stunned"]).indexOf("" + m), 1 );
+          users[m]["stun_timer"] = null;
+
+          client.channels
+            .get("280272696560975872")
+            .send(
+              "Stunnisi päättyi loppui <@" +
+                m + ">"
+            );
+
+          await firebase
+            .database()
+            .ref(global_data)
+            .set(global);
+
         }
       }
 
