@@ -1244,8 +1244,8 @@ function start_fishing(user, _part_day, _bait, _place, _depth, _rod_tier) {
   var cost = Math.floor((weight * fishes[caught_fish]["price"]) / 10) * 10;
 
   var time = Math.floor(Math.random() * Math.floor(3)) + 1;
-  var rng_chest = Math.floor(Math.random() * Math.floor(300)) + 1;
-  if (depth == "B" && rng_chest == 0) {
+  var rng_chest = Math.floor(Math.random() * Math.floor(300));
+  if (depth == "B" && rng_chest == 1) {
     var _fish = {"Aarrearkku" : {
       "index" : 100,
       "weight": 100,
