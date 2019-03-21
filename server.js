@@ -169,7 +169,6 @@ async function draw_lootbox(user_id, multi, game = true) {
   check_user_in_database(user_id)
   var user = await get_user(user_id);
 
-
     var propabilities = {
       legendary: 300,
       epic: 50,
@@ -323,6 +322,7 @@ function check_user_in_database(_id) {
             super_bait: 0,
             hyper_bait: 0,
             stick: 0,
+            log: 0,
             mask: 0,
             ES: 0,
             ES_can: 0,
@@ -415,6 +415,10 @@ function check_user_in_database(_id) {
           compensations: 0,
           hit: 0,
           sticked_money_from_you : 0,
+          logged_money_from_you: 0,
+          log_used: 0,
+          logged_money: 0,
+          hit_with_log: 0,
           stick_used: 0,
           sticked_money : 0,
           money_absorbed_from_you: 0,
@@ -3478,6 +3482,99 @@ const commands = {
 
   ///
 
+  mäjäytä: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+        let name = msg.content.split(" ")[1];
+
+          name = name.replace(/\D/g, "");
+
+          var flag = false;
+          for (var u in client.users.array()) {
+            var _user = client.users.array()[u];
+            if (_user.id == name) {
+              flag = true;
+            }
+          }
+
+          if (!flag) return;
+
+          var target_id = name;
+          var sender_id = user["id"];
+
+        check_user_in_database(target_id).then(() => {
+          get_user(target_id).then(target_user => {
+
+            if (user["inventory"]["items"]["log"] < 1)
+              return msg.channel.send(`Sulla ei ole tukkeja`);
+            if (name == sender_id)
+              return msg.channel.send(`Älä lyö ittees vitun idiotti!`);
+
+            if ("security_cam" in target_user) {
+              target_user["security_cam"]["protected"] += 1;
+              save_user(target_user);
+              return msg.channel.send(
+                `Hän huomasi sinut ennalta, et päässyt antamaan läppälimua häneen...`
+              );
+            }
+
+
+            if (target_user["inventory"]["items"]["shield"] > 0) {
+              msg.channel.send(
+                `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
+              );
+              var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
+              if (rnd == 3) {
+                target_user["inventory"]["items"]["shield"] -= 1;
+                msg.channel.send(
+                  `Kilpi meni kuitenkin rikki...`
+                );
+              }
+
+              user["basic_statistics"]["log_used"] += 1;
+              user["inventory"]["items"]["log"] -= 1;
+              save_user(user);
+              save_user(target_user);
+              return;
+            }
+
+            var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+            var amount = Math.floor(Math.random() * Math.floor(300 + 1)) * 50;
+            var your_amount = Math.floor(amount / 10);
+            if (rnd > 3 ) {
+              if (target_user["inventory"]["money"] < amount) {
+                amount = target_user["inventory"]["money"];
+                your_amount = Math.floor(amount / 10);
+              }
+              msg.channel.send(
+                "Löit jäbää <@" +
+                  name +
+                  ">! Hän pudotti " +
+                  amount +
+                  emojies["coin"] +
+                  " maahan eikä saanut yhtään takaisin... Ehdit keräämään " + your_amount + emojies["coin"] + " kolikkoa maasta..."
+              );
+              target_user["inventory"]["money"] -= amount;
+              user["inventory"]["money"] += your_amount;
+            } else {
+              msg.channel.send(
+                "Löit jäbää <@" + name + ">! Et hyötyny mitään."
+              );
+            }
+            user["inventory"]["items"]["log"] -= 1;
+            user["basic_statistics"]["log_used"] += 1;
+            user["basic_statistics"]["logged_money"] += amount;
+            target_user["basic_statistics"]["hit_with_log"] += 1;
+            target_user["basic_statistics"]["logged_money_from_you"] += amount;
+            save_user(user);
+            save_user(target_user);
+
+          });
+        });
+      });
+    });
+  },
+
   avaa: msg => {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
@@ -4450,6 +4547,71 @@ const commands = {
               save_user(user);
               save_user(target_user);
             }
+            if (item == "tukki") {
+              if (user["inventory"]["items"]["log"] < 1)
+                return msg.channel.send(`Sulla ei ole tukkeja`);
+              if (name == sender_id)
+                return msg.channel.send(`Älä lyö ittees vitun idiotti!`);
+
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                save_user(target_user);
+                return msg.channel.send(
+                  `Hän huomasi sinut ennalta, et päässyt antamaan läppälimua häneen...`
+                );
+              }
+
+
+              if (target_user["inventory"]["items"]["shield"] > 0) {
+                msg.channel.send(
+                  `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
+                );
+                var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
+                if (rnd == 3) {
+                  target_user["inventory"]["items"]["shield"] -= 1;
+                  msg.channel.send(
+                    `Kilpi meni kuitenkin rikki...`
+                  );
+                }
+
+                user["basic_statistics"]["log_used"] += 1;
+                user["inventory"]["items"]["log"] -= 1;
+                save_user(user);
+                save_user(target_user);
+                return;
+              }
+
+              var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
+              var amount = Math.floor(Math.random() * Math.floor(300 + 1)) * 50;
+              var your_amount = Math.floor(amount / 10);
+              if (rnd > 3 ) {
+                if (target_user["inventory"]["money"] < amount) {
+                  amount = target_user["inventory"]["money"];
+                  your_amount = Math.floor(amount / 10);
+                }
+                msg.channel.send(
+                  "Löit jäbää <@" +
+                    name +
+                    ">! Hän pudotti " +
+                    amount +
+                    emojies["coin"] +
+                    " maahan eikä saanut yhtään takaisin... Ehdit keräämään " + your_amount + emojies["coin"] + " kolikkoa maasta..."
+                );
+                target_user["inventory"]["money"] -= amount;
+                user["inventory"]["money"] += your_amount;
+              } else {
+                msg.channel.send(
+                  "Löit jäbää <@" + name + ">! Et hyötyny mitään."
+                );
+              }
+              user["inventory"]["items"]["log"] -= 1;
+              user["basic_statistics"]["log_used"] += 1;
+              user["basic_statistics"]["logged_money"] += amount;
+              target_user["basic_statistics"]["hit_with_log"] += 1;
+              target_user["basic_statistics"]["logged_money_from_you"] += amount;
+              save_user(user);
+              save_user(target_user);
+            }
             if (item == "maski") {
               if (name == sender_id)
                 return msg.channel.send(`Et voi varastaa omaa rahaa, lol!`);
@@ -4656,12 +4818,15 @@ const commands = {
                 return msg.channel.send(`Et voi pränkätä ilman rahaa...`);
 
 
-              if ("security_cam" in target_user) {
-                msg.channel.send("Valvontakamera osoittaa sinuun!");
-                rnd = 1;
-                target_user["security_cam"]["protected"] += 1;
+                if ("security_cam" in target_user) {
+                  target_user["security_cam"]["protected"] += 1;
+                  msg.channel.send("Valvontakamera osoittaa sinuun!");
+                  save_user(target_user);
+                  save_user(user);
+                  return;
 
-              }
+                }
+
 
               var target_money = target_user["inventory"]["money"];
               var user_money = user["inventory"]["money"];
@@ -4696,6 +4861,15 @@ const commands = {
               if ("stun_timer" in target_user)
                 return msg.channel.send(`Kohde on jo kanttuvei...`);
 
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                msg.channel.send("Valvontakamera osoittaa sinuun!");
+                save_user(target_user);
+                save_user(user);
+                return;
+
+              }
+
               target_user["stun_timer"] = {
                 timer: 45
               }
@@ -4728,12 +4902,15 @@ const commands = {
               if (user["inventory"]["items"]["grabber"] < 1)
                 return msg.channel.send(`Sulla ei ole grabbereitä`);
 
-              if ("security_cam" in target_user) {
-                msg.channel.send("Valvontakamera osoittaa sinuun!");
-                rnd = 1;
-                target_user["security_cam"]["protected"] += 1;
+                if ("security_cam" in target_user) {
+                  target_user["security_cam"]["protected"] += 1;
+                  msg.channel.send("Valvontakamera osoittaa sinuun!");
+                  save_user(target_user);
+                  save_user(user);
+                  return;
 
-              }
+                }
+
 
               var inv = target_user["inventory"]["items"];
               var amount = 0;
@@ -4822,7 +4999,7 @@ const commands = {
               }
 
               msg.channel.send(
-                  "Varastit jäbältä <@" +
+                  "Varastit tavaran jäbältä <@" +
                     name +
                     ">! Sait: " +
                     items
@@ -4946,6 +5123,9 @@ const commands = {
             }
             if (ite["stick"] > 0) {
               items += `${emojies["keppi"]} Keppi: ${ite["stick"]}\n`;
+            }
+            if (ite["log"] > 0) {
+              items += `${emojies["tukki"]} Tukki: ${ite["log"]}\n`;
             }
             if (ite["bait"] > 0) {
               items += `${emojies["sytti"]} Sytti: ${ite["bait"]}\n`;
@@ -5305,6 +5485,11 @@ const commands = {
                   "___Hinta:___ 10k" + emojies["coin"] + "\nMahdollistaa kalastamisen eri aikaulottuvuudessa tunnin ajan."
               },
               {
+                name: "***___" + emojies["tukki"] + " Tukki:___*** [tukki]",
+                value:
+                  "___Hinta:___ 50 " + emojies["keppi"] + "\nVoi mäjäyttää vitusti."
+              },
+              {
                 name: "***___" + emojies["supersytti"] + " Supersytti:___*** [supersytti]",
                 value:
                   "___Hinta:___ 10 Syttiä"
@@ -5436,6 +5621,14 @@ const commands = {
         user["inventory"]["items"]["bait"] -= amount*10;
 
         msg.channel.send(`Ostit ${amount} supersyttiä!`);
+      }
+      else if (purchase == "tukki") {
+        if (user["inventory"]["items"]["stick"] < 50*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi keppejä.");
+
+        user["inventory"]["items"]["log"] += amount;
+        user["inventory"]["items"]["stick"] -= amount*50;
+
+        msg.channel.send(`Ostit ${amount} tukkeja!`);
       }
       else if (purchase == "hypersytti") {
         if (user["inventory"]["items"]["super_bait"] < 10*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
