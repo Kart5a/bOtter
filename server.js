@@ -170,8 +170,8 @@ async function draw_lootbox(user_id, multi, game = true) {
   var user = await get_user(user_id);
 
     var propabilities = {
-      legendary: 300,
-      epic: 50,
+      legendary: 160,
+      epic: 40,
       rare: 10,
       uncommon: 3,
       common: 1
@@ -652,31 +652,39 @@ async function check_income_absorbtion() {
         users[id]["absorb_target"]["sum"] += users[id]["inventory"]["income"];
 
         if ("income_machine" in users[id]) {
-          all_money +=
-            users[id]["inventory"]["income"] *
-              users[id]["income_machine"]["multi"] -
-            users[id]["inventory"]["income"];
-          users[id]["inventory"]["money"] -=
-            users[id]["inventory"]["income"] *
-              users[id]["income_machine"]["multi"] -
-            users[id]["inventory"]["income"];
-          users[id]["basic_statistics"]["money_from_incomes"] -=
-            users[id]["inventory"]["income"] *
-              users[id]["income_machine"]["multi"] -
-            users[id]["inventory"]["income"];
+          if (users[id]["income_machine"]["multi"] == 40) {
+            all_money += users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
+            users[id]["inventory"]["money"] -= users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
+            users[id]["basic_statistics"]["money_from_incomes"] -= users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
 
-          users[id]["income_machine"]["sum"] -=
-            users[id]["inventory"]["income"] *
-              users[id]["income_machine"]["multi"] -
-            users[id]["inventory"]["income"];
-          users[id]["basic_statistics"]["money_absorbed_from_you"] +=
-            users[id]["inventory"]["income"] *
-              users[id]["income_machine"]["multi"] -
-            users[id]["inventory"]["income"];
-          users[id]["absorb_target"]["sum"] +=
-            users[id]["inventory"]["income"] *
-              users[id]["income_machine"]["multi"] -
-            users[id]["inventory"]["income"];
+            users[id]["income_machine"]["sum"] -= users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
+            users[id]["basic_statistics"]["money_absorbed_from_you"] += users[id]["inventory"]["income"] *  users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
+            users[id]["absorb_target"]["sum"] += users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
+          } else {
+            all_money += users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"];
+            users[id]["inventory"]["money"] -=
+              users[id]["inventory"]["income"] *
+                users[id]["income_machine"]["multi"] -
+              users[id]["inventory"]["income"];
+            users[id]["basic_statistics"]["money_from_incomes"] -=
+              users[id]["inventory"]["income"] *
+                users[id]["income_machine"]["multi"] -
+              users[id]["inventory"]["income"];
+
+            users[id]["income_machine"]["sum"] -=
+              users[id]["inventory"]["income"] *
+                users[id]["income_machine"]["multi"] -
+              users[id]["inventory"]["income"];
+            users[id]["basic_statistics"]["money_absorbed_from_you"] +=
+              users[id]["inventory"]["income"] *
+                users[id]["income_machine"]["multi"] -
+              users[id]["inventory"]["income"];
+            users[id]["absorb_target"]["sum"] +=
+              users[id]["inventory"]["income"] *
+                users[id]["income_machine"]["multi"] -
+              users[id]["inventory"]["income"];
+          }
+
         }
 
         console.log("Imetty: " + id);
@@ -3617,6 +3625,13 @@ const commands = {
               name: emojies["perustulo1"],
               rate: 1,
               real_name: "Pronssitulo"
+            },
+            Tukki: {
+              path: "user['inventory']['items']['log']",
+              amount: [1],
+              name: emojies["tukki"],
+              rate: 1.5,
+              real_name: "Tukki"
             }
           },
           uncommon: {
@@ -3703,7 +3718,7 @@ const commands = {
             },
             Supersytti: {
               path: "user['inventory']['items']['super_bait']",
-              amount: [12],
+              amount: [5, 6, 7],
               name: emojies["supersytti"],
               rate: 5,
               real_name: "Supersytti"
@@ -3754,7 +3769,7 @@ const commands = {
             },
             Hypersytti: {
               path: "user['inventory']['items']['hyper_bait']",
-              amount: [16, 18, 20],
+              amount: [12, 14, 16],
               name: emojies["hypersytti"],
               rate: 7,
               real_name: "Hypersytti"
@@ -3793,7 +3808,7 @@ const commands = {
               path: "user['inventory']['items']['prankster']",
               amount: [1],
               name: emojies["prankster"],
-              rate: 0, // 1.2
+              rate: 1.2, // 1.2
               real_name: "Prankster"
             },
             Tallelokero: {
@@ -3822,14 +3837,14 @@ const commands = {
               path: "user['inventory']['items']['grabber']",
               amount: [10],
               name: emojies["grabber"],
-              rate: 0, // 5
+              rate: 5, // 5
               real_name: "grabber"
             },
             Hypersytti: {
               path: "user['inventory']['items']['hyper_bait']",
               amount: [100],
               name: emojies["hypersytti"],
-              rate: 5, // 5
+              rate: 0, // 5
               real_name: "Hypersytti"
             }
           }
@@ -5492,12 +5507,12 @@ const commands = {
               {
                 name: "***___" + emojies["supersytti"] + " Supersytti:___*** [supersytti]",
                 value:
-                  "___Hinta:___ 10 Syttiä"
+                  "___Hinta:___ 7 Syttiä"
               },
               {
                 name: "***___" + emojies["hypersytti"] + " Hypersytti:___*** [hypersytti]",
                 value:
-                  "___Hinta:___ 10 Supersyttiä"
+                  "___Hinta:___ 7 Supersyttiä"
               }
 
             ]
@@ -5615,10 +5630,10 @@ const commands = {
           msg.channel.send("Onnittelut! Sulla on nyt onki!");
         }
       else if (purchase == "supersytti") {
-        if (user["inventory"]["items"]["bait"] < 10*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
+        if (user["inventory"]["items"]["bait"] < 7*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
 
         user["inventory"]["items"]["super_bait"] += amount;
-        user["inventory"]["items"]["bait"] -= amount*10;
+        user["inventory"]["items"]["bait"] -= amount*7;
 
         msg.channel.send(`Ostit ${amount} supersyttiä!`);
       }
@@ -5631,10 +5646,10 @@ const commands = {
         msg.channel.send(`Ostit ${amount} tukkeja!`);
       }
       else if (purchase == "hypersytti") {
-        if (user["inventory"]["items"]["super_bait"] < 10*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
+        if (user["inventory"]["items"]["super_bait"] < 7*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
 
         user["inventory"]["items"]["hyper_bait"] += amount;
-        user["inventory"]["items"]["super_bait"] -= amount*10;
+        user["inventory"]["items"]["super_bait"] -= amount*7;
 
         msg.channel.send(`Ostit ${amount} Hypersyttiä!`);
       }
@@ -8698,14 +8713,26 @@ setInterval(async function() {
       // Income Machine
       if ("income_machine" in users[m]) {
         if (user_under_income(users[m])) {
-          users[m]["inventory"]["money"] +=
-            users[m]["income_machine"]["multi"] *
-              users[m]["inventory"]["income"] -
-            users[m]["inventory"]["income"]; // laittaa pelkät tulokone rahat
-          users[m]["income_machine"]["sum"] +=
-            users[m]["income_machine"]["multi"] *
-              users[m]["inventory"]["income"] -
-            users[m]["inventory"]["income"];
+          if (users[m]["income_machine"]["multi"] == 40) {
+
+            users[m]["inventory"]["money"] += users[m]["income_machine"]["multi"] * users[m]["inventory"]["income"] - users[m]["inventory"]["income"] + 5000;
+              // laittaa pelkät tulokone rahat
+            users[m]["income_machine"]["sum"] += users[m]["income_machine"]["multi"] * users[m]["inventory"]["income"] - users[m]["inventory"]["income"] + 5000;
+
+          } else {
+
+            users[m]["inventory"]["money"] +=
+              users[m]["income_machine"]["multi"] *
+                users[m]["inventory"]["income"] -
+              users[m]["inventory"]["income"];
+              // laittaa pelkät tulokone rahat
+            users[m]["income_machine"]["sum"] +=
+              users[m]["income_machine"]["multi"] *
+                users[m]["inventory"]["income"] -
+              users[m]["inventory"]["income"];
+
+          }
+
 
           if ("absorb_target" in users[m]) {
             if (user_under_income(users[m]["absorb_target"]["absorber"])) {
@@ -8877,7 +8904,7 @@ setInterval(async function() {
 
   minute_count += 1;
   console.log("Intervalli meni! (" + minute_count + ")");
-}, 60000 / 10);
+}, 60000);
 
 // Bot login
 client.login(tokens.d_token);
