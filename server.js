@@ -4419,7 +4419,7 @@ const commands = {
               if ("security_cam" in user)
                 return msg.channel.send(`Sulla on jo valvonta päällä!`);
               user["security_cam"] = {
-                timer: 60*3,
+                timer: 60*5,
                 protected: 0
               };
 
