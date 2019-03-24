@@ -4419,7 +4419,7 @@ const commands = {
               if ("security_cam" in user)
                 return msg.channel.send(`Sulla on jo valvonta päällä!`);
               user["security_cam"] = {
-                timer: 120*3,
+                timer: 60*3,
                 protected: 0
               };
 
@@ -4752,13 +4752,13 @@ const commands = {
 
               user["income_absorb"] = {
                 target: target_id,
-                timer: 480,
+                timer: 120,
                 sum: 0
               };
 
               target_user["absorb_target"] = {
                 absorber: user["id"],
-                timer: 480,
+                timer: 120,
                 sum: 0
               };
 
