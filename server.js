@@ -5735,7 +5735,11 @@ const commands = {
       bronze_income: "pronssitulo",
       silver_income: "hopeatulo",
       gold_income: "kultatulo",
-      timemachine: "aikakone"
+      timemachine: "aikakone",
+      log: "tukki",
+      prankster: "prankster",
+      grabber: "grabber",
+      stunner: "stunner"
     };
 
     var emo = {
@@ -5757,7 +5761,11 @@ const commands = {
       bronze_income: emojies["perustulo1"],
       silver_income: emojies["perustulo2"],
       gold_income: emojies["perustulo3"],
-      timemachine: emojies["aikakone"]
+      timemachine: emojies["aikakone"],
+      log: emojies["tukki"],
+      prankster: emojies["prankster"],
+      grabber: emojies["grabber"],
+      stunner: emojies["stunner"]
     };
 
     var trade_message;
