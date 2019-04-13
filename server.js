@@ -8125,7 +8125,9 @@ const commands = {
 
   pääpäivä: msg => {
     var date = new Date();
-    var a, b, c = date.getDate(), date.getMonth(), date.getYear();
+    var a = date.getDate();
+    var b = date.getMonth();
+    var c = date.getYear();
     date_array = [a, b, c];
     delete date;
 
@@ -8537,7 +8539,9 @@ client.on("ready", () => {
   }, 60 * 60 * 1000);*/
 
   var date = new Date();
-  var a, b, c = date.getDate(), date.getMonth(), date.getYear();
+  var a = date.getDate();
+  var b = date.getMonth();
+  var c = date.getYear();
   var date_array = [a, b, c];
   var day = date.getDay();
   delete date;
@@ -8890,7 +8894,9 @@ setInterval(async function() {
 
 
   var date = new Date();
-  var a, b, c = date.getDate(), date.getMonth(), date.getYear();
+  var a = date.getDate();
+  var b = date.getMonth();
+  var c = date.getYear();
   var date_array = [a, b, c];
   var day = date.getDay();
   delete date;
