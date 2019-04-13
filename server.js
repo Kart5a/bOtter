@@ -2314,7 +2314,7 @@ const commands = {
             win_line[2] == emojies["poggers"]
           ) {
             winnings = pog3_v * bet;
-            win_line = [poggersrow, poggersrow, poggersrow];
+            win_line = [emojies["poggersrow"], emojies["poggersrow"], emojies["poggersrow"]];
             user["inventory"]["money"] += winnings;
             user["game_slot"]["wins"]["poggers3"] += 1;
           } else if (
