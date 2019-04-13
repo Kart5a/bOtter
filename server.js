@@ -16,9 +16,6 @@ const fishes = require("./fishes.json");
 const firebase = require("firebase");
 const client = new Client();
 
-// FIREBASE SETUP
-var users;
-
 // Collectors
 var harpoon_collectors = {};
 var msg = {};
@@ -3127,6 +3124,7 @@ const commands = {
     }
     var date = new Date();
     var hour = date.getHours();
+    delete date;
     var part_day = "";
     var time;
     if (hour >= 5 && hour < 10) {
@@ -3308,6 +3306,7 @@ const commands = {
 
     var date = new Date();
     var hour = date.getHours();
+    delete date;
     var part_day = "";
     var time;
 
@@ -8126,7 +8125,9 @@ const commands = {
 
   pääpäivä: msg => {
     var date = new Date();
-    date_array = [date.getDate(), date.getMonth(), date.getYear()];
+    var a, b, c = date.getDate(), date.getMonth(), date.getYear();
+    date_array = [a, b, c];
+    delete date;
 
     let second = msg.content.split(" ")[1];
 
@@ -8248,6 +8249,7 @@ const commands = {
     //IS IT WEDNESDAY MY DUDES?
     let this_date = new Date();
     let day = this_date.getDay();
+    delete this_date;
 
     if (day == 3) {
       msg.channel.send("", {file: "https://i.imgur.com/NcE2HFK.jpg"});
@@ -8529,14 +8531,16 @@ client.on("ready", () => {
       client.channels.size
     } channels of ${client.guilds.size} guilds.`
   );
-
+  /*
   setTimeout(function(){
     process.exit(0);
-  }, 60 * 60 * 1000);
+  }, 60 * 60 * 1000);*/
 
   var date = new Date();
-  var date_array = [date.getDate(), date.getMonth(), date.getYear()];
+  var a, b, c = date.getDate(), date.getMonth(), date.getYear();
+  var date_array = [a, b, c];
   var day = date.getDay();
+  delete date;
 
   check_pääpäivä().then( v => {
     if (v) {
@@ -8886,8 +8890,10 @@ setInterval(async function() {
 
 
   var date = new Date();
-  var date_array = [date.getDate(), date.getMonth(), date.getYear()];
+  var a, b, c = date.getDate(), date.getMonth(), date.getYear();
+  var date_array = [a, b, c];
   var day = date.getDay();
+  delete date;
 
   // Setting up "Title"
   if (global["pääpäivä"]["on"]) {
