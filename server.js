@@ -8533,10 +8533,10 @@ client.on("ready", () => {
       client.channels.size
     } channels of ${client.guilds.size} guilds.`
   );
-  /*
+
   setTimeout(function(){
     process.exit(0);
-  }, 60 * 60 * 1000);*/
+  }, 60 * 60 * 1000);
 
   var date = new Date();
   var a = date.getDate();
