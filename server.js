@@ -4927,19 +4927,17 @@ const commands = {
 
 
               var inv = target_user["inventory"]["items"];
-              var amount = 0;
               var item_list = [];
               for (item in inv) {
                 if (inv[item] > 0) {
-                  amount += 1;
                   item_list.push(item);
                 }
               }
-              if (amount == 0) {
+              if (item_list.length == 0) {
                 return msg.channel.send(`Kohteella ei ole tavaraa!`);
               }
 
-              var rnd = Math.floor(Math.random() * Math.floor(amount+1));
+              var rnd = Math.floor(Math.random() * item_list.length);
               var chosen_item = item_list[rnd];
               console.log(chosen_item);
 
