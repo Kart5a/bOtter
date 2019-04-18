@@ -3784,14 +3784,14 @@ const commands = {
               path: "user['inventory']['items']['stunner']",
               amount: [1],
               name: emojies["stunner"],
-              rate: 0, // 5
+              rate: 5, // 5
               real_name: "Stunner"
             },
             Grabber: {
               path: "user['inventory']['items']['grabber']",
               amount: [1],
               name: emojies["grabber"],
-              rate: 0, // 5
+              rate: 5, // 5
               real_name: "grabber"
             }
           },
@@ -4472,7 +4472,7 @@ const commands = {
                     user["inventory"]["key_items"]["safe"]["capasity"] -
                     user["inventory"]["key_items"]["safe"]["money"];
                   user["inventory"]["key_items"]["safe"]["money"] += price;
-                  user["inventory"]["money"] += price;
+                  user["inventory"]["money"] -= price;
                 }
               }
 
@@ -4939,7 +4939,7 @@ const commands = {
                 return msg.channel.send(`Kohteella ei ole tavaraa!`);
               }
 
-              var rnd = Math.floor(Math.random() * Math.floor(amount));
+              var rnd = Math.floor(Math.random() * Math.floor(amount+1));
               var chosen_item = item_list[rnd];
               console.log(chosen_item);
 
