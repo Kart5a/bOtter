@@ -298,6 +298,7 @@ function check_user_in_database(_id) {
         name = "<@" + _id + ">";
       }
 
+      if (all_users.get(_id) == undefined) return;
       if ((all_users.get(_id)).bot) return;
 
       var new_user_users = {
@@ -506,6 +507,7 @@ function check_user_in_database(_id) {
           KalaDex: {}
         }
       };
+      
       for (var fish in fishes) {
         if (!(fish in new_user_users["game_kalastus"]["KalaDex"])) {
           new_user_users["game_kalastus"]["KalaDex"][fish] = {
@@ -4937,8 +4939,17 @@ const commands = {
                 return msg.channel.send(`Kohteella ei ole tavaraa!`);
               }
 
-              var rnd = Math.floor(Math.random() * item_list.length);
-              var chosen_item = item_list[rnd];
+              let chosen_item;
+              let blacklisted_items = ["ES_can", "nothing"];
+              let rnd;
+              while (chosen_item in blacklisted_items || chosen_item == undefined) {
+                console.log("2");
+                rnd = Math.floor(Math.random() * item_list.length);
+                chosen_item = item_list[rnd];
+              }
+
+              console.log("Tavaroiden määrä: " + item_list.length);
+              console.log(rnd);
               console.log(chosen_item);
 
               var items;
@@ -4951,6 +4962,9 @@ const commands = {
               }
               if (chosen_item == "bait") {
                 items = `${emojies["sytti"]} Sytti\n`;
+              }
+              if (chosen_item == "log") {
+                items = `${emojies["tukki"]} Tukki\n`;
               }
               if (chosen_item == "super_bait") {
                 items = `${emojies["supersytti"]} Supersytti\n`;
@@ -7883,8 +7897,8 @@ const commands = {
         most_active_list = "";
 
         var len = items.length;
-        if (items.length > 20) {
-          len = 20;
+        if (items.length > 15) {
+          len = 15;
         }
 
         for (var i = 0; i < len; i++) {
@@ -7928,8 +7942,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 20) {
-          len = 20;
+        if (items.length > 15) {
+          len = 15;
         }
 
         for (var i = 0; i < len; i++) {
@@ -7983,8 +7997,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 20) {
-          len = 20;
+        if (items.length > 15) {
+          len = 15;
         }
 
         for (var i = 0; i < len; i++) {
@@ -8035,8 +8049,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 20) {
-          len = 20;
+        if (items.length > 15) {
+          len = 15;
         }
 
         for (var i = 0; i < len; i++) {
@@ -8087,8 +8101,8 @@ const commands = {
         list = "";
 
         var len = items.length;
-        if (items.length > 20) {
-          len = 20;
+        if (items.length > 15) {
+          len = 15;
         }
 
         for (var i = 0; i < len; i++) {
@@ -8556,7 +8570,7 @@ client.on("ready", () => {
 });
 
 // When message is recieved
-const banned_textchannels = ["442466922831806475"];
+const banned_textchannels = ["442466922831806475", "180699479379410944", "301088017676763143", "596430485668757507"];
 client.on("message", async msg => {
   if (msg.author.bot) return;
   console.log(get_stun());
