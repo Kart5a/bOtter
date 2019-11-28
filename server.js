@@ -6313,6 +6313,31 @@ const commands = {
     let name = msg.content.split(" ")[1];
     var sender_id = msg.author.id;
 
+    var money_combined = user["inventory"]["key_items"]["safe"]["money"] + user["inventory"]["money"];
+    var extratext = "";
+
+    if (money_combined/1000000000000000000000000 >= 1) {
+      // kvantrillionaa
+      extratext = " (" + (money_combined/1000000000000000000000000).toFixed(2) + " Kvandriljoonaa " + emojies["coin"] + ", 10^24)";
+
+    }
+    else if (money_combined/1000000000000000000 >= 1) {
+      // triljoona
+      extratext = " (" + (money_combined/1000000000000000000).toFixed(2) + " Triljoonaa " + emojies["coin"] + ", 10^18)";
+    }
+    else if (money_combined/1000000000000 >= 1) {
+       // biljoona
+      extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Biljoonaa " + emojies["coin"] + ", 10^12)";
+    }
+    else if (money_combined/1000000000 >= 1) {
+      // miljardi
+      extratext = " (" + (money_combined/1000000000).toFixed(2) + " Miljardia " + emojies["coin"] + ", 10^9)";
+    }
+    else if (money_combined/1000000 >= 1) {
+      // miljoona
+      extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Miljoonaa " + emojies["coin"] + ", 10^6)";
+    }
+
     if (name == "" || name === undefined) {
       var safe_txt = "";
       if (user["inventory"]["key_items"]["safe"]["own"]) {
@@ -6321,8 +6346,7 @@ const commands = {
           emojies["tallelokero"] +
           " " +
           user["inventory"]["key_items"]["safe"]["money"] +
-          emojies["coin"] +
-          ")";
+          emojies["coin"] + ") " + extratext;
       }
       return msg.channel.send(
         "Sulla on " + user["inventory"]["money"] + emojies["coin"] + safe_txt
@@ -6356,11 +6380,50 @@ const commands = {
           emojies["coin"] +
           ")";
       }
+
+      var money_combined = target_user["inventory"]["key_items"]["safe"]["money"] + target_user["inventory"]["money"];
+      var extratext = "";
+
+      if (money_combined/1000000000000000000000000 >= 1) {
+        // kvantrillionaa
+        extratext = " (" + (money_combined/1000000000000000000000000).toFixed(2) + " Kvandriljoonaa " + emojies["coin"] + ", 10^24)";
+
+      }
+      else if (money_combined/1000000000000000000 >= 1) {
+        // triljoona
+        extratext = " (" + (money_combined/1000000000000000000).toFixed(2) + " Triljoonaa " + emojies["coin"] + ", 10^18)";
+      }
+      else if (money_combined/1000000000000 >= 1) {
+         // biljoona
+        extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Biljoonaa " + emojies["coin"] + ", 10^12)";
+      }
+      else if (money_combined/1000000000 >= 1) {
+        // miljardi
+        extratext = " (" + (money_combined/1000000000).toFixed(2) + " Miljardia " + emojies["coin"] + ", 10^9)";
+      }
+      else if (money_combined/1000000 >= 1) {
+        // miljoona
+        extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Miljoonaa " + emojies["coin"] + ", 10^6)";
+      }
+
+      if (target_user["inventory"]["key_items"]["safe"]["own"]) {
+
+        if (target_user["inventory"]["key_items"]["safe"]["money"] + user["inventory"]["money"] )
+        
+        safe_txt =
+          " (" +
+          emojies["tallelokero"] +
+          " " +
+          target_user["inventory"]["key_items"]["safe"]["money"] +
+          emojies["coin"] +
+          ")";
+      }
+
       return msg.channel.send(
         "Hänellä on " +
           target_user["inventory"]["money"] +
           emojies["coin"] +
-          safe_txt
+          safe_txt + extratext
       );
     }
   },
