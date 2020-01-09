@@ -9026,7 +9026,7 @@ setInterval(async function() {
       message += "\n<@" + id + ">";
     }
     client.channels
-            .get("280272696560975872")
+            .get("442466922831806475")
             .send(message);
   }
   
