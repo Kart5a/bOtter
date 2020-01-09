@@ -310,7 +310,8 @@ function check_user_in_database(_id) {
           picture: "",
           ironman: false,
           color: 10197915,
-          notifications: true
+          notifications: false,
+          primetime: false
         },
         inventory: {
           money: 500,
@@ -420,7 +421,9 @@ function check_user_in_database(_id) {
           stick_used: 0,
           sticked_money : 0,
           money_absorbed_from_you: 0,
-          money_absorbed_to_you: 0
+          money_absorbed_to_you: 0,
+          primetime_wins: 0,
+          primetime_win_amount: 0
         },
         game_blackjack: {
           "21": 0,
@@ -8426,6 +8429,21 @@ const commands = {
     save_user(user);
   },
 
+  primetime: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
+
+    if (user["info"]["primetime"]) {
+      user["info"]["primetime"] = false;
+      msg.channel.send("Primetime ilmoitukset pois päältä!");
+    } else {
+      user["info"]["primetime"] = true;
+      msg.channel.send("Primetime ilmoitukset päällä!");
+
+    }
+    save_user(user);
+  },
+
   // Tool Commands
 
   siirräsaldo: msg => {
@@ -8586,6 +8604,21 @@ const commands = {
           msg.createdTimestamp}ms. API viive on ${Math.round(client.ping)}ms`
       );
     });
+  },
+
+  time: msg => {
+    var date = new Date();
+    var a = date.getDate();
+    var b = date.getMonth() + 1;
+    var c = date.getYear() + 1900;
+    var day = date.getDay();
+    var hour = date.getHours();
+    var minute = date.getMinutes();
+    var second = date.getSeconds();
+    delete date;
+
+    msg.channel.send(
+      "Serverin aika: " + hour + ":" + minute + ":" + second + " " + a + "/" + b + "/" + c);
   }
 
 };
@@ -8686,9 +8719,13 @@ client.on("error", e => {
 const banned_channels = ["300242143702679552", "404378873380470786"];
 
 var minute_count = 0;
+
 setInterval(async function() {
   var users;
   var global;
+
+  var primetimers = [];
+
   await bot_users.on("value", async function(u) {
     users = u.val();
   });
@@ -8734,10 +8771,15 @@ setInterval(async function() {
     users = u.val();
   });
 
-  // Happens anyways
+  
   var server_members = client.users.keyArray();
   for (var m of server_members) {
     if (m in users) {
+      await check_user_in_database(m);
+      // Primetime
+      if (users[m]["info"]["primetime"]) {
+        primetimers.push(m);
+      }
       // Absorber
       if ("income_absorb" in users[m]) {
 
@@ -8964,17 +9006,32 @@ setInterval(async function() {
     }
   }
 
-  await save_all_users(users);
-  await check_income_absorbtion();
-
-
   var date = new Date();
   var a = date.getDate();
-  var b = date.getMonth();
-  var c = date.getYear();
-  var date_array = [a, b, c];
+  var b = date.getMonth() + 1;
+  var c = date.getYear() + 1900;
+  var date_array = [a, b - 1, c - 1900];
   var day = date.getDay();
+  var hour = date.getHours();
+  var minute = date.getMinutes();
+  var second = date.getSeconds();
   delete date;
+
+  // Primetime
+  let current_date_string = hour + ":" + minute;
+  let primetimes = ["19:29", "19:44", "19:54"];
+  if (primetimes.includes(current_date_string)) {
+    let message = "It is time for Primetime time! (" + current_date_string + ") ";
+    for (let id of primetimers) {
+      message += "\n<@" + id + ">";
+    }
+    client.channels
+            .get("280272696560975872")
+            .send(message);
+  }
+  
+  await save_all_users(users);
+  await check_income_absorbtion();
 
   // Setting up "Title"
   if (global["pääpäivä"]["on"]) {
@@ -8984,7 +9041,6 @@ setInterval(async function() {
   } else {
     change_title("ttunes");
   }
-
 
   // Next day
   if (date_array[0] != global["pääpäivä"]["date"][0] || date_array[1] != global["pääpäivä"]["date"][1] || date_array[2] != global["pääpäivä"]["date"][2]) {
