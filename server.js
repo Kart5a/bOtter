@@ -9019,7 +9019,7 @@ setInterval(async function() {
 
   // Primetime
   let current_date_string = hour + ":" + minute;
-  let primetimes = ["19:29", "19:44", "19:54"];
+  let primetimes = ["19:20", "19:45", "19:55"];
   if (primetimes.includes(current_date_string)) {
     let message = "It is time for Primetime time! (" + current_date_string + ") ";
     for (let id of primetimers) {
