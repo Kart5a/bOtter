@@ -275,9 +275,31 @@ async function add_income(_id) {
 }
 
 async function add_solo(_id) {
-  console.log(_id);
   var user = await get_user(_id);
   user["basic_statistics"]["solo_minutes"] += 1;
+  await save_user(user);
+}
+
+async function mark_lastseen(_id) {
+  var user = await get_user(_id);
+
+  var date = new Date();
+  var day = date.getDate();
+  var month = date.getMonth() + 1;
+  var year = date.getYear() + 1900;
+  var minutes = date.getMinutes();
+  var hours = date.getHours();
+  var weekday = date.getDay();
+  delete date;
+
+  var date_array = {'day' : day,
+                  'month' : month,
+                  'year' : year,
+                  'minutes' : minutes,
+                  'hours' : hours,
+                  'weekday': weekday};
+
+  user["info"]["lastseen"] = date_array;
   await save_user(user);
 }
 
@@ -290,6 +312,15 @@ function check_user_in_database(_id) {
     .then(d => {
       var users = d.val();
       var all_users = client.users;
+
+      var date = new Date();
+      var day_ = date.getDate();
+      var month_ = date.getMonth();
+      var year_ = date.getYear();
+      var minutes_ = date.getMinutes();
+      var hours_ = date.getHours();
+      var weekday_ = date.getDay();
+      delete date;
 
       var name;
       try {
@@ -310,8 +341,16 @@ function check_user_in_database(_id) {
           picture: "",
           ironman: false,
           color: 10197915,
-          notifications: false,
-          primetime: false
+          notifications: true,
+          primetime: true,
+          lastseen: {
+                    "day" : day_,
+                    "month" : month_ + 1,
+                    "year" : year_ + 1900,
+                    "minutes" : minutes_,
+                    "hours" : hours_,
+                    "weekday" : weekday_
+                  }
         },
         inventory: {
           money: 500,
@@ -340,7 +379,8 @@ function check_user_in_database(_id) {
             timemachine : 0,
             prankster: 0,
             grabber: 0,
-            stunner: 0
+            stunner: 0,
+            lockpick : 0
           },
           key_items: {
             rod: false,
@@ -423,7 +463,11 @@ function check_user_in_database(_id) {
           money_absorbed_from_you: 0,
           money_absorbed_to_you: 0,
           primetime_wins: 0,
-          primetime_win_amount: 0
+          primetime_win_amount: 0,
+          lockpick_used: 0,
+          lockpick_used_to_you: 0,
+          lockpicked_money_you_have_stolen : 0,
+          lockpicked_money_stoled_from_you: 0
         },
         game_blackjack: {
           "21": 0,
@@ -3587,6 +3631,40 @@ const commands = {
     });
   },
 
+  vartija: msg => {
+    check_user_in_database(msg.author.id).then(() => {
+      get_user(msg.author.id).then(user => {
+
+        if (user["inventory"]["money"] < 1000)
+          return msg.channel.send(
+            "Tarvitset vähintään " +
+              1000 +
+              " " +
+              emojies["coin"] +
+              " kutsuaksesi vartijan."
+          );
+
+        user["inventory"]["money"] -= 1000;
+
+        if (user["lockpicking"]) {
+          user["lockpicking"] = null;
+
+          msg.channel.send(
+            "Varas juoksi karkuun... Hänen tiirikointinsa epäonnistui! Vartija ottaa maksuksi 1000 " + emojies["coin"]
+          );
+
+        } else {
+          msg.channel.send(
+            "tallelokerolla ei ollut ketään! Vartija ottaa maksuksi 1000 " + emojies["coin"]
+          );
+        }
+
+        save_user(user);
+
+      });
+    });
+  },
+
   avaa: msg => {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
@@ -3798,6 +3876,13 @@ const commands = {
               name: emojies["grabber"],
               rate: 5, // 5
               real_name: "grabber"
+            },
+            Tiirikka: {
+              path: "user['inventory']['items']['lockpick']",
+              amount: [1],
+              name: emojies["tiirikka"],
+              rate: 2, // 5
+              real_name: "Tiirikka"
             }
           },
           legendary: {
@@ -4299,8 +4384,14 @@ const commands = {
               if (user["inventory"]["items"]["gem"] < 1)
                 return msg.channel.send(`Sulla ei ole gemiä...`);
 
-              user["inventory"]["money"] = user["inventory"]["money"] * 2;
+              var money_to_add = user["inventory"]["money"];
+              if (money_to_add > 10000000) {
+                money_to_add = 10000000;
+              } 
+              user["inventory"]["money"] += money_to_add;
+
               user["inventory"]["items"]["gem"] -= 1;
+
               save_user(user);
               return msg.channel.send(
                 `Hehkuva kivi imeytyy aikaavaruuteen, tunnet taskujesi täyttyvän!`
@@ -4694,6 +4785,40 @@ const commands = {
               user["inventory"]["items"]["mask"] -= 1;
               save_user(target_user);
               save_user(user);
+            }
+            if (item == "tiirikka") {
+              if (user["inventory"]["items"]["lockpick"] < 1)
+                return msg.channel.send(`Sulla ei ole tiirikoita...`);
+              if (name == sender_id)
+                return msg.channel.send(`Ei onnistu, ei kannata omasta varastaa :DDD !`);
+
+              if (!target_user["inventory"]["key_items"]["safe"]["own"]) return 
+                msg.channel.send(`Kohteella ei ole edes tallelokeroa...`);
+
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                save_user(target_user);
+                return msg.channel.send(
+                  `Hän huomasi sinut ennalta, et päässyt käsiksi tallelokeroon...`
+                );
+              }
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
+                `Et löydä häntä mistään!?...`
+              );
+
+              user["basic_statistics"]["lockpick_used"] += 1;
+              target_user["basic_statistics"]["lockpick_used_to_you"] += 1;
+              user["inventory"]["items"]["lockpick"] -= 1;
+
+              target_user["lockpicking"] = {"time" : 0,
+                                            "lockpicker" : user["id"]}
+
+              msg.channel.send(
+                "Hähää, nyt avataan lukko :D Menee hetki..."
+              );
+              save_user(user);
+              save_user(target_user);
+              return;
             }
             if (item == "tuloimu") {
               if (target_user["id"] == user["id"]) return msg.channel.send(`Et voi imeä itteltäs, tirsk`);
@@ -5205,6 +5330,9 @@ const commands = {
             }
             if (ite["mask"] > 0) {
               items += `${emojies["maski"]} Maski: ${ite["mask"]}\n`;
+            }
+            if (ite["lockpick"] > 0) {
+              items += `${emojies["tiirikka"]} Tiirikka: ${ite["lockpick"]}\n`;
             }
             if (ite["stunner"] > 0) {
               items += `${emojies["stunner"]} Stunner: ${ite["stunner"]}\n`;
@@ -5753,7 +5881,8 @@ const commands = {
       log: "tukki",
       prankster: "prankster",
       grabber: "grabber",
-      stunner: "stunner"
+      stunner: "stunner",
+      lockpick : "tiirikka"
     };
 
     var emo = {
@@ -5779,7 +5908,8 @@ const commands = {
       log: emojies["tukki"],
       prankster: emojies["prankster"],
       grabber: emojies["grabber"],
-      stunner: emojies["stunner"]
+      stunner: emojies["stunner"],
+      lockpick: emojies["tiirikka"]
     };
 
     var trade_message;
@@ -8429,21 +8559,6 @@ const commands = {
     save_user(user);
   },
 
-  primetime: async msg => {
-    await check_user_in_database(msg.author.id);
-    var user = await get_user(msg.author.id);
-
-    if (user["info"]["primetime"]) {
-      user["info"]["primetime"] = false;
-      msg.channel.send("Primetime ilmoitukset pois päältä!");
-    } else {
-      user["info"]["primetime"] = true;
-      msg.channel.send("Primetime ilmoitukset päällä!");
-
-    }
-    save_user(user);
-  },
-
   // Tool Commands
 
   siirräsaldo: msg => {
@@ -8609,8 +8724,8 @@ const commands = {
   time: msg => {
     var date = new Date();
     var a = date.getDate();
-    var b = date.getMonth() + 1;
-    var c = date.getYear() + 1900;
+    var b = date.getMonth();
+    var c = date.getYear();
     var day = date.getDay();
     var hour = date.getHours();
     var minute = date.getMinutes();
@@ -8619,6 +8734,51 @@ const commands = {
 
     msg.channel.send(
       "Serverin aika: " + hour + ":" + minute + ":" + second + " " + a + "/" + b + "/" + c);
+  },
+
+  lastseen: msg => {
+
+    let name = msg.content.split(" ")[1];
+
+    if (name == "" || name === undefined)  {
+      msg.channel.send(
+        "Laita nimi!"
+      );
+      return;
+    }
+
+    name = name.replace(/\D/g, "");
+
+    var u;
+    var flag = false;
+    for (u in client.users.array()) {
+      var User = client.users.array()[u];
+      if (User.id == name) {
+        flag = true;
+      }
+    }
+
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
+
+    check_user_in_database(name).then(() => {
+      get_user(name).then(user => {
+        var day = user["info"]["lastseen"]["day"];
+        var month = user["info"]["lastseen"]["month"];
+        var year = user["info"]["lastseen"]["year"];
+        var minutes = user["info"]["lastseen"]["minutes"];
+        var hours = user["info"]["lastseen"]["hours"];
+        var addition = "";
+        if (minutes < 10) {
+          addition = "0";
+        }
+        msg.channel.send(
+          "<@" + name + "> on viimeksi ollut channelillä " +
+           day + "/" + month + "/" + year + " klo " + hours + ":" + addition + minutes
+        );
+        msg.delete();
+        save_user(user);
+      });
+    });
   }
 
 };
@@ -8676,7 +8836,7 @@ client.on("message", async msg => {
 
   if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
 
-  if (!(msg.content).includes("purge")) {
+  if (msg.author.id != "247754056804728832") {
     if (banned_textchannels.includes(msg.channel.id)) {
       msg.delete();
       return;
@@ -8719,19 +8879,31 @@ client.on("error", e => {
 const banned_channels = ["300242143702679552", "404378873380470786"];
 
 var minute_count = 0;
-
 setInterval(async function() {
   var users;
   var global;
-
-  var primetimers = [];
-
   await bot_users.on("value", async function(u) {
     users = u.val();
   });
   await global_data.once("value", async function(g) {
     global = g.val();
   });
+
+  var date = new Date();
+  var day = date.getDate();
+  var month = date.getMonth() + 1;
+  var year = date.getYear() + 1900;
+  var minutes = date.getMinutes();
+  var hours = date.getHours();
+  var weekday = date.getDay();
+  delete date;
+
+  var date_array = {'day' : day,
+                  'month' : month,
+                  'year' : year,
+                  'minutes' : minutes,
+                  'hours' : hours,
+                  'weekday': weekday};
 
   // Happens every time user is active on voicechannel
   var voicechannels_array = client.channels.keyArray();
@@ -8761,6 +8933,7 @@ setInterval(async function() {
           await add_income(usr.id);
           await draw_lootbox(usr.id, 45, false);
 
+          await mark_lastseen(usr.id);
 
         }
       }
@@ -8771,15 +8944,10 @@ setInterval(async function() {
     users = u.val();
   });
 
-  
+  // Happens anyways
   var server_members = client.users.keyArray();
   for (var m of server_members) {
     if (m in users) {
-      await check_user_in_database(m);
-      // Primetime
-      if (users[m]["info"]["primetime"]) {
-        primetimers.push(m);
-      }
       // Absorber
       if ("income_absorb" in users[m]) {
 
@@ -8904,6 +9072,81 @@ setInterval(async function() {
         }
       }
 
+      if ("lockpicking" in users[m]) {
+
+        users[m]["lockpicking"]["time"] += 1;
+
+        var rnd = Math.floor(Math.random() * Math.floor(100)) + 1;
+
+        if (rnd == 50) {
+          // Onnistui
+
+          var money = users[m]["inventory"]["key_items"]["safe"]["money"];
+          var target_id = users[m]["lockpicking"]["lockpicker"];
+
+
+          await firebase
+            .database()
+            .ref("users/" + target_id + "/inventory/money")
+            .set(users[target_id]["inventory"]["money"] + money);
+
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/basic_statistics/lockpicked_money_stolen_from_you")
+            .set(users[m]["basic_statistics"]["lockpicked_money_stoled_from_you"] + money);
+
+          await firebase
+            .database()
+            .ref("users/" + target_id + "/basic_statistics/lockpicked_money_you_have_stolen")
+            .set(users[target_id]["basic_statistics"]["lockpicked_money_you_have_stolen"] + money);
+
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/inventory/key_items/safe/money")
+            .set(0); 
+
+          client.channels
+            .get("280272696560975872")
+            .send(
+              "Tiirikointi onnistui, <@" +
+                users[m]["lockpicking"]["lockpicker"] +
+                "> onnistui varastamaan tallelokerosi tyhjäksi <@" +
+                m +
+                ">! Siihen kului vain " + 
+                users[m]["lockpicking"]["time"] +
+                " minuuttia!"
+            );
+
+          delete users[m].lockpicking;
+          await firebase
+            .database()
+            .ref("users/" + users[m]["id"] + "/lockpicking")
+            .set(null);
+
+        }
+      }
+
+      if ("stun_timer" in users[m]) {
+        users[m]["stun_timer"]["timer"] -= 1;
+        if (users[m]["stun_timer"]["timer"] == 0) {
+          (global["stunned"]).splice( (global["stunned"]).indexOf("" + m), 1 );
+          users[m]["stun_timer"] = null;
+
+          client.channels
+            .get("280272696560975872")
+            .send(
+              "Stunnisi päättyi loppui <@" +
+                m + ">"
+            );
+
+          await firebase
+            .database()
+            .ref(global_data)
+            .set(global);
+
+        }
+      }
+
       if ("security_cam" in users[m]) {
         users[m]["security_cam"]["timer"] -= 1;
         if (users[m]["security_cam"]["timer"] == 0) {
@@ -9006,44 +9249,21 @@ setInterval(async function() {
     }
   }
 
-  var date = new Date();
-  var a = date.getDate();
-  var b = date.getMonth() + 1;
-  var c = date.getYear() + 1900;
-  var date_array = [a, b - 1, c - 1900];
-  var day = date.getDay();
-  var hour = date.getHours();
-  var minute = date.getMinutes();
-  var second = date.getSeconds();
-  delete date;
-
-  // Primetime
-  let current_date_string = hour + ":" + minute;
-  let primetimes = ["19:20", "19:45", "19:55"];
-  if (primetimes.includes(current_date_string)) {
-    let message = "It is time for Primetime time! (" + current_date_string + ") ";
-    for (let id of primetimers) {
-      message += "\n<@" + id + ">";
-    }
-    client.channels
-            .get("442466922831806475")
-            .send(message);
-  }
-  
   await save_all_users(users);
   await check_income_absorbtion();
 
   // Setting up "Title"
   if (global["pääpäivä"]["on"]) {
     change_title("PÄÄPÄIVÄ");
-  } else if (day === 3) {
+  } else if (weekday === 3) {
     change_title("Wednesday");
   } else {
     change_title("ttunes");
   }
 
+
   // Next day
-  if (date_array[0] != global["pääpäivä"]["date"][0] || date_array[1] != global["pääpäivä"]["date"][1] || date_array[2] != global["pääpäivä"]["date"][2]) {
+  if (date_array["day"] != global["pääpäivä"]["date"][0] || date_array["month"] != global["pääpäivä"]["date"][1] || date_array["year"] != global["pääpäivä"]["date"][2]) {
     global["pääpäivä"]["on"] = false;
     delete global["dj"];
     global["pääpäivä"]["date"] = [0, 0, 0];
