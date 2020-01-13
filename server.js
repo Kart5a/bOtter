@@ -5578,13 +5578,15 @@ const commands = {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
         var basic_income = Math.floor(user["inventory"]["income"]);
-        var cost_next_basic_income =
+        /*var cost_next_basic_income =
           Math.floor(
             (1000 *
               Math.pow(1.08, user["basic_statistics"]["income_bought"]) *
               (10 + 5 * user["basic_statistics"]["income_bought"])) /
               100
-          ) * 100;
+          ) * 100;*/
+
+        var cost_next_basic_income = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100
 
         msg.channel.send({
           embed: {
@@ -5706,8 +5708,9 @@ const commands = {
         // PERUSTULO
         if (purchase == "perustulo") {
           var basic_income = user["inventory"]["income"];
-          var basic_income_price =
-            Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
+          var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100;
+          /*var basic_income_price =
+            Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;*/
           if (money < basic_income_price)
             return msg.channel.send(
               "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
