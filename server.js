@@ -2344,13 +2344,13 @@ const commands = {
           for (var i = 0; i < 3; i++) {
             var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
             if (rnd <= tkarvis) {
-              win_line.push(emojies["karvis"]);
+              win_line.push(emojies["JanneS"]);
             } else if (rnd <= tsasu + tkarvis) {
-              win_line.push(emojies["sasu"]);
+              win_line.push(emojies["huutonauris"]);
             } else if (rnd <= tsasu + tkarvis + talfa) {
-              win_line.push(emojies["alfa"]);
+              win_line.push(emojies["thinkin"]);
             } else if (rnd <= tsasu + tkarvis + tjesilmero + talfa) {
-              win_line.push(emojies["jesilmero"]);
+              win_line.push(emojies["PMA"]);
             } else {
               win_line.push(emojies["poggers"]);
             }
@@ -2384,19 +2384,19 @@ const commands = {
             win_line[0] == win_line[2] &&
             win_line[1] == win_line[2]
           ) {
-            if (win_line[0] == emojies["alfa"]) {
+            if (win_line[0] == emojies["thinkin"]) {
               winnings = alfa_v * bet;
               user["game_slot"]["wins"]["alfa"] += 1;
               user["inventory"]["money"] += winnings;
-            } else if (win_line[0] == emojies["karvis"]) {
+            } else if (win_line[0] == emojies["JanneS"]) {
               winnings = karvis_v * bet;
               user["game_slot"]["wins"]["karvis"] += 1;
               user["inventory"]["money"] += winnings;
-            } else if (win_line[0] == emojies["sasu"]) {
+            } else if (win_line[0] == emojies["huutonauris"]) {
               winnings = sasu_v * bet;
               user["game_slot"]["wins"]["sasu"] += 1;
               user["inventory"]["money"] += winnings;
-            } else if (win_line[0] == emojies["jesilmero"]) {
+            } else if (win_line[0] == emojies["PMA"]) {
               winnings = jesilmero_v * bet;
               user["game_slot"]["wins"]["jesilmero"] += 1;
               user["inventory"]["money"] += winnings;
@@ -2456,13 +2456,13 @@ const commands = {
           for (var i = 0; i < 6; i++) {
             var rnda = Math.floor(Math.random() * Math.floor(100 + 1));
             if (rnda <= tkarvis) {
-              rnd.push(emojies["karvis"]);
+              rnd.push(emojies["JanneS"]);
             } else if (rnda <= tsasu + tkarvis) {
-              rnd.push(emojies["sasu"]);
+              rnd.push(emojies["huutonauris"]);
             } else if (rnda <= tsasu + tkarvis + talfa) {
-              rnd.push(emojies["alfa"]);
+              rnd.push(emojies["thinkin"]);
             } else if (rnda <= tsasu + tkarvis + tjesilmero + talfa) {
-              rnd.push(emojies["jesilmero"]);
+              rnd.push(emojies["PMA"]);
             } else {
               rnd.push(emojies["poggers"]);
             }
@@ -2481,13 +2481,13 @@ const commands = {
             _bet +
             emojies["coin"] +
             "\n\n" +
-            "⬛️|        " +
+            ":blue_square:|        " +
             rnd[0] +
             "    |    " +
             rnd[1] +
             "    |    " +
             rnd[2] +
-            "        |⬛️\n" +
+            "        |:blue_square:\n" +
             "▶️|        " +
             _first_roll +
             "    |    " +
@@ -2495,13 +2495,13 @@ const commands = {
             "    |    " +
             _third_roll +
             "        |◀️\n" +
-            "⬛️|        " +
+            ":blue_square:|        " +
             rnd[3] +
             "    |    " +
             rnd[4] +
             "    |    " +
             rnd[5] +
-            "        |⬛️\n" +
+            "        |:blue_square:\n" +
             "\nVoitit: " +
             _win_amount +
             emojies["coin"] +
@@ -7359,17 +7359,17 @@ const commands = {
         "\n";
 
       var sasu =
-        emojies["sasu"] +
-        emojies["sasu"] +
-        emojies["sasu"] +
+        emojies["huutonauris"] +
+        emojies["huutonauris"] +
+        emojies["huutonauris"] +
         ": " +
         user["game_slot"]["wins"]["sasu"] +
         "\n";
 
       var karvis =
-        emojies["karvis"] +
-        emojies["karvis"] +
-        emojies["karvis"] +
+        emojies["JanneS"] +
+        emojies["JanneS"] +
+        emojies["JanneS"] +
         ": " +
         user["game_slot"]["wins"]["karvis"] +
         "\n";
@@ -7382,17 +7382,17 @@ const commands = {
         "\n";
 
       var alfa =
-        emojies["alfa"] +
-        emojies["alfa"] +
-        emojies["alfa"] +
+        emojies["thinkin"] +
+        emojies["thinkin"] +
+        emojies["thinkin"] +
         ": " +
         user["game_slot"]["wins"]["alfa"] +
         "\n";
 
       var jesilmero =
-        emojies["jesilmero"] +
-        emojies["jesilmero"] +
-        emojies["jesilmero"] +
+        emojies["PMA"] +
+        emojies["PMA"] +
+        emojies["PMA"] +
         ": " +
         user["game_slot"]["wins"]["jesilmero"] +
         "\n";
