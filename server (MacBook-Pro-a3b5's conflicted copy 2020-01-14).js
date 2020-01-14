@@ -260,7 +260,7 @@ async function draw_lootbox(user_id, multi, game = true) {
     }
 
     if (lootbox_text != "") {
-      client.channels.get("666348588527386643").send(lootbox_text);
+      client.channels.get("280272696560975872").send(lootbox_text);
     }
     return save_user(user);
 }
@@ -275,31 +275,9 @@ async function add_income(_id) {
 }
 
 async function add_solo(_id) {
+  console.log(_id);
   var user = await get_user(_id);
   user["basic_statistics"]["solo_minutes"] += 1;
-  await save_user(user);
-}
-
-async function mark_lastseen(_id) {
-  var user = await get_user(_id);
-
-  var date = new Date();
-  var day = date.getDate();
-  var month = date.getMonth() + 1;
-  var year = date.getYear() + 1900;
-  var minutes = date.getMinutes();
-  var hours = date.getHours();
-  var weekday = date.getDay();
-  delete date;
-
-  var date_array = {'day' : day,
-                  'month' : month,
-                  'year' : year,
-                  'minutes' : minutes,
-                  'hours' : hours,
-                  'weekday': weekday};
-
-  user["info"]["lastseen"] = date_array;
   await save_user(user);
 }
 
@@ -312,15 +290,6 @@ function check_user_in_database(_id) {
     .then(d => {
       var users = d.val();
       var all_users = client.users;
-
-      var date = new Date();
-      var day_ = date.getDate();
-      var month_ = date.getMonth();
-      var year_ = date.getYear();
-      var minutes_ = date.getMinutes();
-      var hours_ = date.getHours();
-      var weekday_ = date.getDay();
-      delete date;
 
       var name;
       try {
@@ -341,16 +310,8 @@ function check_user_in_database(_id) {
           picture: "",
           ironman: false,
           color: 10197915,
-          notifications: true,
-          primetime: true,
-          lastseen: {
-                    "day" : day_,
-                    "month" : month_ + 1,
-                    "year" : year_ + 1900,
-                    "minutes" : minutes_,
-                    "hours" : hours_,
-                    "weekday" : weekday_
-                  }
+          notifications: false,
+          primetime: false
         },
         inventory: {
           money: 500,
@@ -379,8 +340,7 @@ function check_user_in_database(_id) {
             timemachine : 0,
             prankster: 0,
             grabber: 0,
-            stunner: 0,
-            lockpick : 0
+            stunner: 0
           },
           key_items: {
             rod: false,
@@ -463,11 +423,7 @@ function check_user_in_database(_id) {
           money_absorbed_from_you: 0,
           money_absorbed_to_you: 0,
           primetime_wins: 0,
-          primetime_win_amount: 0,
-          lockpick_used: 0,
-          lockpick_used_to_you: 0,
-          lockpicked_money_you_have_stolen : 0,
-          lockpicked_money_stoled_from_you: 0
+          primetime_win_amount: 0
         },
         game_blackjack: {
           "21": 0,
@@ -1172,7 +1128,7 @@ function check_kaladex(user) {
     user["inventory"]["money"] += 100000;
     user["inventory"]["key_items"]["super_rod"] = true;
     client.channels
-      .get("666348588527386643")
+      .get("280272696560975872")
       .send(
         "Onnea <@" +
           user["id"] +
@@ -1193,7 +1149,7 @@ function check_kaladex(user) {
     user["inventory"]["money"] += 250000;
     user["inventory"]["key_items"]["hyper_rod"] = true;
     client.channels
-      .get("666348588527386643")
+      .get("280272696560975872")
       .send(
         "Onnea <@" +
           user["id"] +
@@ -1214,7 +1170,7 @@ function check_kaladex(user) {
     user["inventory"]["key_items"]["fishing_boat"] = true;
 
     client.channels
-      .get("666348588527386643")
+      .get("280272696560975872")
       .send(
         "Onnea <@" +
           user["id"] +
@@ -1386,7 +1342,6 @@ const commands = {
 
   /// Game commands
 
-  // Kummatkin
   bj: msg => {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
@@ -2251,7 +2206,6 @@ const commands = {
     });
   },
 
-  // Only slot
   slot: msg => {
     const ALLOWED_CHANNELS = ["280272696560975872"];
     const SLOTRATE = 30;
@@ -2346,13 +2300,13 @@ const commands = {
           for (var i = 0; i < 3; i++) {
             var rnd = Math.floor(Math.random() * Math.floor(100 + 1));
             if (rnd <= tkarvis) {
-              win_line.push(emojies["JanneS"]);
+              win_line.push(emojies["karvis"]);
             } else if (rnd <= tsasu + tkarvis) {
-              win_line.push(emojies["huutonauris"]);
+              win_line.push(emojies["sasu"]);
             } else if (rnd <= tsasu + tkarvis + talfa) {
-              win_line.push(emojies["thinkin"]);
+              win_line.push(emojies["alfa"]);
             } else if (rnd <= tsasu + tkarvis + tjesilmero + talfa) {
-              win_line.push(emojies["PMA"]);
+              win_line.push(emojies["jesilmero"]);
             } else {
               win_line.push(emojies["poggers"]);
             }
@@ -2365,7 +2319,7 @@ const commands = {
             win_line[2] == emojies["poggers"]
           ) {
             winnings = pog3_v * bet;
-            win_line = [emojies["PoggersRow"], emojies["PoggersRow"], emojies["PoggersRow"]];
+            win_line = [emojies["poggersrow"], emojies["poggersrow"], emojies["poggersrow"]];
             user["inventory"]["money"] += winnings;
             user["game_slot"]["wins"]["poggers3"] += 1;
           } else if (
@@ -2386,19 +2340,19 @@ const commands = {
             win_line[0] == win_line[2] &&
             win_line[1] == win_line[2]
           ) {
-            if (win_line[0] == emojies["thinkin"]) {
+            if (win_line[0] == emojies["alfa"]) {
               winnings = alfa_v * bet;
               user["game_slot"]["wins"]["alfa"] += 1;
               user["inventory"]["money"] += winnings;
-            } else if (win_line[0] == emojies["JanneS"]) {
+            } else if (win_line[0] == emojies["karvis"]) {
               winnings = karvis_v * bet;
               user["game_slot"]["wins"]["karvis"] += 1;
               user["inventory"]["money"] += winnings;
-            } else if (win_line[0] == emojies["huutonauris"]) {
+            } else if (win_line[0] == emojies["sasu"]) {
               winnings = sasu_v * bet;
               user["game_slot"]["wins"]["sasu"] += 1;
               user["inventory"]["money"] += winnings;
-            } else if (win_line[0] == emojies["PMA"]) {
+            } else if (win_line[0] == emojies["jesilmero"]) {
               winnings = jesilmero_v * bet;
               user["game_slot"]["wins"]["jesilmero"] += 1;
               user["inventory"]["money"] += winnings;
@@ -2458,13 +2412,13 @@ const commands = {
           for (var i = 0; i < 6; i++) {
             var rnda = Math.floor(Math.random() * Math.floor(100 + 1));
             if (rnda <= tkarvis) {
-              rnd.push(emojies["JanneS"]);
+              rnd.push(emojies["karvis"]);
             } else if (rnda <= tsasu + tkarvis) {
-              rnd.push(emojies["huutonauris"]);
+              rnd.push(emojies["sasu"]);
             } else if (rnda <= tsasu + tkarvis + talfa) {
-              rnd.push(emojies["thinkin"]);
+              rnd.push(emojies["alfa"]);
             } else if (rnda <= tsasu + tkarvis + tjesilmero + talfa) {
-              rnd.push(emojies["PMA"]);
+              rnd.push(emojies["jesilmero"]);
             } else {
               rnd.push(emojies["poggers"]);
             }
@@ -2483,13 +2437,13 @@ const commands = {
             _bet +
             emojies["coin"] +
             "\n\n" +
-            ":blue_square:|        " +
+            "⬛️|        " +
             rnd[0] +
             "    |    " +
             rnd[1] +
             "    |    " +
             rnd[2] +
-            "        |:blue_square:\n" +
+            "        |⬛️\n" +
             "▶️|        " +
             _first_roll +
             "    |    " +
@@ -2497,13 +2451,13 @@ const commands = {
             "    |    " +
             _third_roll +
             "        |◀️\n" +
-            ":blue_square:|        " +
+            "⬛️|        " +
             rnd[3] +
             "    |    " +
             rnd[4] +
             "    |    " +
             rnd[5] +
-            "        |:blue_square:\n" +
+            "        |⬛️\n" +
             "\nVoitit: " +
             _win_amount +
             emojies["coin"] +
@@ -3160,7 +3114,6 @@ const commands = {
   },
 
   kalasta: async msg => {
-    
     await check_user_in_database(msg.author.id);
     var user = await get_user(msg.author.id);
     var rod_tier = 0;
@@ -3542,14 +3495,6 @@ const commands = {
   ///
 
   mäjäytä: msg => {
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
         let name = msg.content.split(" ")[1];
@@ -3573,27 +3518,27 @@ const commands = {
           get_user(target_id).then(target_user => {
 
             if (user["inventory"]["items"]["log"] < 1)
-              return feed_channel.send(`Sulla ei ole tukkeja`);
+              return msg.channel.send(`Sulla ei ole tukkeja`);
             if (name == sender_id)
-              return feed_channel.send(`Älä lyö ittees vitun idiotti!`);
+              return msg.channel.send(`Älä lyö ittees vitun idiotti!`);
 
             if ("security_cam" in target_user) {
               target_user["security_cam"]["protected"] += 1;
               save_user(target_user);
-              return feed_channel.send(
+              return msg.channel.send(
                 `Hän huomasi sinut ennalta, et päässyt antamaan läppälimua häneen...`
               );
             }
 
 
             if (target_user["inventory"]["items"]["shield"] > 0) {
-              feed_channel.send(
+              msg.channel.send(
                 `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
               );
               var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
               if (rnd == 3) {
                 target_user["inventory"]["items"]["shield"] -= 1;
-                feed_channel.send(
+                msg.channel.send(
                   `Kilpi meni kuitenkin rikki...`
                 );
               }
@@ -3613,7 +3558,7 @@ const commands = {
                 amount = target_user["inventory"]["money"];
                 your_amount = Math.floor(amount / 10);
               }
-              feed_channel.send(
+              msg.channel.send(
                 "Löit jäbää <@" +
                   name +
                   ">! Hän pudotti " +
@@ -3624,7 +3569,7 @@ const commands = {
               target_user["inventory"]["money"] -= amount;
               user["inventory"]["money"] += your_amount;
             } else {
-              feed_channel.send(
+              msg.channel.send(
                 "Löit jäbää <@" + name + ">! Et hyötyny mitään."
               );
             }
@@ -3638,48 +3583,6 @@ const commands = {
 
           });
         });
-      });
-    });
-  },
-
-  vartija: msg => {
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
-    check_user_in_database(msg.author.id).then(() => {
-      get_user(msg.author.id).then(user => {
-
-        if (user["inventory"]["money"] < 1000)
-          return feed_channel.send(
-            "Tarvitset vähintään " +
-              1000 +
-              " " +
-              emojies["coin"] +
-              " kutsuaksesi vartijan."
-          );
-
-        user["inventory"]["money"] -= 1000;
-
-        if (user["lockpicking"]) {
-          user["lockpicking"] = null;
-
-          feed_channel.send(
-            "Varas juoksi karkuun... Hänen tiirikointinsa epäonnistui! Vartija ottaa maksuksi 1000 " + emojies["coin"]
-          );
-
-        } else {
-          feed_channel.send(
-            "tallelokerolla ei ollut ketään! Vartija ottaa maksuksi 1000 " + emojies["coin"]
-          );
-        }
-
-        save_user(user);
-
       });
     });
   },
@@ -3895,13 +3798,6 @@ const commands = {
               name: emojies["grabber"],
               rate: 5, // 5
               real_name: "grabber"
-            },
-            Tiirikka: {
-              path: "user['inventory']['items']['lockpick']",
-              amount: [1],
-              name: emojies["tiirikka"],
-              rate: 2, // 5
-              real_name: "Tiirikka"
             }
           },
           legendary: {
@@ -4305,15 +4201,8 @@ const commands = {
   },
 
   käytä: msg => {
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
-
         let item = msg.content.split(" ")[1];
         let name = msg.content.split(" ")[2];
         let second = msg.content.split(" ")[2];
@@ -4333,7 +4222,7 @@ const commands = {
           }
 
           if (item == "" || item == undefined) {
-            return feed_channel.send(
+            return msg.channel.send(
               `Valitse aktivoitava tavara ja mahdollinen kohde!`
             );
           }
@@ -4360,9 +4249,9 @@ const commands = {
           get_user(target_id).then(target_user => {
             if (item == "tulokone") {
               if (user["inventory"]["items"]["income_machine"] < 1)
-                return feed_channel.send(`Sulla ei ole Tulokonetta`);
+                return msg.channel.send(`Sulla ei ole Tulokonetta`);
               if ("income_machine" in user)
-                return feed_channel.send(`Sulla on jo Tulokone päällä!`);
+                return msg.channel.send(`Sulla on jo Tulokone päällä!`);
                 user["income_machine"] = {
                   multi: 10,
                   timer: 60,
@@ -4370,15 +4259,15 @@ const commands = {
                 };
 
                 user["inventory"]["items"]["income_machine"] -= 1;
-                feed_channel.send(`Hurraa! Tulokone hurraa!`);
+                msg.channel.send(`Hurraa! Tulokone hurraa!`);
                 save_user(user);
                 return;
             }
             else if (item == "tulokone-x") {
               if (!("income_machine_X" in user["inventory"]["items"]))
-                return feed_channel.send(`Sulla ei ole Tulokone-X:ää`);
+                return msg.channel.send(`Sulla ei ole Tulokone-X:ää`);
               if ("income_machine" in user)
-                return feed_channel.send("Sulla on jo Tulokone päällä!");
+                return msg.channel.send("Sulla on jo Tulokone päällä!");
               user["income_machine"] = {
                 multi: 20,
                 timer: 60,
@@ -4388,13 +4277,13 @@ const commands = {
               user["inventory"]["items"]["income_machine_X"] -= 1;
 
               save_user(user);
-              return feed_channel.send(`Hurraa! Tulokone-X hurraa!`);
+              return msg.channel.send(`Hurraa! Tulokone-X hurraa!`);
             }
             else if (item == "tulokiihdytin") {
               if (!("income_accelerator" in user["inventory"]["items"]))
-                return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
+                return msg.channel.send(`Sulla ei ole Tulokiihdytintä`);
               if ("income_machine" in user)
-                return feed_channel.send(`Sulla on jo Tulokone päällä!`);
+                return msg.channel.send(`Sulla on jo Tulokone päällä!`);
               user["income_machine"] = {
                 multi: 40,
                 timer: 60,
@@ -4404,31 +4293,25 @@ const commands = {
               user["inventory"]["items"]["income_accelerator"] -= 1;
 
               save_user(user);
-              return feed_channel.send(`Hurraa! Tulokiihdytin hurraa!`);
+              return msg.channel.send(`Hurraa! Tulokiihdytin hurraa!`);
             }
             else if (item == "gem") {
               if (user["inventory"]["items"]["gem"] < 1)
-                return feed_channel.send(`Sulla ei ole gemiä...`);
+                return msg.channel.send(`Sulla ei ole gemiä...`);
 
-              var money_to_add = user["inventory"]["money"];
-              if (money_to_add > 10000000) {
-                money_to_add = 10000000;
-              } 
-              user["inventory"]["money"] += money_to_add;
-
+              user["inventory"]["money"] = user["inventory"]["money"] * 2;
               user["inventory"]["items"]["gem"] -= 1;
-
               save_user(user);
-              return feed_channel.send(
+              return msg.channel.send(
                 `Hehkuva kivi imeytyy aikaavaruuteen, tunnet taskujesi täyttyvän!`
               );
             }
             else if (item == "aikakone") {
               if (user["inventory"]["items"]["timemachine"] < 1)
-                return feed_channel.send(`Sulla ei ole aikakonetta...`);
+                return msg.channel.send(`Sulla ei ole aikakonetta...`);
 
               if (second == "" || second == undefined)
-                return feed_channel.send(`Laita jokin aika! (Aamu, Päivä, Ilta tai Yö)`);
+                return msg.channel.send(`Laita jokin aika! (Aamu, Päivä, Ilta tai Yö)`);
 
               var _time = "";
               var _part_day = "";
@@ -4453,7 +4336,7 @@ const commands = {
                 _part_day = "M";
               }
               else {
-                return feed_channel.send(`Valitse sopiva aika!`);
+                return msg.channel.send(`Valitse sopiva aika!`);
               }
 
               user["inventory"]["items"]["timemachine"] -= 1;
@@ -4464,15 +4347,15 @@ const commands = {
               }
 
               save_user(user);
-              return feed_channel.send(
+              return msg.channel.send(
                 `Aikakoneen mukaan sulla on tunti aikaa tällä aikaulottuvuudella. Näyttäisi, että on: ***${_time}***`
               );
             }
             else if (item == "kultatulo") {
               if (user["inventory"]["items"]["gold_income"] < 1)
-                return feed_channel.send(`Sulla ei ole perustuloa...`);
+                return msg.channel.send(`Sulla ei ole perustuloa...`);
               user["inventory"]["income"] += 5;
-              feed_channel.send(
+              msg.channel.send(
                 `Uiui, käytit ${emojies["perustulo3"]} ja sait perustuloa +5!`
               );
 
@@ -4482,10 +4365,10 @@ const commands = {
             }
             else if (item == "hopeatulo") {
               if (user["inventory"]["items"]["silver_income"] < 1)
-                return feed_channel.send(`Sulla ei ole perustuloa...`);
+                return msg.channel.send(`Sulla ei ole perustuloa...`);
 
               user["inventory"]["income"] += 3;
-              feed_channel.send(
+              msg.channel.send(
                 `Uiui, käytit ${emojies["perustulo2"]} ja sait perustuloa +3!`
               );
 
@@ -4495,10 +4378,10 @@ const commands = {
             }
             else if (item == "pronssitulo") {
               if (user["inventory"]["items"]["bronze_income"] < 1)
-                return feed_channel.send(`Sulla ei ole perustuloa...`);
+                return msg.channel.send(`Sulla ei ole perustuloa...`);
 
               user["inventory"]["income"] += 1;
-              feed_channel.send(
+              msg.channel.send(
                 `Uiui, käytit ${emojies["perustulo1"]} ja sait perustuloa +1!`
               );
 
@@ -4508,7 +4391,7 @@ const commands = {
             }
             else if (item == "glitch") {
               if (user["inventory"]["items"]["glitch"] < 1)
-                return feed_channel.send(`Sulla ei ole gemiä...`);
+                return msg.channel.send(`Sulla ei ole gemiä...`);
               var start_money = user["inventory"]["money"];
               var end_money = user["inventory"]["money"];
               while (start_money == end_money) {
@@ -4526,7 +4409,7 @@ const commands = {
               user["inventory"]["items"]["glitch"] -= 1;
               user["inventory"]["money"] = end_money;
               save_user(user);
-              return feed_channel.send(
+              return msg.channel.send(
                 `There was a glitch ${
                   emojies["glitch"]
                 } in the system. Seems like you had ${start_money} ${
@@ -4536,24 +4419,24 @@ const commands = {
             }
             else if (item == "valvontakamera") {
               if (user["inventory"]["items"]["security_cam"] < 1)
-                return feed_channel.send(`Sulla ei ole Valvontakameraa!`);
+                return msg.channel.send(`Sulla ei ole Valvontakameraa!`);
               if ("security_cam" in user)
-                return feed_channel.send(`Sulla on jo valvonta päällä!`);
+                return msg.channel.send(`Sulla on jo valvonta päällä!`);
               user["security_cam"] = {
                 timer: 60*5,
                 protected: 0
               };
 
               user["inventory"]["items"]["security_cam"] -= 1;
-              feed_channel.send(`Valvonta päällä!`);
+              msg.channel.send(`Valvonta päällä!`);
               save_user(user);
               return;
             }
             else if (item == "tallelokero") {
               if (user["inventory"]["key_items"]["safe"]["own"] == false)
-                return feed_channel.send(`Sulla ei ole tallelokeroa!`);
+                return msg.channel.send(`Sulla ei ole tallelokeroa!`);
               if (second == "" || second == undefined)
-                return feed_channel.send(`Laita summa!`);
+                return msg.channel.send(`Laita summa!`);
 
               second = second.replace(",", "");
 
@@ -4566,7 +4449,7 @@ const commands = {
                 var price = Math.floor(second);
               }
 
-              if (isNaN(price)) return feed_channel.send(`Laita summa!`);
+              if (isNaN(price)) return msg.channel.send(`Laita summa!`);
 
               if (second.startsWith("-")) {
                 price = price*-1;
@@ -4598,55 +4481,55 @@ const commands = {
                 }
               }
 
-              feed_channel.send(`Rahoja siirretty ${price}${emojies["coin"]}`);
+              msg.channel.send(`Rahoja siirretty ${price}${emojies["coin"]}`);
               save_user(user);
               return;
             }
             else if (item == "puska") {
               if (user["inventory"]["key_items"]["bush"]["own"] == false)
-                return feed_channel.send(`Sulla ei ole puskaa!`);
+                return msg.channel.send(`Sulla ei ole puskaa!`);
 
 
               if (user["inventory"]["key_items"]["bush"]["on"]) {
                 user["inventory"]["key_items"]["bush"]["on"] = false;
-                feed_channel.send(`Puska pois päältä!`);
+                msg.channel.send(`Puska pois päältä!`);
               } else {
                 user["inventory"]["key_items"]["bush"]["on"] = true;
-                feed_channel.send(`Puska päällä!`);
+                msg.channel.send(`Puska päällä!`);
               }
               save_user(user);
               return;
             }
 
-            if (user["ironman"]) return feed_channel.send(`Olet Ironman...`);
+            if (user["ironman"]) return msg.channel.send(`Olet Ironman...`);
             if (target_user["ironman"])
-              return feed_channel.send(`Kohde on Ironman...`);
+              return msg.channel.send(`Kohde on Ironman...`);
 
             if (item == "keppi") {
               if (user["inventory"]["items"]["stick"] < 1)
-                return feed_channel.send(`Sulla ei ole keppejä`);
+                return msg.channel.send(`Sulla ei ole keppejä`);
               if (name == sender_id)
-                return feed_channel.send(`Älä lyö ittees vitun idiotti!`);
+                return msg.channel.send(`Älä lyö ittees vitun idiotti!`);
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
                 save_user(target_user);
-                return feed_channel.send(
+                return msg.channel.send(
                   `Hän huomasi sinut ennalta, et päässyt käsiksi häneen...`
                 );
               }
-              if (target_user["inventory"]["key_items"]["bush"]["on"]) return feed_channel.send(
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
                 `Et löydä häntä mistään!?...`
               );
 
               if (target_user["inventory"]["items"]["shield"] > 0) {
-                feed_channel.send(
+                msg.channel.send(
                   `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
                 );
                 var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
                 if (rnd == 3) {
                   target_user["inventory"]["items"]["shield"] -= 1;
-                  feed_channel.send(
+                  msg.channel.send(
                     `Kilpi meni kuitenkin rikki...`
                   );
                 }
@@ -4661,7 +4544,7 @@ const commands = {
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
               var amount = Math.floor(Math.random() * Math.floor(300 + 1));
               if (rnd > 3 && target_user["inventory"]["money"] > amount) {
-                feed_channel.send(
+                msg.channel.send(
                   "Löit jäbää <@" +
                     name +
                     ">! Hän pudotti " +
@@ -4671,7 +4554,7 @@ const commands = {
                 );
                 target_user["inventory"]["money"] -= amount;
               } else {
-                feed_channel.send(
+                msg.channel.send(
                   "Löit jäbää <@" + name + ">! Et hyötyny mitään."
                 );
               }
@@ -4685,27 +4568,27 @@ const commands = {
             }
             if (item == "tukki") {
               if (user["inventory"]["items"]["log"] < 1)
-                return feed_channel.send(`Sulla ei ole tukkeja`);
+                return msg.channel.send(`Sulla ei ole tukkeja`);
               if (name == sender_id)
-                return feed_channel.send(`Älä lyö ittees vitun idiotti!`);
+                return msg.channel.send(`Älä lyö ittees vitun idiotti!`);
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
                 save_user(target_user);
-                return feed_channel.send(
+                return msg.channel.send(
                   `Hän huomasi sinut ennalta, et päässyt antamaan läppälimua häneen...`
                 );
               }
 
 
               if (target_user["inventory"]["items"]["shield"] > 0) {
-                feed_channel.send(
+                msg.channel.send(
                   `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
                 );
                 var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
                 if (rnd == 3) {
                   target_user["inventory"]["items"]["shield"] -= 1;
-                  feed_channel.send(
+                  msg.channel.send(
                     `Kilpi meni kuitenkin rikki...`
                   );
                 }
@@ -4725,7 +4608,7 @@ const commands = {
                   amount = target_user["inventory"]["money"];
                   your_amount = Math.floor(amount / 10);
                 }
-                feed_channel.send(
+                msg.channel.send(
                   "Löit jäbää <@" +
                     name +
                     ">! Hän pudotti " +
@@ -4736,7 +4619,7 @@ const commands = {
                 target_user["inventory"]["money"] -= amount;
                 user["inventory"]["money"] += your_amount;
               } else {
-                feed_channel.send(
+                msg.channel.send(
                   "Löit jäbää <@" + name + ">! Et hyötyny mitään."
                 );
               }
@@ -4750,11 +4633,11 @@ const commands = {
             }
             if (item == "maski") {
               if (name == sender_id)
-                return feed_channel.send(`Et voi varastaa omaa rahaa, lol!`);
+                return msg.channel.send(`Et voi varastaa omaa rahaa, lol!`);
               if (user["inventory"]["items"]["mask"] < 1)
-                return feed_channel.send(`Sulla ei ole maskeja`);
+                return msg.channel.send(`Sulla ei ole maskeja`);
               if (target_user["inventory"]["money"] <= 0)
-                return feed_channel.send(`Kohteella ei ole oikein rahaa...`);
+                return msg.channel.send(`Kohteella ei ole oikein rahaa...`);
               var multi = (48978*target_user["inventory"]["money"]**(-0.67)) / 100;
               if (multi > 1) {
                 multi = 1;
@@ -4767,19 +4650,19 @@ const commands = {
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
               var sum = Math.floor(Math.random() * Math.floor(multi*target_user["inventory"]["money"] + 1));
 
-              if (target_user["inventory"]["key_items"]["bush"]["on"]) return feed_channel.send(
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
                 `Et löydä häntä mistään!?...`
               );
 
               if ("security_cam" in target_user) {
-                feed_channel.send("Valvontakamera osoittaa sinuun!");
+                msg.channel.send("Valvontakamera osoittaa sinuun!");
                 rnd = 1;
                 target_user["security_cam"]["protected"] += 1;
 
               }
 
               if (rnd > 2) {
-                feed_channel.send(
+                msg.channel.send(
                   "Varastit jäbältä <@" +
                     name +
                     ">! Sait: " +
@@ -4791,7 +4674,7 @@ const commands = {
                 target_user["inventory"]["money"] -= sum;
                 target_user["basic_statistics"]["money_stolen_from_you"] += sum;
               } else {
-                feed_channel.send(
+                msg.channel.send(
                   "Jäit kiinni varastaessasi jäbältä <@" +
                     name +
                     ">! Sait sakkoa " +
@@ -4812,55 +4695,21 @@ const commands = {
               save_user(target_user);
               save_user(user);
             }
-            if (item == "tiirikka") {
-              if (user["inventory"]["items"]["lockpick"] < 1)
-                return feed_channel.send(`Sulla ei ole tiirikoita...`);
-              if (name == sender_id)
-                return feed_channel.send(`Ei onnistu, ei kannata omasta varastaa :DDD !`);
-
-              if (!target_user["inventory"]["key_items"]["safe"]["own"]) return 
-                feed_channel.send(`Kohteella ei ole edes tallelokeroa...`);
-
-              if ("security_cam" in target_user) {
-                target_user["security_cam"]["protected"] += 1;
-                save_user(target_user);
-                return feed_channel.send(
-                  `Hän huomasi sinut ennalta, et päässyt käsiksi tallelokeroon...`
-                );
-              }
-              if (target_user["inventory"]["key_items"]["bush"]["on"]) return feed_channel.send(
-                `Et löydä häntä mistään!?...`
-              );
-
-              user["basic_statistics"]["lockpick_used"] += 1;
-              target_user["basic_statistics"]["lockpick_used_to_you"] += 1;
-              user["inventory"]["items"]["lockpick"] -= 1;
-
-              target_user["lockpicking"] = {"time" : 0,
-                                            "lockpicker" : user["id"]}
-
-              feed_channel.send(
-                "Hähää, nyt avataan lukko :D Menee hetki..."
-              );
-              save_user(user);
-              save_user(target_user);
-              return;
-            }
             if (item == "tuloimu") {
-              if (target_user["id"] == user["id"]) return feed_channel.send(`Et voi imeä itteltäs, tirsk`);
+              if (target_user["id"] == user["id"]) return msg.channel.send(`Et voi imeä itteltäs, tirsk`);
               if (!("income_absorber" in user["inventory"]["items"]))
-                return feed_channel.send(`Sulla ei ole Tuloimua`);
+                return msg.channel.send(`Sulla ei ole Tuloimua`);
               if ("income_absorb" in user)
-                return feed_channel.send(`Sulla on jo imuri päällä!`);
+                return msg.channel.send(`Sulla on jo imuri päällä!`);
               if ("income_absorb" in target_user) {
                 if (target_user["income_absorb"]["target"] == user.id)
-                  return feed_channel.send(
+                  return msg.channel.send(
                     `Et voi imeä häneltä koska hän imee jo sinulta ;)`
                   );
               }
               /*
               if (!check_if_absorb(target_user)) {
-                return feed_channel.send(
+                return msg.channel.send(
                   `Et voi imeä häneltä koska olet pohjalla :(`
                 );
               }*/
@@ -4893,14 +4742,14 @@ const commands = {
 
 
 
-              if (target_user["inventory"]["key_items"]["bush"]["on"]) return feed_channel.send(
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
                 `Et löydä häntä mistään!?...`
               );
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
                 save_user(target_user);
-                return feed_channel.send(
+                return msg.channel.send(
                   `Hän näki sinut ennelta...Et päässyt käsiksi häneen!`
                 );
               }
@@ -4918,40 +4767,40 @@ const commands = {
               };
 
               user["inventory"]["items"]["income_absorber"] -= 1;
-              feed_channel.send(`Imet tuloa!`);
+              msg.channel.send(`Imet tuloa!`);
               save_user(target_user);
               save_user(user);
             }
             if (item == "pommi") {
               if (user["inventory"]["items"]["bomb"] < 1)
-                return feed_channel.send(`Sulla ei ole pommia`);
+                return msg.channel.send(`Sulla ei ole pommia`);
               if (name == sender_id)
-                return feed_channel.send(`Älä pommita ittees vitun idiotti!`);
+                return msg.channel.send(`Älä pommita ittees vitun idiotti!`);
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
               var amount = Math.floor(
                 Math.random() * Math.floor(2000 + 1) + 500
               );
 
-              if (target_user["inventory"]["key_items"]["bush"]["on"]) return feed_channel.send(
+              if (target_user["inventory"]["key_items"]["bush"]["on"]) return msg.channel.send(
                 `Et löydä häntä mistään!?...`
               );
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
                 save_user(target_user);
-                return feed_channel.send(
+                return msg.channel.send(
                   `Hän näki sinut ennelta...Et päässyt käsiksi häneen!`
                 );
               }
 
               if (target_user["inventory"]["items"]["shield"] > 0) {
-                feed_channel.send(
+                msg.channel.send(
                   `Hänellä oli kilpi. <@${name}> selvisi vaurioitta.`
                 );
                 var rnd = Math.floor(Math.random() * Math.floor(5 + 1));
                 if (rnd == 3) {
                   target_user["inventory"]["items"]["shield"] -= 1;
-                  feed_channel.send(
+                  msg.channel.send(
                     `Kilpi meni kuitenkin rikki...`
                   );
                 }
@@ -4961,7 +4810,7 @@ const commands = {
                 save_user(target_user);
                 return;
               }
-              feed_channel.send(
+              msg.channel.send(
                 "Pommitit jäbää <@" +
                   name +
                   ">! Korjauksiin ja lääkäriin meni: " +
@@ -4981,16 +4830,16 @@ const commands = {
             if (item == "prankster") {
 
               if (name == sender_id)
-                return feed_channel.send(`Et voi pränkätä omaa rahaa, lol!`);
+                return msg.channel.send(`Et voi pränkätä omaa rahaa, lol!`);
               if (user["inventory"]["items"]["prankster"] < 1)
-                return feed_channel.send(`Sulla ei ole pranksteriä`);
+                return msg.channel.send(`Sulla ei ole pranksteriä`);
               if (user["inventory"]["money"] <= 0)
-                return feed_channel.send(`Et voi pränkätä ilman rahaa...`);
+                return msg.channel.send(`Et voi pränkätä ilman rahaa...`);
 
 
                 if ("security_cam" in target_user) {
                   target_user["security_cam"]["protected"] += 1;
-                  feed_channel.send("Valvontakamera osoittaa sinuun!");
+                  msg.channel.send("Valvontakamera osoittaa sinuun!");
                   save_user(target_user);
                   save_user(user);
                   return;
@@ -5006,7 +4855,7 @@ const commands = {
 
 
 
-              feed_channel.send(
+              msg.channel.send(
                   "Pränkkäsit jäbältä <@" +
                     name +
                     "> rahat. Sait hänen: " +
@@ -5025,15 +4874,15 @@ const commands = {
             }
             if (item == "stunner") {
               if (name == sender_id)
-                return feed_channel.send(`Et voi stunnaa itseäsi, lol!`);
+                return msg.channel.send(`Et voi stunnaa itseäsi, lol!`);
               if (user["inventory"]["items"]["stunner"] < 1)
-                return feed_channel.send(`Sulla ei ole stunnereitä`);
+                return msg.channel.send(`Sulla ei ole stunnereitä`);
               if ("stun_timer" in target_user)
-                return feed_channel.send(`Kohde on jo kanttuvei...`);
+                return msg.channel.send(`Kohde on jo kanttuvei...`);
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
-                feed_channel.send("Valvontakamera osoittaa sinuun!");
+                msg.channel.send("Valvontakamera osoittaa sinuun!");
                 save_user(target_user);
                 save_user(user);
                 return;
@@ -5062,19 +4911,19 @@ const commands = {
 
               save_user(target_user);
               save_user(user);
-              return feed_channel.send("Löit iha vitun kovaa, hän on stunneissa!");
+              return msg.channel.send("Löit iha vitun kovaa, hän on stunneissa!");
 
 
             }
             if (item == "grabber") {
               if (name == sender_id)
-                return feed_channel.send(`Et voi varastaa omaa tavaraa, lol!`);
+                return msg.channel.send(`Et voi varastaa omaa tavaraa, lol!`);
               if (user["inventory"]["items"]["grabber"] < 1)
-                return feed_channel.send(`Sulla ei ole grabbereitä`);
+                return msg.channel.send(`Sulla ei ole grabbereitä`);
 
                 if ("security_cam" in target_user) {
                   target_user["security_cam"]["protected"] += 1;
-                  feed_channel.send("Valvontakamera osoittaa sinuun!");
+                  msg.channel.send("Valvontakamera osoittaa sinuun!");
                   save_user(target_user);
                   save_user(user);
                   return;
@@ -5090,7 +4939,7 @@ const commands = {
                 }
               }
               if (item_list.length == 0) {
-                return feed_channel.send(`Kohteella ei ole tavaraa!`);
+                return msg.channel.send(`Kohteella ei ole tavaraa!`);
               }
 
               let chosen_item;
@@ -5178,7 +5027,7 @@ const commands = {
                 items = `${emojies["perustulo3"]} Kultatulo\n`;
               }
 
-              feed_channel.send(
+              msg.channel.send(
                   "Varastit tavaran jäbältä <@" +
                     name +
                     ">! Sait: " +
@@ -5356,9 +5205,6 @@ const commands = {
             }
             if (ite["mask"] > 0) {
               items += `${emojies["maski"]} Maski: ${ite["mask"]}\n`;
-            }
-            if (ite["lockpick"] > 0) {
-              items += `${emojies["tiirikka"]} Tiirikka: ${ite["lockpick"]}\n`;
             }
             if (ite["stunner"] > 0) {
               items += `${emojies["stunner"]} Stunner: ${ite["stunner"]}\n`;
@@ -5604,15 +5450,13 @@ const commands = {
     check_user_in_database(msg.author.id).then(() => {
       get_user(msg.author.id).then(user => {
         var basic_income = Math.floor(user["inventory"]["income"]);
-        /*var cost_next_basic_income =
+        var cost_next_basic_income =
           Math.floor(
             (1000 *
               Math.pow(1.08, user["basic_statistics"]["income_bought"]) *
               (10 + 5 * user["basic_statistics"]["income_bought"])) /
               100
-          ) * 100;*/
-
-        var cost_next_basic_income = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100
+          ) * 100;
 
         msg.channel.send({
           embed: {
@@ -5734,9 +5578,8 @@ const commands = {
         // PERUSTULO
         if (purchase == "perustulo") {
           var basic_income = user["inventory"]["income"];
-          var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100;
-          /*var basic_income_price =
-            Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;*/
+          var basic_income_price =
+            Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
           if (money < basic_income_price)
             return msg.channel.send(
               "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
@@ -5851,21 +5694,12 @@ const commands = {
   },
 
   vaihda: async msg => {
-
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
     var user;
     var target_user;
 
     let name = msg.content.split(" ")[1];
     if (name == "" || name === undefined)
-      return feed_channel.send(`Kirjoita kohdehenkilö!`);
+      return msg.channel.send(`Kirjoita kohdehenkilö!`);
 
     name = name.replace(/\D/g, "");
 
@@ -5877,7 +5711,7 @@ const commands = {
         flag = true;
       }
     }
-    if (!flag) return feed_channel.send(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     var target_id = name;
     await check_user_in_database(msg.author.id);
@@ -5887,12 +5721,12 @@ const commands = {
     target_user = await get_user(target_id);
 
     if (target_id == msg.author.id)
-      return feed_channel.send(`Et voi vaihtaa itsesi kanssa!`);
+      return msg.channel.send(`Et voi vaihtaa itsesi kanssa!`);
 
     if (user["ironman"])
-      return feed_channel.send(`Oot Ironman, et voi vaihtaa...`);
+      return msg.channel.send(`Oot Ironman, et voi vaihtaa...`);
     if (target_user["ironman"])
-      return feed_channel.send(
+      return msg.channel.send(
         `Hän ei halua vaihdella.. hän on katsos Ironman btw..`
       );
 
@@ -5919,8 +5753,7 @@ const commands = {
       log: "tukki",
       prankster: "prankster",
       grabber: "grabber",
-      stunner: "stunner",
-      lockpick : "tiirikka"
+      stunner: "stunner"
     };
 
     var emo = {
@@ -5946,12 +5779,11 @@ const commands = {
       log: emojies["tukki"],
       prankster: emojies["prankster"],
       grabber: emojies["grabber"],
-      stunner: emojies["stunner"],
-      lockpick: emojies["tiirikka"]
+      stunner: emojies["stunner"]
     };
 
     var trade_message;
-    await feed_channel.send(print_trade_window(items, emo)).then(async m => {
+    await msg.channel.send(print_trade_window(items, emo)).then(async m => {
       trade_message = m;
       await trade_message.react("✅");
       await trade_message.react("❎");
@@ -5961,7 +5793,7 @@ const commands = {
     var target_user_trades = {};
     var accepted = [];
 
-    let co = feed_channel.createCollector(m => m);
+    let co = msg.channel.createCollector(m => m);
     co.on("collect", async m => {
       if (
         m.content.startsWith(tokens.prefix + "laita") &&
@@ -6238,7 +6070,7 @@ const commands = {
         }
       } else if (reaction.emoji == "❎") {
         em.stop();
-        feed_channel.send("Vaihtoa ei suoritettu...");
+        msg.channel.send("Vaihtoa ei suoritettu...");
       }
     });
 
@@ -6251,12 +6083,12 @@ const commands = {
       if (_item == "rahat") {
         if ("money" in _trades) {
           if (_user["inventory"]["money"] - _trades["money"] < _amount) {
-            feed_channel.send("Sulla on liian vähän rahaa!");
+            msg.channel.send("Sulla on liian vähän rahaa!");
             return _trades;
           }
         } else {
           if (_user["inventory"]["money"] < _amount) {
-            feed_channel.send("Sulla on liian vähän rahaa!");
+            msg.channel.send("Sulla on liian vähän rahaa!");
             return _trades;
           }
         }
@@ -6269,7 +6101,7 @@ const commands = {
         return _trades;
       } else {
         if (!Object.values(items).includes(_item)) {
-          feed_channel.send("Virheellinen tavara!");
+          msg.channel.send("Virheellinen tavara!");
           return _trades;
         }
         var ret = {};
@@ -6282,12 +6114,12 @@ const commands = {
             _user["inventory"]["items"][ret[_item]] - _trades[_item] <
             _amount
           ) {
-            feed_channel.send("Sulla on liian vähän kyseistä tavaraa!");
+            msg.channel.send("Sulla on liian vähän kyseistä tavaraa!");
             return _trades;
           }
         } else {
           if (_user["inventory"]["items"][ret[_item]] < _amount) {
-            feed_channel.send("Sulla on liian vähän kyseistä tavaraa!");
+            msg.channel.send("Sulla on liian vähän kyseistä tavaraa!");
             return _trades;
           }
         }
@@ -6312,7 +6144,7 @@ const commands = {
         return _trades;
       } else {
         if (!Object.values(items).includes(_item)) {
-          feed_channel.send("Virheellinen tavara!");
+          msg.channel.send("Virheellinen tavara!");
           return _trades;
         }
 
@@ -6434,13 +6266,13 @@ const commands = {
       for (item in _user_trades) {
         if (item == "money") {
 
-          if (_user_trades["money"] > _user["inventory"]["money"]) return feed_channel.send("Vaihtoa ei suoritettu, rahaa liian vähän...");
+          if (_user_trades["money"] > _user["inventory"]["money"]) return msg.channel.send("Vaihtoa ei suoritettu, rahaa liian vähän...");
 
           _target_user["inventory"]["money"] += _user_trades["money"];
           _user["inventory"]["money"] -= _user_trades["money"];
         } else {
 
-          if (_user_trades[item] > _user["inventory"]["items"][ret[item]]) return feed_channel.send("Vaihtoa ei suoritettu, liia vähän jotain tavaroista...");
+          if (_user_trades[item] > _user["inventory"]["items"][ret[item]]) return msg.channel.send("Vaihtoa ei suoritettu, liia vähän jotain tavaroista...");
 
           _target_user["inventory"]["items"][ret[item]] += _user_trades[item];
           _user["inventory"]["items"][ret[item]] -= _user_trades[item];
@@ -6450,14 +6282,14 @@ const commands = {
       for (item in _target_user_trades) {
 
         if (item == "money") {
-          if (_target_user_trades["money"] > _target_user["inventory"]["money"]) return feed_channel.send("Vaihtoa ei suoritettu, rahaa liian vähän...");
+          if (_target_user_trades["money"] > _target_user["inventory"]["money"]) return msg.channel.send("Vaihtoa ei suoritettu, rahaa liian vähän...");
 
           _user["inventory"]["money"] += _target_user_trades["money"];
           _target_user["inventory"]["money"] -= _target_user_trades["money"];
 
         } else {
 
-          if (_target_user_trades[item] > _target_user["inventory"]["items"][ret[item]]) return feed_channel.send("Vaihtoa ei suoritettu, liia vähän jotain tavaroista...");
+          if (_target_user_trades[item] > _target_user["inventory"]["items"][ret[item]]) return msg.channel.send("Vaihtoa ei suoritettu, liia vähän jotain tavaroista...");
 
           _user["inventory"]["items"][ret[item]] += _target_user_trades[item];
           _target_user["inventory"]["items"][ret[item]] -=
@@ -6470,7 +6302,7 @@ const commands = {
       save_user(_user);
       save_user(_target_user);
 
-      return feed_channel.send(
+      return msg.channel.send(
         print_trade_window(items, emo, "Vaihto suoritettu!")
 
       );
@@ -6688,15 +6520,6 @@ const commands = {
   },
 
   kaladex: async msg => {
-
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
     let name = msg.content.split(" ")[1];
     var sender_id = msg.author.id;
 
@@ -6716,14 +6539,14 @@ const commands = {
       }
     }
 
-    if (!flag) return feed_channel.send(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     await check_user_in_database(target_id);
     var user = await get_user(target_id);
 
     var _all_users = await get_all_users();
 
-    await feed_channel.send(await lake(user, _all_users)).then(async m => {
+    await msg.channel.send(await lake(user, _all_users)).then(async m => {
       message = m;
       await message.react(emojies["ahven"]);
       await message.react(emojies["lohi"]);
@@ -7212,14 +7035,6 @@ const commands = {
     let name = msg.content.split(" ")[1];
     let edit = "";
 
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
     if (name == "" || name === undefined) {
       name = msg.author.id;
     }
@@ -7234,7 +7049,7 @@ const commands = {
       }
     }
 
-    if (!flag) return feed_channel.send(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     var target_id = name;
     await check_user_in_database(target_id);
@@ -7242,7 +7057,7 @@ const commands = {
     var avatar = client.users.get(user.id).avatarURL;
 
     var message;
-    await feed_channel.send(await general(user)).then(async m => {
+    await msg.channel.send(await general(user)).then(async m => {
       message = m;
       await message.react("📊");
       await message.react(emojies["poggers"]);
@@ -7411,17 +7226,17 @@ const commands = {
         "\n";
 
       var sasu =
-        emojies["huutonauris"] +
-        emojies["huutonauris"] +
-        emojies["huutonauris"] +
+        emojies["sasu"] +
+        emojies["sasu"] +
+        emojies["sasu"] +
         ": " +
         user["game_slot"]["wins"]["sasu"] +
         "\n";
 
       var karvis =
-        emojies["JanneS"] +
-        emojies["JanneS"] +
-        emojies["JanneS"] +
+        emojies["karvis"] +
+        emojies["karvis"] +
+        emojies["karvis"] +
         ": " +
         user["game_slot"]["wins"]["karvis"] +
         "\n";
@@ -7434,17 +7249,17 @@ const commands = {
         "\n";
 
       var alfa =
-        emojies["thinkin"] +
-        emojies["thinkin"] +
-        emojies["thinkin"] +
+        emojies["alfa"] +
+        emojies["alfa"] +
+        emojies["alfa"] +
         ": " +
         user["game_slot"]["wins"]["alfa"] +
         "\n";
 
       var jesilmero =
-        emojies["PMA"] +
-        emojies["PMA"] +
-        emojies["PMA"] +
+        emojies["jesilmero"] +
+        emojies["jesilmero"] +
+        emojies["jesilmero"] +
         ": " +
         user["game_slot"]["wins"]["jesilmero"] +
         "\n";
@@ -7815,14 +7630,6 @@ const commands = {
     let name = msg.content.split(" ")[1];
     let edit = "";
 
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
     if (name == "" || name === undefined) {
       name = msg.author.id;
     }
@@ -7837,7 +7644,7 @@ const commands = {
       }
     }
 
-    if (!flag) return feed_channel.send(`Kelvoton nimi.`);
+    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
 
     var target_id = name;
     await check_user_in_database(target_id);
@@ -8029,7 +7836,7 @@ const commands = {
       var uz = client.users.get(user["id"]);
       var avatar = uz.avatarURL;
 
-      feed_channel.send({
+      msg.channel.send({
         embed: {
           title: `***YLEISDATA: ***`,
           color: user["info"]["color"],
@@ -8085,21 +7892,12 @@ const commands = {
   },
 
   yhteisdata: async msg => {
-
-    const FEED_CHANNEL = "666348588527386643";
-    feed_channel = client.channels.get(FEED_CHANNEL);
-
-    if (msg.channel.id != FEED_CHANNEL) {
-      feed_channel.send("<@" + msg.author.id + ">");
-      msg.delete();
-    }
-
     var users;
     msg.delete();
     bot_users.once("value", async function(u) {
       users = u.val();
       var message;
-      await feed_channel.send(await activity(users)).then(async m => {
+      await msg.channel.send(await activity(users)).then(async m => {
         message = m;
         await message.react("1⃣");
         await message.react("2⃣");
@@ -8404,7 +8202,6 @@ const commands = {
   // boxisade
 
   pääpäivä: msg => {
-    
     var date = new Date();
     var a = date.getDate();
     var b = date.getMonth();
@@ -8515,7 +8312,6 @@ const commands = {
   },
 
   onkovammanen: msg => {
-
     let dude = msg.content.split(" ")[1];
     if (dude == "" || dude === undefined)
       return msg.channel.send(`Ketä tarkoitat?`);
@@ -8530,7 +8326,6 @@ const commands = {
   },
 
   wednesday: msg => {
-
     //IS IT WEDNESDAY MY DUDES?
     let this_date = new Date();
     let day = this_date.getDay();
@@ -8620,8 +8415,6 @@ const commands = {
   },
 
   ilmoitukset: async msg => {
-    const ALLOWED_CHANNELS = ["666348588527386643"];
-    if (!ALLOWED_CHANNELS.includes(msg.channel.id)) return msg.delete();
     await check_user_in_database(msg.author.id);
     var user = await get_user(msg.author.id);
 
@@ -8631,6 +8424,21 @@ const commands = {
     } else {
       user["info"]["notifications"] = true;
       msg.channel.send("Ilmoitukset päällä!");
+
+    }
+    save_user(user);
+  },
+
+  primetime: async msg => {
+    await check_user_in_database(msg.author.id);
+    var user = await get_user(msg.author.id);
+
+    if (user["info"]["primetime"]) {
+      user["info"]["primetime"] = false;
+      msg.channel.send("Primetime ilmoitukset pois päältä!");
+    } else {
+      user["info"]["primetime"] = true;
+      msg.channel.send("Primetime ilmoitukset päällä!");
 
     }
     save_user(user);
@@ -8809,76 +8617,8 @@ const commands = {
     var second = date.getSeconds();
     delete date;
 
-    let addition1 = "";
-    let addition2 = "";
-    if (hour < 10) {
-      addition1 = "0";
-    }
-    if (minute < 10) {
-      addition2 = "0";
-    }
-    
-    let aika = "";
-    if (hour >= 5 && hour < 10) {
-      aika = "Aamu";
-    }
-    if (hour >= 10 && hour < 18) {
-      aika = "Päivä";
-    }
-    if (hour >= 18 && hour < 23) {
-      aika = "Ilta";
-    }
-    if (hour >= 23 && hour < 5) {
-      aika = "Yö";
-    }
-
     msg.channel.send(
-      "Serverin aika: " + hour + ":" + addition2 + minute + ":" + addition1 + second + " " + a + "/" + b + "/" + c + " (" + aika + ")");
-  },
-
-  lastseen: msg => {
-
-    let name = msg.content.split(" ")[1];
-
-    if (name == "" || name === undefined)  {
-      msg.channel.send(
-        "Laita nimi!"
-      );
-      return;
-    }
-
-    name = name.replace(/\D/g, "");
-
-    var u;
-    var flag = false;
-    for (u in client.users.array()) {
-      var User = client.users.array()[u];
-      if (User.id == name) {
-        flag = true;
-      }
-    }
-
-    if (!flag) return msg.channel.send(`Kelvoton nimi.`);
-
-    check_user_in_database(name).then(() => {
-      get_user(name).then(user => {
-        var day = user["info"]["lastseen"]["day"];
-        var month = user["info"]["lastseen"]["month"];
-        var year = user["info"]["lastseen"]["year"];
-        var minutes = user["info"]["lastseen"]["minutes"];
-        var hours = user["info"]["lastseen"]["hours"];
-        var addition = "";
-        if (minutes < 10) {
-          addition = "0";
-        }
-        msg.channel.send(
-          "<@" + name + "> on viimeksi ollut channelillä " +
-           day + "/" + month + "/" + year + " klo " + hours + ":" + addition + minutes
-        );
-        msg.delete();
-        save_user(user);
-      });
-    });
+      "Serverin aika: " + hour + ":" + minute + ":" + second + " " + a + "/" + b + "/" + c);
   }
 
 };
@@ -8936,7 +8676,7 @@ client.on("message", async msg => {
 
   if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
 
-  if (msg.author.id != "247754056804728832") {
+  if (!(msg.content).includes("purge")) {
     if (banned_textchannels.includes(msg.channel.id)) {
       msg.delete();
       return;
@@ -8979,31 +8719,19 @@ client.on("error", e => {
 const banned_channels = ["300242143702679552", "404378873380470786"];
 
 var minute_count = 0;
+
 setInterval(async function() {
   var users;
   var global;
+
+  var primetimers = [];
+
   await bot_users.on("value", async function(u) {
     users = u.val();
   });
   await global_data.once("value", async function(g) {
     global = g.val();
   });
-
-  var date = new Date();
-  var day = date.getDate();
-  var month = date.getMonth() + 1;
-  var year = date.getYear() + 1900;
-  var minutes = date.getMinutes();
-  var hours = date.getHours();
-  var weekday = date.getDay();
-  delete date;
-
-  var date_array = {'day' : day,
-                  'month' : month,
-                  'year' : year,
-                  'minutes' : minutes,
-                  'hours' : hours,
-                  'weekday': weekday};
 
   // Happens every time user is active on voicechannel
   var voicechannels_array = client.channels.keyArray();
@@ -9033,7 +8761,6 @@ setInterval(async function() {
           await add_income(usr.id);
           await draw_lootbox(usr.id, 45, false);
 
-          await mark_lastseen(usr.id);
 
         }
       }
@@ -9044,17 +8771,22 @@ setInterval(async function() {
     users = u.val();
   });
 
-  // Happens anyways
+  
   var server_members = client.users.keyArray();
   for (var m of server_members) {
     if (m in users) {
+      await check_user_in_database(m);
+      // Primetime
+      if (users[m]["info"]["primetime"]) {
+        primetimers.push(m);
+      }
       // Absorber
       if ("income_absorb" in users[m]) {
 
         users[m]["income_absorb"]["timer"] -= 1;
         if (users[m]["income_absorb"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "Tuloimusi loppui, <@" +
                 m +
@@ -9077,7 +8809,7 @@ setInterval(async function() {
           users[m]["stun_timer"] = null;
 
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "Stunnisi päättyi loppui <@" +
                 m + ">"
@@ -9095,7 +8827,7 @@ setInterval(async function() {
         users[m]["absorb_target"]["timer"] -= 1;
         if (users[m]["absorb_target"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -9156,7 +8888,7 @@ setInterval(async function() {
         users[m]["income_machine"]["timer"] -= 1;
         if (users[m]["income_machine"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -9172,86 +8904,11 @@ setInterval(async function() {
         }
       }
 
-      if ("lockpicking" in users[m]) {
-
-        users[m]["lockpicking"]["time"] += 1;
-
-        var rnd = Math.floor(Math.random() * Math.floor(100)) + 1;
-
-        if (rnd == 50) {
-          // Onnistui
-
-          var money = users[m]["inventory"]["key_items"]["safe"]["money"];
-          var target_id = users[m]["lockpicking"]["lockpicker"];
-
-
-          await firebase
-            .database()
-            .ref("users/" + target_id + "/inventory/money")
-            .set(users[target_id]["inventory"]["money"] + money);
-
-          await firebase
-            .database()
-            .ref("users/" + users[m]["id"] + "/basic_statistics/lockpicked_money_stolen_from_you")
-            .set(users[m]["basic_statistics"]["lockpicked_money_stoled_from_you"] + money);
-
-          await firebase
-            .database()
-            .ref("users/" + target_id + "/basic_statistics/lockpicked_money_you_have_stolen")
-            .set(users[target_id]["basic_statistics"]["lockpicked_money_you_have_stolen"] + money);
-
-          await firebase
-            .database()
-            .ref("users/" + users[m]["id"] + "/inventory/key_items/safe/money")
-            .set(0); 
-
-          client.channels
-            .get("666348588527386643")
-            .send(
-              "Tiirikointi onnistui, <@" +
-                users[m]["lockpicking"]["lockpicker"] +
-                "> onnistui varastamaan tallelokerosi tyhjäksi <@" +
-                m +
-                ">! Siihen kului vain " + 
-                users[m]["lockpicking"]["time"] +
-                " minuuttia!"
-            );
-
-          delete users[m].lockpicking;
-          await firebase
-            .database()
-            .ref("users/" + users[m]["id"] + "/lockpicking")
-            .set(null);
-
-        }
-      }
-
-      if ("stun_timer" in users[m]) {
-        users[m]["stun_timer"]["timer"] -= 1;
-        if (users[m]["stun_timer"]["timer"] == 0) {
-          (global["stunned"]).splice( (global["stunned"]).indexOf("" + m), 1 );
-          users[m]["stun_timer"] = null;
-
-          client.channels
-            .get("666348588527386643")
-            .send(
-              "Stunnisi päättyi loppui <@" +
-                m + ">"
-            );
-
-          await firebase
-            .database()
-            .ref(global_data)
-            .set(global);
-
-        }
-      }
-
       if ("security_cam" in users[m]) {
         users[m]["security_cam"]["timer"] -= 1;
         if (users[m]["security_cam"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -9271,7 +8928,7 @@ setInterval(async function() {
         users[m]["timemachine_timer"]["timer"] -= 1;
         if (users[m]["timemachine_timer"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -9289,7 +8946,7 @@ setInterval(async function() {
         users[m]["inventory"]["key_items"]["bush"]["timer"] -= 1;
         if (users[m]["inventory"]["key_items"]["bush"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(
               "<@" +
                 m +
@@ -9304,7 +8961,7 @@ setInterval(async function() {
         users[m]["fishing_timer"]["timer"] -= 1;
         if (users[m]["fishing_timer"]["timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(fish_caught(users[m], users));
           await check_kaladex(users[m]);
           await delete users[m].fishing_timer;
@@ -9326,7 +8983,7 @@ setInterval(async function() {
         users[m]["boat_timer"] -= 1;
         if (users[m]["boat_timer"] == 0) {
           client.channels
-            .get("666348588527386643")
+            .get("280272696560975872")
             .send(fishes_caught(users[m], users));
           check_kaladex(users[m]);
           delete users[m].fishing_boat_timer;
@@ -9349,21 +9006,44 @@ setInterval(async function() {
     }
   }
 
+  var date = new Date();
+  var a = date.getDate();
+  var b = date.getMonth() + 1;
+  var c = date.getYear() + 1900;
+  var date_array = [a, b - 1, c - 1900];
+  var day = date.getDay();
+  var hour = date.getHours();
+  var minute = date.getMinutes();
+  var second = date.getSeconds();
+  delete date;
+
+  // Primetime
+  let current_date_string = hour + ":" + minute;
+  let primetimes = ["19:20", "19:45", "19:55"];
+  if (primetimes.includes(current_date_string)) {
+    let message = "It is time for Primetime time! (" + current_date_string + ") ";
+    for (let id of primetimers) {
+      message += "\n<@" + id + ">";
+    }
+    client.channels
+            .get("442466922831806475")
+            .send(message);
+  }
+  
   await save_all_users(users);
   await check_income_absorbtion();
 
   // Setting up "Title"
   if (global["pääpäivä"]["on"]) {
     change_title("PÄÄPÄIVÄ");
-  } else if (weekday === 3) {
+  } else if (day === 3) {
     change_title("Wednesday");
   } else {
     change_title("ttunes");
   }
 
-
   // Next day
-  if (date_array["day"] != global["pääpäivä"]["date"][0] || date_array["month"] != global["pääpäivä"]["date"][1] || date_array["year"] != global["pääpäivä"]["date"][2]) {
+  if (date_array[0] != global["pääpäivä"]["date"][0] || date_array[1] != global["pääpäivä"]["date"][1] || date_array[2] != global["pääpäivä"]["date"][2]) {
     global["pääpäivä"]["on"] = false;
     delete global["dj"];
     global["pääpäivä"]["date"] = [0, 0, 0];
