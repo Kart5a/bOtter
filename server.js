@@ -8828,7 +8828,7 @@ const commands = {
     if (hour >= 18 && hour < 23) {
       aika = "Ilta";
     }
-    if (hour >= 23 && hour < 5) {
+    if (hour >= 23 || hour < 5) {
       aika = "Yö";
     }
 
