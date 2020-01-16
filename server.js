@@ -817,7 +817,7 @@ function calculate_wealth(user) {
   }
   for (var i = 0; i < user["basic_statistics"]["income_bought"]; i++) {
     all_money +=
-      Math.floor((1000 * Math.pow(1.08, i) * (10 + 5 * i)) / 100) * 100;
+      Math.floor((5364.6 * Math.exp(0.0057*i*5))/100)*100;
   }
 
   all_money += user["inventory"]["items"]["ES"];
@@ -826,8 +826,11 @@ function calculate_wealth(user) {
   all_money += user["inventory"]["items"]["hyper_bait"] * 12000;
   all_money += user["inventory"]["items"]["bomb"] * 2000;
 
-  all_money +=
-    user["inventory"]["money"] * Math.pow(user["inventory"]["items"]["gem"], 2);
+  let gem = user["inventory"]["money"] * Math.pow(user["inventory"]["items"]["gem"], 2);
+  if (user["inventory"]["money"] > 10000000) {
+    gem = 10000000 * Math.pow(user["inventory"]["items"]["gem"], 2);
+  }
+  all_money += gem;
   all_money +=
     user["inventory"]["money"] * (user["inventory"]["items"]["glitch"] * 2.5);
   all_money += user["inventory"]["items"]["bronze_income"] * 10000;
@@ -2430,7 +2433,7 @@ const commands = {
         var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
         var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
 
-        var weight = map(bet, 0, (inc+mon)/2,  25, 3);
+        var weight = map(bet, 0, (inc + mon)/2,  25, 3);
         if (bet < 10*user["inventory"]["income"]) {
           weight = 100;
         }
@@ -3148,7 +3151,7 @@ const commands = {
         user["game_KTEM"]["games"] += 1;
         user["game_KTEM"]["all_bets"] += user["inventory"]["money"];
 
-        var weight = map(starting_money, 0, user["basic_statistics"]["peak_money"],  9, 1);
+        var weight = map(starting_money, 0, user["basic_statistics"]["peak_money"], 9, 1);
         if (starting_money < 10*user["inventory"]["income"]) {
           weight = 100;
         }
@@ -5612,7 +5615,7 @@ const commands = {
               100
           ) * 100;*/
 
-        var cost_next_basic_income = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100
+        var cost_next_basic_income = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100;
 
         msg.channel.send({
           embed: {
@@ -9238,6 +9241,11 @@ setInterval(async function() {
               "Stunnisi päättyi loppui <@" +
                 m + ">"
             );
+
+          await firebase
+            .database()
+            .ref("users/" + users[m]["stun_timer"])
+            .set(null);
 
           await firebase
             .database()
