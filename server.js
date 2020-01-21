@@ -70,8 +70,8 @@ function get_user(_id) {
 
 function save_user(user) {
 
-  if (user["invetory"]["money"] > user["basic_statistics"]["peak_money"]) {
-    user["basic_statistics"]["peak_money"] = user["invetory"]["money"];
+  if (user["inventory"]["money"] > user["basic_statistics"]["peak_money"]) {
+    user["basic_statistics"]["peak_money"] = user["inventory"]["money"];
   }
   firebase
     .database()
