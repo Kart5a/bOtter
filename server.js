@@ -69,6 +69,10 @@ function get_user(_id) {
 }
 
 function save_user(user) {
+
+  if (user["invetory"]["money"] > user["basic_statistics"]["peak_money"]) {
+    user["basic_statistics"]["peak_money"] = user["invetory"]["money"];
+  }
   firebase
     .database()
     .ref("users/" + user["id"])
@@ -825,6 +829,7 @@ function calculate_wealth(user) {
   all_money += user["inventory"]["items"]["super_bait"] * 2000;
   all_money += user["inventory"]["items"]["hyper_bait"] * 12000;
   all_money += user["inventory"]["items"]["bomb"] * 2000;
+  all_money += user["inventory"]["items"]["lockpick"] * 10000;
 
   let gem = user["inventory"]["money"] * Math.pow(user["inventory"]["items"]["gem"], 2);
   if (user["inventory"]["money"] > 10000000) {
