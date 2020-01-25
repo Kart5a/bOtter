@@ -4385,6 +4385,8 @@ const commands = {
             else if (item == "tulokone-x") {
               if (!("income_machine_X" in user["inventory"]["items"]))
                 return feed_channel.send(`Sulla ei ole Tulokone-X:ää`);
+              if (user["inventory"]["items"]["income_machine_X"] < 1)
+                return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
               if ("income_machine" in user)
                 return feed_channel.send("Sulla on jo Tulokone päällä!");
               user["income_machine"] = {
