@@ -4401,6 +4401,8 @@ const commands = {
             else if (item == "tulokiihdytin") {
               if (!("income_accelerator" in user["inventory"]["items"]))
                 return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
+              if (user["inventory"]["items"]["income_accelerator"] < 1)
+                return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
               if ("income_machine" in user)
                 return feed_channel.send(`Sulla on jo Tulokone päällä!`);
               user["income_machine"] = {
@@ -4858,6 +4860,8 @@ const commands = {
               if (target_user["id"] == user["id"]) return feed_channel.send(`Et voi imeä itteltäs, tirsk`);
               if (!("income_absorber" in user["inventory"]["items"]))
                 return feed_channel.send(`Sulla ei ole Tuloimua`);
+              if (user["inventory"]["items"]["income_absorber"] < 1)
+                return feed_channel.send(`Sulla ei ole Tuloimua...`);
               if ("income_absorb" in user)
                 return feed_channel.send(`Sulla on jo imuri päällä!`);
               if ("income_absorb" in target_user) {
