@@ -20,6 +20,7 @@ const client = new Client();
 var harpoon_collectors = {};
 var msg = {};
 var bj = {};
+let locked_flag = false;
 
 firebase.initializeApp(fireb);
 var database = firebase.database();
@@ -54,6 +55,28 @@ function randn_bm(min, max, skew) {
   num *= max - min; // Stretch to fill range
   num += min; // offset to min
   return num;
+}
+
+function check_lock() {
+  return firebase
+    .database()
+    .ref("global_data")
+    .once("value")
+    .then(d => {
+      global = d.val();
+      if (!(global["lock"] == true || global["lock"] == false)) {
+        global["lock"] = false;
+        locked_flag = global["lock"];
+        return firebase
+          .database()
+          .ref("global_data")
+          .set(global);
+      }
+      else {
+        locked_flag = global["lock"];
+      }
+      
+    });
 }
 
 //// Database management
@@ -4368,27 +4391,25 @@ const commands = {
           get_user(target_id).then(target_user => {
             if (item == "tulokone") {
               if (user["inventory"]["items"]["income_machine"] < 1)
-                return feed_channel.send(`Sulla ei ole Tulokonetta`);
+                return feed_channel.send(`Sulla ei ole tulokonetta`);
               if ("income_machine" in user)
-                return feed_channel.send(`Sulla on jo Tulokone päällä!`);
-                user["income_machine"] = {
-                  multi: 10,
-                  timer: 60,
-                  sum: 0
-                };
+                return feed_channel.send(`Sulla on jo tulokone päällä!`);
+              user["income_machine"] = {
+                multi: 10,
+                timer: 60,
+                sum: 0
+              };
 
-                user["inventory"]["items"]["income_machine"] -= 1;
-                feed_channel.send(`Hurraa! Tulokone hurraa!`);
-                save_user(user);
-                return;
+              user["inventory"]["items"]["income_machine"] -= 1;
+              
+              save_user(user);
+              return feed_channel.send(`Hurraa! Tulokone hurraa!`);;
             }
             else if (item == "tulokone-x") {
-              if (!("income_machine_X" in user["inventory"]["items"]))
-                return feed_channel.send(`Sulla ei ole Tulokone-X:ää`);
               if (user["inventory"]["items"]["income_machine_X"] < 1)
-                return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
+                return feed_channel.send(`Sulla ei ole tulokone-X:ää`);
               if ("income_machine" in user)
-                return feed_channel.send("Sulla on jo Tulokone päällä!");
+                return feed_channel.send("Sulla on jo tulokone päällä!");
               user["income_machine"] = {
                 multi: 20,
                 timer: 60,
@@ -4402,11 +4423,11 @@ const commands = {
             }
             else if (item == "tulokiihdytin") {
               if (!("income_accelerator" in user["inventory"]["items"]))
-                return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
+                return feed_channel.send(`Sulla ei ole tulokiihdytintä`);
               if (user["inventory"]["items"]["income_accelerator"] < 1)
-                return feed_channel.send(`Sulla ei ole Tulokiihdytintä`);
+                return feed_channel.send(`Sulla ei ole tulokiihdytintä`);
               if ("income_machine" in user)
-                return feed_channel.send(`Sulla on jo Tulokone päällä!`);
+                return feed_channel.send(`Sulla on jo tulokone päällä!`);
               user["income_machine"] = {
                 multi: 40,
                 timer: 60,
@@ -4860,10 +4881,8 @@ const commands = {
             }
             if (item == "tuloimu") {
               if (target_user["id"] == user["id"]) return feed_channel.send(`Et voi imeä itteltäs, tirsk`);
-              if (!("income_absorber" in user["inventory"]["items"]))
-                return feed_channel.send(`Sulla ei ole Tuloimua`);
               if (user["inventory"]["items"]["income_absorber"] < 1)
-                return feed_channel.send(`Sulla ei ole Tuloimua...`);
+                return feed_channel.send(`Sulla ei ole tuloimua.`);
               if ("income_absorb" in user)
                 return feed_channel.send(`Sulla on jo imuri päällä!`);
               if ("income_absorb" in target_user) {
@@ -4935,6 +4954,7 @@ const commands = {
               feed_channel.send(`Imet tuloa!`);
               save_user(target_user);
               save_user(user);
+              return;
             }
             if (item == "pommi") {
               if (user["inventory"]["items"]["bomb"] < 1)
@@ -8893,6 +8913,33 @@ const commands = {
         save_user(user);
       });
     });
+  },
+
+  lukitse: msg => {
+    const locker = ["247754056804728832", "142672140683051008", "180701407580651520", "140175682499117056"];
+    if (locker.includes(msg.author.id)) {
+
+      return firebase
+      .database()
+      .ref("global_data")
+      .once("value")
+      .then(d => {
+        let global = d.val();
+        global.lock = true;
+        locked_flag = true;
+        change_title("LUKITTU");
+        msg.channel.send("Botti lukittu ID " + msg.author.id + " toimesta.");
+        return firebase
+        .database()
+        .ref("global_data")
+        .set(global);
+
+      });
+
+    }
+    else {
+      return msg.channel.send("Sulla ei ole lupaa lukita bottia.");
+    }
   }
 
 };
@@ -8928,8 +8975,12 @@ client.on("ready", () => {
   var day = date.getDay();
   delete date;
 
+  check_lock();
+
   check_pääpäivä().then( v => {
-    if (v) {
+    if (locked_flag) {
+      change_title("LUKITTU");
+    } else if (v) {
       change_title("PÄÄPÄIVÄ");
     } else if (day === 3) {
       change_title("Wednesday");
@@ -8942,13 +8993,11 @@ client.on("ready", () => {
 // When message is recieved
 const banned_textchannels = ["442466922831806475", "180699479379410944", "301088017676763143", "596430485668757507"];
 client.on("message", async msg => {
+
   if (msg.author.bot) return;
-  console.log(get_stun());
 
   if (msg.content.indexOf(tokens.prefix) !== 0) return;
   if (!msg.content.startsWith(tokens.prefix)) return;
-
-  if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
 
   if (msg.author.id != "247754056804728832") {
     if (banned_textchannels.includes(msg.channel.id)) {
@@ -8956,6 +9005,17 @@ client.on("message", async msg => {
       return;
     }
   }
+
+  if (locked_flag) {
+    console.log("Lukittu viesti!");
+    msg.channel.send(
+      "bOtter on väliaikaisesti lukittu eikä ota komentoja vastaan.");
+    return;
+  }
+
+  if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
+
+  
 
   if (!(msg.content).includes("sano")) {
     if (!(msg.content).includes("rahat") && !(msg.content).includes("ryhmäpeli")) {
@@ -8969,7 +9029,6 @@ client.on("message", async msg => {
     }
   }
 
-
   if (
     commands.hasOwnProperty(
       msg.content
@@ -8977,13 +9036,14 @@ client.on("message", async msg => {
         .slice(tokens.prefix.length)
         .split(" ")[0]
     )
-  )
+  ) {
     commands[
       msg.content
         .toLowerCase()
         .slice(tokens.prefix.length)
         .split(" ")[0]
     ](msg);
+  }  
 });
 
 client.on("error", e => {
@@ -9002,6 +9062,12 @@ setInterval(async function() {
   await global_data.once("value", async function(g) {
     global = g.val();
   });
+  check_lock();
+  if (locked_flag) {
+    change_title("LUKITTU");
+    console.log("Lukittu intervalli");
+    return;
+  } 
 
   var date = new Date();
   var day = date.getDate();
@@ -9372,7 +9438,10 @@ setInterval(async function() {
   await check_income_absorbtion();
 
   // Setting up "Title"
-  if (global["pääpäivä"]["on"]) {
+  if (locked_flag) {
+    change_title("LUKITTU");
+  }
+  else if (global["pääpäivä"]["on"]) {
     change_title("PÄÄPÄIVÄ");
   } else if (weekday === 3) {
     change_title("Wednesday");
