@@ -3837,7 +3837,7 @@ const commands = {
               path: "user['inventory']['items']['security_cam']",
               amount: [1],
               name: emojies["valvontakamera"],
-              rate: 2,
+              rate: 4,
               real_name: "Valvontakamera"
             },
             Onki: {
@@ -3885,13 +3885,13 @@ const commands = {
               rate: 5,
               real_name: "Tulokone-X"
             },
-            Tuloimu: {
+            /*Tuloimu: {
               path: "user['inventory']['items']['income_absorber']",
               amount: [1],
               name: emojies["tuloimu"],
               rate: 7,
               real_name: "Tuloimu"
-            },
+            },*/
             Kultatulo: {
               path: "user['inventory']['items']['gold_income']",
               amount: [1],
@@ -3931,7 +3931,7 @@ const commands = {
               path: "user['inventory']['items']['lockpick']",
               amount: [1],
               name: emojies["tiirikka"],
-              rate: 2, // 5
+              rate: 3, // 5
               real_name: "Tiirikka"
             }
           },
