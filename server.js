@@ -7,13 +7,19 @@
 // User profiles, money system, shop, games, musicbot (ttunebot) and some tools.
 
 // This season (2) started on 30.8.2018.
-// This seasun (3) started on 31.10.2018.
-const {Client} = require("discord.js");
+// This season (3) started on 31.10.2018.
+// This season (4) started on 13.1.2020.
+
+const { Client } = require("discord.js");
 const Discord = require("discord.js");
 const tokens = require("./tokens.json");
 const fireb = require("./config.json");
 const fishes = require("./fishes.json");
 const firebase = require("firebase");
+
+//const crypto = require("crypto");
+const bcrypt = require('bcrypt');
+
 const client = new Client();
 
 // Collectors
@@ -26,6 +32,7 @@ firebase.initializeApp(fireb);
 var database = firebase.database();
 var bot_users = database.ref("users");
 var global_data = database.ref("global_data");
+var password_data = database.ref("password_data");
 
 function change_title(text) {
   // Changes title of bOtter
@@ -57,6 +64,44 @@ function randn_bm(min, max, skew) {
   return num;
 }
 
+async function generatePassword(id) {
+  var length = 8,
+    charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+    retVal = "";
+  for (var i = 0, n = charset.length; i < length; ++i) {
+    retVal += charset.charAt(Math.floor(Math.random() * n));
+  }
+  let hash = bcrypt.hashSync(retVal, 10);
+  return [hash, retVal];
+}
+
+async function setPassword(id, password) {
+  var length = 8,
+    charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+    retVal = "";
+
+  client.fetchUser(id, false).then(user => {
+
+    if (password.length > 18 || password.length < 6) {
+      return user.send("Salasana on liian pitkä tai liian lyhyt. (6-18 merkkiä)");
+    }
+
+    for (let i = 0; i < password.length; i++) {
+      if (!charset.includes(password[i])) {
+        return user.send("Salasana sisältää ei sallittuja merkkejä. Sallitut merkit on:\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+      }
+    }
+
+    let hash = bcrypt.hashSync(retVal, 10);
+    user.send("Salasana on vaihdettu! Suosittelen poistamaan lähettämäsi viestin, jottei se jää muiden katseltavaksi. Voit kuitenkin halutessasi säilyttää sen, jotta muistat salasanasi! Voit kuitenkin aina tilata uuden salasanan.");
+    return firebase
+      .database()
+      .ref("password_data/" + id)
+      .set(hash);
+
+  });
+}
+
 function check_lock() {
   return firebase
     .database()
@@ -75,7 +120,7 @@ function check_lock() {
       else {
         locked_flag = global["lock"];
       }
-      
+
     });
 }
 
@@ -104,9 +149,9 @@ function save_user(user) {
 
 function get_all_users() {
   return firebase.database().ref("users").once("value").then(d => {
-      user = d.val();
-      return user;
-    });
+    user = d.val();
+    return user;
+  });
 }
 
 function save_all_users(users) {
@@ -193,103 +238,103 @@ async function draw_lootbox(user_id, multi, game = true) {
   check_user_in_database(user_id)
   var user = await get_user(user_id);
 
-    var propabilities = {
-      legendary: 160,
-      epic: 40,
-      rare: 10,
-      uncommon: 3,
-      common: 1
-    };
+  var propabilities = {
+    legendary: 160,
+    epic: 40,
+    rare: 10,
+    uncommon: 3,
+    common: 1
+  };
 
-    var rnd_legendary = Math.floor(
-      Math.random() * Math.floor(propabilities["legendary"] * multi + 1)
-    );
-    var rnd_epic = Math.floor(
-      Math.random() * Math.floor(propabilities["epic"] * multi + 1)
-    );
-    var rnd_rare = Math.floor(
-      Math.random() * Math.floor(propabilities["rare"] * multi + 1)
-    );
-    var rnd_uncommon = Math.floor(
-      Math.random() * Math.floor(propabilities["uncommon"] * multi + 1)
-    );
-    var rnd_common = Math.floor(
-      Math.random() * Math.floor(propabilities["common"] * multi + 1)
-    );
+  var rnd_legendary = Math.floor(
+    Math.random() * Math.floor(propabilities["legendary"] * multi + 1)
+  );
+  var rnd_epic = Math.floor(
+    Math.random() * Math.floor(propabilities["epic"] * multi + 1)
+  );
+  var rnd_rare = Math.floor(
+    Math.random() * Math.floor(propabilities["rare"] * multi + 1)
+  );
+  var rnd_uncommon = Math.floor(
+    Math.random() * Math.floor(propabilities["uncommon"] * multi + 1)
+  );
+  var rnd_common = Math.floor(
+    Math.random() * Math.floor(propabilities["common"] * multi + 1)
+  );
 
-    var lootbox_text = "";
-    var name = "<@" + user["id"] + ">: ";
-    if (user["info"]["notifications"] == false) {
-      var uz = client.users.get(user["id"]);
-      name = uz.username + ": ";
+  var lootbox_text = "";
+  var name = "<@" + user["id"] + ">: ";
+  if (user["info"]["notifications"] == false) {
+    var uz = client.users.get(user["id"]);
+    name = uz.username + ": ";
+  }
+
+  if (rnd_common == 0) {
+    user["inventory"]["lootboxes"]["common"] += 1;
+
+    if (game) {
+      user["basic_statistics"]["lootboxes_by_playing_common"] += 1;
+    } else {
+      user["basic_statistics"]["lootboxes_by_afking_common"] += 1;
     }
 
-    if (rnd_common == 0) {
-      user["inventory"]["lootboxes"]["common"] += 1;
 
-      if (game) {
-        user["basic_statistics"]["lootboxes_by_playing_common"] += 1;
-      } else {
-        user["basic_statistics"]["lootboxes_by_afking_common"] += 1;
-      }
+    lootbox_text +=
+      name + emojies["chest_common"] + "\n";
+  }
+  if (rnd_uncommon == 0) {
 
-
-      lootbox_text +=
-         name + emojies["chest_common"] + "\n";
-    }
-    if (rnd_uncommon == 0) {
-
-      if (game) {
-        user["basic_statistics"]["lootboxes_by_playing_uncommon"] += 1;
-      } else {
-        user["basic_statistics"]["lootboxes_by_afking_uncommon"] += 1;
-      }
-
-      user["inventory"]["lootboxes"]["uncommon"] += 1;
-      lootbox_text +=
-        "Jes! " + name + emojies["chest_uncommon"] + "\n";
-    }
-    if (rnd_rare == 0) {
-
-      if (game) {
-        user["basic_statistics"]["lootboxes_by_playing_rare"] += 1;
-      } else {
-        user["basic_statistics"]["lootboxes_by_afking_rare"] += 1;
-      }
-
-      user["inventory"]["lootboxes"]["rare"] += 1;
-      lootbox_text +=
-        "Oujee! " + name + emojies["chest_rare"] + "\n";
-    }
-    if (rnd_epic == 0) {
-
-      if (game) {
-        user["basic_statistics"]["lootboxes_by_playing_epic"] += 1;
-      } else {
-        user["basic_statistics"]["lootboxes_by_afking_epic"] += 1;
-      }
-
-      user["inventory"]["lootboxes"]["epic"] += 1;
-      lootbox_text +=
-        "Eeppistä! " + name + emojies["chest_epic"] + "\n";
-    }
-    if (rnd_legendary == 0) {
-
-      if (game) {
-        user["basic_statistics"]["lootboxes_by_playing_legendary"] += 1;
-      } else {
-        user["basic_statistics"]["lootboxes_by_afking_legendary"] += 1;
-      }
-
-      user["inventory"]["lootboxes"]["legendary"] += 1;
-      lootbox_text +=
-        "Legendaarista! " + name + emojies["chest_legendary"] + "\n";
+    if (game) {
+      user["basic_statistics"]["lootboxes_by_playing_uncommon"] += 1;
+    } else {
+      user["basic_statistics"]["lootboxes_by_afking_uncommon"] += 1;
     }
 
-    if (lootbox_text != "") {
-      client.channels.get("666348588527386643").send(lootbox_text);
+    user["inventory"]["lootboxes"]["uncommon"] += 1;
+    lootbox_text +=
+      "Jes! " + name + emojies["chest_uncommon"] + "\n";
+  }
+  if (rnd_rare == 0) {
+
+    if (game) {
+      user["basic_statistics"]["lootboxes_by_playing_rare"] += 1;
+    } else {
+      user["basic_statistics"]["lootboxes_by_afking_rare"] += 1;
     }
-    return save_user(user);
+
+    user["inventory"]["lootboxes"]["rare"] += 1;
+    lootbox_text +=
+      "Oujee! " + name + emojies["chest_rare"] + "\n";
+  }
+  if (rnd_epic == 0) {
+
+    if (game) {
+      user["basic_statistics"]["lootboxes_by_playing_epic"] += 1;
+    } else {
+      user["basic_statistics"]["lootboxes_by_afking_epic"] += 1;
+    }
+
+    user["inventory"]["lootboxes"]["epic"] += 1;
+    lootbox_text +=
+      "Eeppistä! " + name + emojies["chest_epic"] + "\n";
+  }
+  if (rnd_legendary == 0) {
+
+    if (game) {
+      user["basic_statistics"]["lootboxes_by_playing_legendary"] += 1;
+    } else {
+      user["basic_statistics"]["lootboxes_by_afking_legendary"] += 1;
+    }
+
+    user["inventory"]["lootboxes"]["legendary"] += 1;
+    lootbox_text +=
+      "Legendaarista! " + name + emojies["chest_legendary"] + "\n";
+  }
+
+  if (lootbox_text != "") {
+    client.channels.get("666348588527386643").send(lootbox_text);
+  }
+  return save_user(user);
 }
 
 async function add_income(_id) {
@@ -319,12 +364,14 @@ async function mark_lastseen(_id) {
   var weekday = date.getDay();
   delete date;
 
-  var date_array = {'day' : day,
-                  'month' : month,
-                  'year' : year,
-                  'minutes' : minutes,
-                  'hours' : hours,
-                  'weekday': weekday};
+  var date_array = {
+    'day': day,
+    'month': month,
+    'year': year,
+    'minutes': minutes,
+    'hours': hours,
+    'weekday': weekday
+  };
 
   user["info"]["lastseen"] = date_array;
   await save_user(user);
@@ -359,279 +406,299 @@ function check_user_in_database(_id) {
       if (all_users.get(_id) == undefined) return;
       if ((all_users.get(_id)).bot) return;
 
-      var new_user_users = {
-        id: _id,
-        name: (client.users.get(_id)).username,
-        info: {
-          description: "-",
-          motto: "-",
-          picture: "",
-          ironman: false,
-          color: 10197915,
-          notifications: true,
-          primetime: true,
-          lastseen: {
-                    "day" : day_,
-                    "month" : month_ + 1,
-                    "year" : year_ + 1900,
-                    "minutes" : minutes_,
-                    "hours" : hours_,
-                    "weekday" : weekday_
-                  }
-        },
-        inventory: {
-          money: 500,
-          income: 10,
-          items: {
-            bait: 0,
-            super_bait: 0,
-            hyper_bait: 0,
-            stick: 0,
-            log: 0,
-            mask: 0,
-            ES: 0,
-            ES_can: 0,
-            income_machine: 0,
-            income_machine_X: 0,
-            income_accelerator: 0,
-            income_absorber: 0,
-            gem: 0,
-            glitch: 0,
-            bomb: 0,
-            shield: 0,
-            security_cam: 0,
-            bronze_income: 0,
-            silver_income: 0,
-            gold_income: 0,
-            timemachine : 0,
-            prankster: 0,
-            grabber: 0,
-            stunner: 0,
-            lockpick : 0
-          },
-          key_items: {
-            rod: false,
-            super_rod: false,
-            hyper_rod: false,
-            fishing_boat: false,
-            golden_harpoon: false,
-            whale_breeding_program: false,
-            safe: {
-              own: false,
-              money: 0,
-              capasity: 1000000,
-            },
-            bush: {
-              own: false,
-              on: false,
-              timer: 0
+      let hash = "";
+      let pass = "";
+      generatePassword(_id).then(v => {
+        hash = v[0];
+        pass = v[1];
+
+        var new_user_users = {
+          id: _id,
+          name: (client.users.get(_id)).username,
+          info: {
+            description: "-",
+            motto: "-",
+            picture: "",
+            ironman: false,
+            color: 10197915,
+            notifications: true,
+            primetime: true,
+            lastseen: {
+              "day": day_,
+              "month": month_ + 1,
+              "year": year_ + 1900,
+              "minutes": minutes_,
+              "hours": hours_,
+              "weekday": weekday_
             }
           },
-          lootboxes: {
-            common: 0,
-            uncommon: 0,
-            rare: 0,
-            epic: 0,
-            legendary: 0
-          }
-        },
-        basic_statistics: {
-          minutes_on_channel: 0,
-          peak_money: 500,
-          income_bought: 0,
-          money_from_incomes: 0,
-          solo_minutes : 0,
-          stunned: 0,
-          you_stunned: 0,
-          money_from_opening_lootboxes: 0,
-          money_from_lootboxes: 0,
-          money_from_income_machines: 0,
-          lootboxes_by_afking: 0,
-          lootboxes_by_afking_common: 0,
-          lootboxes_by_afking_uncommon: 0,
-          lootboxes_by_afking_rare: 0,
-          lootboxes_by_afking_epic: 0,
-          lootboxes_by_afking_legendary: 0,
-          lootboxes_by_playing: 0,
-          lootboxes_by_playing_common: 0,
-          lootboxes_by_playing_uncommon: 0,
-          lootboxes_by_playing_rare: 0,
-          lootboxes_by_playing_epic: 0,
-          lootboxes_by_playing_legendary: 0,
-          money_stolen: 0,
-          money_stolen_from_you: 0,
-          bomb_used: 0,
-          bombed_money : 0,
-          bombed: 0,
-          bombed_money_from_you: 0,
-          pranked: 0,
-          got_pranked: 0,
-          pranked_money: 0,
-          pranked_from_you: 0,
-          opened_lootboxes: {
-            common: 0,
-            uncommon: 0,
-            rare: 0,
-            epic: 0,
-            legendary: 0
-          },
-          money_recieved: 0,
-          money_given: 0,
-          fines: 0,
-          compensations: 0,
-          hit: 0,
-          sticked_money_from_you : 0,
-          logged_money_from_you: 0,
-          log_used: 0,
-          logged_money: 0,
-          hit_with_log: 0,
-          stick_used: 0,
-          sticked_money : 0,
-          money_absorbed_from_you: 0,
-          money_absorbed_to_you: 0,
-          primetime_wins: 0,
-          primetime_win_amount: 0,
-          lockpick_used: 0,
-          lockpick_used_to_you: 0,
-          lockpicked_money_you_have_stolen : 0,
-          lockpicked_money_stoled_from_you: 0
-        },
-        game_blackjack: {
-          "21": 0,
-          double: 0,
-          hit: 0,
-          games_lost: 0,
-          money_lost: 0,
-          all_bets: 0,
-          games: 0,
-          stand: 0,
-          games_won: 0,
-          money_won: 0,
-          less: 0,
-          over: 0,
-          tie: 0,
-          cards_played: 0
-        },
-        game_slot: {
-          money_lost: 0,
-          all_bets: 0,
-          games: 0,
-          games_lost: 0,
-          games_won: 0,
-          money_won: 0,
-          wins: {
-            alfa: 0,
-            karvis: 0,
-            jesilmero: 0,
-            poggers1: 0,
-            poggers2: 0,
-            poggers3: 0,
-            sasu: 0
-          }
-        },
-        game_harpoon: {
-          money_lost: 0,
-          hits: 0,
-          games: 0,
-          money_won: 0,
-          games_lost: 0,
-          games_won: 0,
-          targets: {
-            shark: 0,
-            balloon: 0,
-            whale: 0
-          }
-        },
-        game_KTEM: {
-          money_lost: 0,
-          games_lost: 0,
-          games: 0,
-          games_won: 0,
-          money_won: 0,
-          all_bets: 0
-        },
-        game_ryhmäpeli: {
-          money_lost: 0,
-          games: 0,
-          games_lost: 0,
-          games_won: 0,
-          money_won: 0
-        },
-        game_kalastus: {
-          bait_consumed: 0,
-          treasure_chest : 0,
-          super_bait_consumed: 0,
-          hyper_bait_consumed: 0,
-          fish_caught: 0,
-          money_got: 0,
-          in_sea: 0,
-          in_river: 0,
-          in_lake: 0,
-          top: 0,
-          mid: 0,
-          bot: 0,
-          rod_used: 0,
-          super_rod_used: 0,
-          hyper_rod_used: 0,
-          tier1_completed: false,
-          tier2_completed: false,
-          tier3_completed: false,
-          all_fish_weight: 0,
-          fishing_boat_used : 0,
-          KalaDex: {}
-        }
-      };
-      
-      for (var fish in fishes) {
-        if (!(fish in new_user_users["game_kalastus"]["KalaDex"])) {
-          new_user_users["game_kalastus"]["KalaDex"][fish] = {
-            caught: 0,
-            index: fishes[fish]["index"],
-            heaviest: 0,
-            money_got: 0
-          };
-        }
-      }
-
-      if (users == undefined) {
-        firebase
-          .database()
-          .ref("users/" + _id)
-          .set(new_user_users);
-      } else {
-        Object.keys(new_user_users).forEach(function(key) {
-          if (!(key in users)) {
-            firebase
-              .database()
-              .ref("users/" + _id + "/" + key)
-              .set(new_user_users[key]);
-          }
-          if (typeof new_user_users[key] == "object") {
-            Object.keys(new_user_users[key]).forEach(function(key2) {
-              if (!(key2 in users[key])) {
-                firebase
-                  .database()
-                  .ref("users/" + _id + "/" + key + "/" + key2)
-                  .set(new_user_users[key][key2]);
+          inventory: {
+            money: 500,
+            income: 10,
+            items: {
+              bait: 0,
+              super_bait: 0,
+              hyper_bait: 0,
+              stick: 0,
+              log: 0,
+              mask: 0,
+              ES: 0,
+              ES_can: 0,
+              income_machine: 0,
+              income_machine_X: 0,
+              income_accelerator: 0,
+              income_absorber: 0,
+              gem: 0,
+              glitch: 0,
+              bomb: 0,
+              shield: 0,
+              security_cam: 0,
+              bronze_income: 0,
+              silver_income: 0,
+              gold_income: 0,
+              timemachine: 0,
+              prankster: 0,
+              grabber: 0,
+              stunner: 0,
+              lockpick: 0
+            },
+            key_items: {
+              rod: false,
+              super_rod: false,
+              hyper_rod: false,
+              fishing_boat: false,
+              golden_harpoon: false,
+              whale_breeding_program: false,
+              safe: {
+                own: false,
+                money: 0,
+                capasity: 1000000,
+              },
+              bush: {
+                own: false,
+                on: false,
+                timer: 0
               }
+            },
+            lootboxes: {
+              common: 0,
+              uncommon: 0,
+              rare: 0,
+              epic: 0,
+              legendary: 0
+            }
+          },
+          basic_statistics: {
+            minutes_on_channel: 0,
+            peak_money: 500,
+            income_bought: 0,
+            money_from_incomes: 0,
+            solo_minutes: 0,
+            stunned: 0,
+            you_stunned: 0,
+            money_from_opening_lootboxes: 0,
+            money_from_lootboxes: 0,
+            money_from_income_machines: 0,
+            lootboxes_by_afking: 0,
+            lootboxes_by_afking_common: 0,
+            lootboxes_by_afking_uncommon: 0,
+            lootboxes_by_afking_rare: 0,
+            lootboxes_by_afking_epic: 0,
+            lootboxes_by_afking_legendary: 0,
+            lootboxes_by_playing: 0,
+            lootboxes_by_playing_common: 0,
+            lootboxes_by_playing_uncommon: 0,
+            lootboxes_by_playing_rare: 0,
+            lootboxes_by_playing_epic: 0,
+            lootboxes_by_playing_legendary: 0,
+            money_stolen: 0,
+            money_stolen_from_you: 0,
+            bomb_used: 0,
+            bombed_money: 0,
+            bombed: 0,
+            bombed_money_from_you: 0,
+            pranked: 0,
+            got_pranked: 0,
+            pranked_money: 0,
+            pranked_from_you: 0,
+            opened_lootboxes: {
+              common: 0,
+              uncommon: 0,
+              rare: 0,
+              epic: 0,
+              legendary: 0
+            },
+            money_recieved: 0,
+            money_given: 0,
+            fines: 0,
+            compensations: 0,
+            hit: 0,
+            sticked_money_from_you: 0,
+            logged_money_from_you: 0,
+            log_used: 0,
+            logged_money: 0,
+            hit_with_log: 0,
+            stick_used: 0,
+            sticked_money: 0,
+            money_absorbed_from_you: 0,
+            money_absorbed_to_you: 0,
+            primetime_wins: 0,
+            primetime_win_amount: 0,
+            lockpick_used: 0,
+            lockpick_used_to_you: 0,
+            lockpicked_money_you_have_stolen: 0,
+            lockpicked_money_stoled_from_you: 0
+          },
+          game_blackjack: {
+            "21": 0,
+            double: 0,
+            hit: 0,
+            games_lost: 0,
+            money_lost: 0,
+            all_bets: 0,
+            games: 0,
+            stand: 0,
+            games_won: 0,
+            money_won: 0,
+            less: 0,
+            over: 0,
+            tie: 0,
+            cards_played: 0
+          },
+          game_slot: {
+            money_lost: 0,
+            all_bets: 0,
+            games: 0,
+            games_lost: 0,
+            games_won: 0,
+            money_won: 0,
+            wins: {
+              alfa: 0,
+              karvis: 0,
+              jesilmero: 0,
+              poggers1: 0,
+              poggers2: 0,
+              poggers3: 0,
+              sasu: 0
+            }
+          },
+          game_harpoon: {
+            money_lost: 0,
+            hits: 0,
+            games: 0,
+            money_won: 0,
+            games_lost: 0,
+            games_won: 0,
+            targets: {
+              shark: 0,
+              balloon: 0,
+              whale: 0
+            }
+          },
+          game_KTEM: {
+            money_lost: 0,
+            games_lost: 0,
+            games: 0,
+            games_won: 0,
+            money_won: 0,
+            all_bets: 0
+          },
+          game_ryhmäpeli: {
+            money_lost: 0,
+            games: 0,
+            games_lost: 0,
+            games_won: 0,
+            money_won: 0
+          },
+          game_kalastus: {
+            bait_consumed: 0,
+            treasure_chest: 0,
+            super_bait_consumed: 0,
+            hyper_bait_consumed: 0,
+            fish_caught: 0,
+            money_got: 0,
+            in_sea: 0,
+            in_river: 0,
+            in_lake: 0,
+            top: 0,
+            mid: 0,
+            bot: 0,
+            rod_used: 0,
+            super_rod_used: 0,
+            hyper_rod_used: 0,
+            tier1_completed: false,
+            tier2_completed: false,
+            tier3_completed: false,
+            all_fish_weight: 0,
+            fishing_boat_used: 0,
+            KalaDex: {}
+          },
+          game_canvas: {
+            pixels: [],
+            custom_colors: [],
+            pixels_drawn: 0
+          }
+        };
 
-              if (typeof new_user_users[key][key2] == "object") {
-                Object.keys(new_user_users[key][key2]).forEach(function(key3) {
-                  if (!(key3 in users[key][key2])) {
-                    firebase
-                      .database()
-                      .ref("users/" + _id + "/" + key + "/" + key2 + "/" + key3)
-                      .set(new_user_users[key][key2][key3]);
-                  }
+        for (var fish in fishes) {
+          if (!(fish in new_user_users["game_kalastus"]["KalaDex"])) {
+            new_user_users["game_kalastus"]["KalaDex"][fish] = {
+              caught: 0,
+              index: fishes[fish]["index"],
+              heaviest: 0,
+              money_got: 0
+            };
+          }
+        }
 
-                  if (typeof new_user_users[key][key2][key3] == "object") {
-                    Object.keys(new_user_users[key][key2][key3]).forEach(
-                      function(key4) {
-                        if (!(key4 in users[key][key2][key3])) {
-                          firebase
-                            .database()
-                            .ref(
-                              "users/" +
+        if (users == undefined) {
+          firebase
+            .database()
+            .ref("users/" + _id)
+            .set(new_user_users);
+          firebase
+            .database()
+            .ref("password_data/" + _id)
+            .set(hash);
+
+          client.fetchUser(_id, false).then(user => {
+            user.send("Sun salasana botter.xyz sivustolle on: **" + pass + "**.\nVoit vaihtaa salasanan komennolla " + tokens.prefix + "salasana <uusi salasana>. Uuden salasanan pituus on oltava 6-18 merkkiä ja se saa sisaltää seuraavia merkkejä:\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+          });
+        } 
+        else {
+          Object.keys(new_user_users).forEach(function (key) {
+            if (!(key in users)) {
+              firebase
+                .database()
+                .ref("users/" + _id + "/" + key)
+                .set(new_user_users[key]);
+            }
+            if (typeof new_user_users[key] == "object") {
+              Object.keys(new_user_users[key]).forEach(function (key2) {
+                if (!(key2 in users[key])) {
+                  firebase
+                    .database()
+                    .ref("users/" + _id + "/" + key + "/" + key2)
+                    .set(new_user_users[key][key2]);
+                }
+
+                if (typeof new_user_users[key][key2] == "object") {
+                  Object.keys(new_user_users[key][key2]).forEach(function (key3) {
+                    if (!(key3 in users[key][key2])) {
+                      firebase
+                        .database()
+                        .ref("users/" + _id + "/" + key + "/" + key2 + "/" + key3)
+                        .set(new_user_users[key][key2][key3]);
+                    }
+
+                    if (typeof new_user_users[key][key2][key3] == "object") {
+                      Object.keys(new_user_users[key][key2][key3]).forEach(
+                        function (key4) {
+                          if (!(key4 in users[key][key2][key3])) {
+                            firebase
+                              .database()
+                              .ref(
+                                "users/" +
                                 _id +
                                 "/" +
                                 key +
@@ -641,22 +708,22 @@ function check_user_in_database(_id) {
                                 key3 +
                                 "/" +
                                 key4
-                            )
-                            .set(new_user_users[key][key2][key3][key4]);
-                        }
+                              )
+                              .set(new_user_users[key][key2][key3][key4]);
+                          }
 
-                        if (
-                          typeof new_user_users[key][key2][key3][key4] ==
-                          "object"
-                        ) {
-                          Object.keys(
-                            new_user_users[key][key2][key3][key4]
-                          ).forEach(function(key5) {
-                            if (!(key5 in users[key][key2][key3][key4])) {
-                              firebase
-                                .database()
-                                .ref(
-                                  "users/" +
+                          if (
+                            typeof new_user_users[key][key2][key3][key4] ==
+                            "object"
+                          ) {
+                            Object.keys(
+                              new_user_users[key][key2][key3][key4]
+                            ).forEach(function (key5) {
+                              if (!(key5 in users[key][key2][key3][key4])) {
+                                firebase
+                                  .database()
+                                  .ref(
+                                    "users/" +
                                     _id +
                                     "/" +
                                     key +
@@ -668,22 +735,38 @@ function check_user_in_database(_id) {
                                     key4 +
                                     "/" +
                                     key5
-                                )
-                                .set(
-                                  new_user_users[key][key2][key3][key4][key5]
-                                );
-                            }
-                          });
+                                  )
+                                  .set(
+                                    new_user_users[key][key2][key3][key4][key5]
+                                  );
+                              }
+                            });
+                          }
                         }
-                      }
-                    );
-                  }
+                      );
+                    }
+                  });
+                }
+              });
+            }
+          });
+          return firebase
+            .database()
+            .ref("password_data/" + _id)
+            .once("value").then(d => {
+              if (d.val() == undefined) {
+                firebase
+                  .database()
+                  .ref("password_data/" + _id)
+                  .set(hash);
+                client.fetchUser(_id, false).then(u => {
+                  u.send("Sun salasana botter.xyz sivustolle on nollattu ja se on: **" + pass + "**.\nVoit vaihtaa salasanan komennolla " + tokens.prefix + "salasana <uusi salasana>. Uuden salasanan pituus on oltava 6-18 merkkiä ja se saa sisaltää seuraavia merkkejä:\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
                 });
               }
+
             });
-          }
-        });
-      }
+        }
+      });
     });
 }
 
@@ -731,30 +814,30 @@ async function check_income_absorbtion() {
             users[id]["basic_statistics"]["money_from_incomes"] -= users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
 
             users[id]["income_machine"]["sum"] -= users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
-            users[id]["basic_statistics"]["money_absorbed_from_you"] += users[id]["inventory"]["income"] *  users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
+            users[id]["basic_statistics"]["money_absorbed_from_you"] += users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
             users[id]["absorb_target"]["sum"] += users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"] + 5000;
           } else {
             all_money += users[id]["inventory"]["income"] * users[id]["income_machine"]["multi"] - users[id]["inventory"]["income"];
             users[id]["inventory"]["money"] -=
               users[id]["inventory"]["income"] *
-                users[id]["income_machine"]["multi"] -
+              users[id]["income_machine"]["multi"] -
               users[id]["inventory"]["income"];
             users[id]["basic_statistics"]["money_from_incomes"] -=
               users[id]["inventory"]["income"] *
-                users[id]["income_machine"]["multi"] -
+              users[id]["income_machine"]["multi"] -
               users[id]["inventory"]["income"];
 
             users[id]["income_machine"]["sum"] -=
               users[id]["inventory"]["income"] *
-                users[id]["income_machine"]["multi"] -
+              users[id]["income_machine"]["multi"] -
               users[id]["inventory"]["income"];
             users[id]["basic_statistics"]["money_absorbed_from_you"] +=
               users[id]["inventory"]["income"] *
-                users[id]["income_machine"]["multi"] -
+              users[id]["income_machine"]["multi"] -
               users[id]["inventory"]["income"];
             users[id]["absorb_target"]["sum"] +=
               users[id]["inventory"]["income"] *
-                users[id]["income_machine"]["multi"] -
+              users[id]["income_machine"]["multi"] -
               users[id]["inventory"]["income"];
           }
 
@@ -813,7 +896,7 @@ function check_pääpäivä() {
     .database()
     .ref("global_data/pääpäivä")
     .once("value")
-    .then( async d => {
+    .then(async d => {
       pp = d.val();
       if (pp == undefined) {
         pp = {
@@ -844,7 +927,7 @@ function calculate_wealth(user) {
   }
   for (var i = 0; i < user["basic_statistics"]["income_bought"]; i++) {
     all_money +=
-      Math.floor((5364.6 * Math.exp(0.0057*i*5))/100)*100;
+      Math.floor((5364.6 * Math.exp(0.0057 * i * 5)) / 100) * 100;
   }
 
   all_money += user["inventory"]["items"]["ES"];
@@ -897,7 +980,7 @@ function calculate_wealth(user) {
   }
 
   if (user["inventory"]["key_items"]["safe"]["own"]) {
-    all_money += 100000*user["inventory"]["key_items"]["safe"]["capasity"]/1000000;
+    all_money += 100000 * user["inventory"]["key_items"]["safe"]["capasity"] / 1000000;
   }
 
   return all_money;
@@ -969,7 +1052,7 @@ function fish_caught(user, _users) {
   ] += user["fishing_timer"]["price"];
   if (
     user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
-      "heaviest"
+    "heaviest"
     ] < user["fishing_timer"]["weight"]
   ) {
     user["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
@@ -985,7 +1068,7 @@ function fish_caught(user, _users) {
   for (var u in users) {
     if (
       users[u]["game_kalastus"]["KalaDex"][user["fishing_timer"]["name"]][
-        "heaviest"
+      "heaviest"
       ] > user["fishing_timer"]["weight"]
     ) {
       all_time_heaviest = "";
@@ -1120,7 +1203,7 @@ function fishes_caught(user, _users) {
 
     if (
       user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
-        "heaviest"
+      "heaviest"
       ] < user["fishing_boat_timer"][i]["weight"]
     ) {
       user["game_kalastus"]["KalaDex"][user["fishing_boat_timer"][i]["name"]][
@@ -1154,40 +1237,40 @@ function fishes_caught(user, _users) {
     }
 
     all_fishes += emojies[fishes[user["fishing_boat_timer"][i]["name"]]["emoji"]] + " " + user["fishing_boat_timer"][i]["name"] + "\n___Arvo:___ " + user["fishing_boat_timer"][i]["price"] +
-    emojies["coin"] + "___Paino:___ " + user["fishing_boat_timer"][i]["weight"] + "kg\n" + all_time_heaviest + _new + "\n";
+      emojies["coin"] + "___Paino:___ " + user["fishing_boat_timer"][i]["weight"] + "kg\n" + all_time_heaviest + _new + "\n";
 
   }
-    user["game_kalastus"]["money_got"] += value;
-    save_user(user);
-    var uz = client.users.get(user["id"]);
-    var avatar = uz.avatarURL;
+  user["game_kalastus"]["money_got"] += value;
+  save_user(user);
+  var uz = client.users.get(user["id"]);
+  var avatar = uz.avatarURL;
 
-    return {
-      embed: {
-        color: user["info"]["color"],
-        author: {
-          name: "Saalistaja: " + user["name"],
-          icon_url: avatar
-        },
-        "description" : all_fishes,
-        fields: [
-          {
-            name: "***___Tiedot:___***",
-            value:
+  return {
+    embed: {
+      color: user["info"]["color"],
+      author: {
+        name: "Saalistaja: " + user["name"],
+        icon_url: avatar
+      },
+      "description": all_fishes,
+      fields: [
+        {
+          name: "***___Tiedot:___***",
+          value:
             "***Yhteisumma:*** " + value + emojies["coin"] + "\n" +
             "***Syttien määrä:*** " + user["fishing_boat_timer"].length + "\n" +
-              "***Paikka:*** " +
-              place +
-              "\n***Aika:*** " +
-              time +
-              "\n***Onki:*** " +
-              rod +
-              "\n***Sytti:*** " +
-              bait
-          }
-        ]
-      }
-    };
+            "***Paikka:*** " +
+            place +
+            "\n***Aika:*** " +
+            time +
+            "\n***Onki:*** " +
+            rod +
+            "\n***Sytti:*** " +
+            bait
+        }
+      ]
+    }
+  };
 }
 
 function check_kaladex(user) {
@@ -1206,11 +1289,11 @@ function check_kaladex(user) {
       .get("666348588527386643")
       .send(
         "Onnea <@" +
-          user["id"] +
-          "> olet suorittanut KalaDexin ensimmäisen osion. Palkinnoksi saat 100000" +
-          emojies["coin"] +
-          " ja Superongen " +
-          emojies["superonki"]
+        user["id"] +
+        "> olet suorittanut KalaDexin ensimmäisen osion. Palkinnoksi saat 100000" +
+        emojies["coin"] +
+        " ja Superongen " +
+        emojies["superonki"]
       );
   } else if (user["game_kalastus"]["tier2_completed"] == false) {
     for (var fish in fishes) {
@@ -1227,11 +1310,11 @@ function check_kaladex(user) {
       .get("666348588527386643")
       .send(
         "Onnea <@" +
-          user["id"] +
-          "> olet suorittanut KalaDexin toisen osion. Palkinnoksi saat 250000" +
-          emojies["coin"] +
-          " ja Hyperongen " +
-          emojies["hyperonki"]
+        user["id"] +
+        "> olet suorittanut KalaDexin toisen osion. Palkinnoksi saat 250000" +
+        emojies["coin"] +
+        " ja Hyperongen " +
+        emojies["hyperonki"]
       );
   } else if (user["game_kalastus"]["tier3_completed"] == false) {
     for (var fish in fishes) {
@@ -1248,11 +1331,11 @@ function check_kaladex(user) {
       .get("666348588527386643")
       .send(
         "Onnea <@" +
-          user["id"] +
-          "> olet suorittanut koko KalaDexin. Palkinnoksi saat 500000" +
-          emojies["coin"] +
-          " ja Kalastusveneen " +
-          emojies["kalastusvene"]
+        user["id"] +
+        "> olet suorittanut koko KalaDexin. Palkinnoksi saat 500000" +
+        emojies["coin"] +
+        " ja Kalastusveneen " +
+        emojies["kalastusvene"]
       );
   }
 
@@ -1344,13 +1427,15 @@ function start_fishing(user, _part_day, _bait, _place, _depth, _rod_tier) {
   var time = Math.floor(Math.random() * Math.floor(3)) + 1;
   var rng_chest = Math.floor(Math.random() * Math.floor(300));
   if (depth == "B" && rng_chest == 1) {
-    var _fish = {"Aarrearkku" : {
-      "index" : 100,
-      "weight": 100,
-      "price" : 500,
-      "emoji" : "aarrearkku",
-      "description" : "Aarteinen arkku, näyttää olevan kivasti rahea sisällä!"
-    }};
+    var _fish = {
+      "Aarrearkku": {
+        "index": 100,
+        "weight": 100,
+        "price": 500,
+        "emoji": "aarrearkku",
+        "description": "Aarteinen arkku, näyttää olevan kivasti rahea sisällä!"
+      }
+    };
 
     return {
       fish: fishes["Aarrearkku"],
@@ -1387,7 +1472,7 @@ function start_fishing(user, _part_day, _bait, _place, _depth, _rod_tier) {
 function check_stun() {
   var stunned;
   var stun = firebase.database().ref("global_data/stunned");
-  stun.on("value", function(d) {
+  stun.on("value", function (d) {
     stunned = d.val();
     if (stunned == undefined) {
       stunned = ["id"];
@@ -1404,7 +1489,7 @@ function check_stun() {
 function get_stun() {
   var stunned;
   var stun = firebase.database().ref("global_data/stunned");
-  stun.on("value", function(d) {
+  stun.on("value", function (d) {
     stunned = d.val();
   });
 
@@ -1480,10 +1565,10 @@ const commands = {
         bet = "" + bet;
 
         if (bet.slice(-1) == "k") {
-          bet = Math.floor(1000*parseFloat(bet));
+          bet = Math.floor(1000 * parseFloat(bet));
         }
         else if (bet.slice(-1) == "m") {
-          bet = Math.floor(1000000*parseFloat(bet));
+          bet = Math.floor(1000000 * parseFloat(bet));
         }
 
         if (isNaN(bet))
@@ -1671,7 +1756,7 @@ const commands = {
 
               var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
               var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
-              var mast = (inc*0.5+mon*1.5)/2
+              var mast = (inc * 0.5 + mon * 1.5) / 2
               var th = Math.floor(map(bet, min_bet, mast, 10, 1));
               draw_lootbox(user["id"], th, true);
               save_user(user);
@@ -1705,8 +1790,8 @@ const commands = {
                     Math.floor(bet),
                     true,
                     "Blackjack! Voitit " +
-                      Math.floor(bet * 1.5) +
-                      emojies["coin"],
+                    Math.floor(bet * 1.5) +
+                    emojies["coin"],
                     5348864,
                     history_log,
                     user
@@ -1733,8 +1818,8 @@ const commands = {
                     Math.floor(bet),
                     false,
                     "Jakaja voitti! Hävisit " +
-                      Math.floor(bet) +
-                      emojies["coin"],
+                    Math.floor(bet) +
+                    emojies["coin"],
                     9381414,
                     history_log,
                     user
@@ -1798,8 +1883,8 @@ const commands = {
                       Math.floor(bet),
                       false,
                       "Jakajan Blackjack! Hävisit " +
-                        Math.floor(bet) +
-                        emojies["coin"],
+                      Math.floor(bet) +
+                      emojies["coin"],
                       9381414,
                       history_log,
                       user
@@ -1822,8 +1907,8 @@ const commands = {
                       Math.floor(bet),
                       false,
                       "Jakaja meni yli! Voitit " +
-                        Math.floor(bet) +
-                        emojies["coin"],
+                      Math.floor(bet) +
+                      emojies["coin"],
                       5348864,
                       history_log,
                       user
@@ -1847,8 +1932,8 @@ const commands = {
                         Math.floor(bet),
                         false,
                         "Jakaja voitti! Hävisit " +
-                          Math.floor(bet) +
-                          emojies["coin"],
+                        Math.floor(bet) +
+                        emojies["coin"],
                         9381414,
                         history_log,
                         user
@@ -1871,8 +1956,8 @@ const commands = {
                         Math.floor(bet),
                         false,
                         "Jakaja voitti! Hävisit " +
-                          Math.floor(bet) +
-                          emojies["coin"],
+                        Math.floor(bet) +
+                        emojies["coin"],
                         9381414,
                         history_log,
                         user
@@ -1935,8 +2020,8 @@ const commands = {
                     Math.floor(bet) * 2,
                     false,
                     "Jakaja voitti! Hävisit " +
-                      Math.floor(bet * 2) +
-                      emojies["coin"],
+                    Math.floor(bet * 2) +
+                    emojies["coin"],
                     9381414,
                     history_log,
                     user
@@ -1975,8 +2060,8 @@ const commands = {
                       Math.floor(bet) * 2,
                       false,
                       "Jakajan Blackjack! Hävisit " +
-                        Math.floor(bet * 2) +
-                        emojies["coin"],
+                      Math.floor(bet * 2) +
+                      emojies["coin"],
                       9381414,
                       history_log,
                       user
@@ -1999,8 +2084,8 @@ const commands = {
                       Math.floor(bet) * 2,
                       false,
                       "Jakaja meni yli! Voitit " +
-                        Math.floor(bet * 2) +
-                        emojies["coin"],
+                      Math.floor(bet * 2) +
+                      emojies["coin"],
                       5348864,
                       history_log,
                       user
@@ -2024,8 +2109,8 @@ const commands = {
                         Math.floor(bet) * 2,
                         false,
                         "Jakaja voitti! Hävisit " +
-                          Math.floor(bet * 2) +
-                          emojies["coin"],
+                        Math.floor(bet * 2) +
+                        emojies["coin"],
                         9381414,
                         history_log,
                         user
@@ -2068,7 +2153,7 @@ const commands = {
 
         function check_deck() {
           var deck_ref = firebase.database().ref("global_data/deck");
-          deck_ref.on("value", function(d) {
+          deck_ref.on("value", function (d) {
             deck = d.val();
           });
 
@@ -2289,7 +2374,7 @@ const commands = {
     if (!ALLOWED_CHANNELS.includes(msg.channel.id)) return msg.delete();
 
     check_user_in_database(msg.author.id).then(() => {
-      get_user(msg.author.id).then( u => {
+      get_user(msg.author.id).then(u => {
         var user = u;
         let bet = msg.content.split(" ")[1];
         var starting_money = user["inventory"]["money"];
@@ -2338,10 +2423,10 @@ const commands = {
 
         bet = "" + bet;
         if (bet.slice(-1) == "k") {
-          bet = Math.floor(1000*parseFloat(bet));
+          bet = Math.floor(1000 * parseFloat(bet));
         }
         else if (bet.slice(-1) == "m") {
-          bet = Math.floor(1000000*parseFloat(bet));
+          bet = Math.floor(1000000 * parseFloat(bet));
         }
 
         if (isNaN(bet))
@@ -2461,8 +2546,8 @@ const commands = {
         var inc = Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;
         var mon = user["inventory"]["money"] + user["inventory"]["key_items"]["safe"]["money"];
 
-        var weight = map(bet, 0, (inc + mon)/2,  25, 3);
-        if (bet < 10*user["inventory"]["income"]) {
+        var weight = map(bet, 0, (inc + mon) / 2, 25, 3);
+        if (bet < 10 * user["inventory"]["income"]) {
           weight = 100;
         }
 
@@ -2948,10 +3033,10 @@ const commands = {
     }
 
     if (bet.slice(-1) == "k") {
-      bet = Math.floor(1000*parseFloat(bet));
+      bet = Math.floor(1000 * parseFloat(bet));
     }
     else if (bet.slice(-1) == "m") {
-      bet = Math.floor(1000000*parseFloat(bet));
+      bet = Math.floor(1000000 * parseFloat(bet));
     }
 
     if (isNaN(bet)) return msg.channel.send("Panos tarvitsee olla luku");
@@ -2965,17 +3050,17 @@ const commands = {
     msg.channel
       .send(
         "***" +
-          users[msg.author.id]["name"] +
-          "*** loi ryhmäpelin panoksella " +
-          bet +
-          emojies["coin"] +
-          ". Liity mukaan painamalla ✅"
+        users[msg.author.id]["name"] +
+        "*** loi ryhmäpelin panoksella " +
+        bet +
+        emojies["coin"] +
+        ". Liity mukaan painamalla ✅"
       )
-      .then(function(msg) {
+      .then(function (msg) {
         message = msg;
         msg.react("✅");
       })
-      .catch(function() {
+      .catch(function () {
         //Something
       });
 
@@ -3078,16 +3163,16 @@ const commands = {
 
       msg.channel.send(
         "Ryhmäpelin potti: " +
-          all_money +
-          emojies["coin"] +
-          "\nVoittaja on: <@" +
-          winner +
-          ">\n\nOsallistuneet pelaajat:\n" +
-          successful +
-          "\n" +
-          ra +
-          ep +
-          ir
+        all_money +
+        emojies["coin"] +
+        "\nVoittaja on: <@" +
+        winner +
+        ">\n\nOsallistuneet pelaajat:\n" +
+        successful +
+        "\n" +
+        ra +
+        ep +
+        ir
       );
     }
   },
@@ -3103,10 +3188,10 @@ const commands = {
         if (user["inventory"]["money"] < MIN)
           return msg.channel.send(
             "Tarvitset vähintään " +
-              MIN +
-              " " +
-              emojies["coin"] +
-              " pelataksesi kaikki tai ei mitään."
+            MIN +
+            " " +
+            emojies["coin"] +
+            " pelataksesi kaikki tai ei mitään."
           );
 
         var rnd = Math.floor(Math.random() * Math.floor(1000) + 1);
@@ -3180,7 +3265,7 @@ const commands = {
         user["game_KTEM"]["all_bets"] += user["inventory"]["money"];
 
         var weight = map(starting_money, 0, user["basic_statistics"]["peak_money"], 9, 1);
-        if (starting_money < 10*user["inventory"]["income"]) {
+        if (starting_money < 10 * user["inventory"]["income"]) {
           weight = 100;
         }
 
@@ -3191,7 +3276,7 @@ const commands = {
   },
 
   kalasta: async msg => {
-    
+
     await check_user_in_database(msg.author.id);
     var user = await get_user(msg.author.id);
     var rod_tier = 0;
@@ -3585,20 +3670,20 @@ const commands = {
       get_user(msg.author.id).then(user => {
         let name = msg.content.split(" ")[1];
 
-          name = name.replace(/\D/g, "");
+        name = name.replace(/\D/g, "");
 
-          var flag = false;
-          for (var u in client.users.array()) {
-            var _user = client.users.array()[u];
-            if (_user.id == name) {
-              flag = true;
-            }
+        var flag = false;
+        for (var u in client.users.array()) {
+          var _user = client.users.array()[u];
+          if (_user.id == name) {
+            flag = true;
           }
+        }
 
-          if (!flag) return;
+        if (!flag) return;
 
-          var target_id = name;
-          var sender_id = user["id"];
+        var target_id = name;
+        var sender_id = user["id"];
 
         check_user_in_database(target_id).then(() => {
           get_user(target_id).then(target_user => {
@@ -3639,18 +3724,18 @@ const commands = {
             var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
             var amount = Math.floor(Math.random() * Math.floor(300 + 1)) * 50;
             var your_amount = Math.floor(amount / 10);
-            if (rnd > 3 ) {
+            if (rnd > 3) {
               if (target_user["inventory"]["money"] < amount) {
                 amount = target_user["inventory"]["money"];
                 your_amount = Math.floor(amount / 10);
               }
               feed_channel.send(
                 "Löit jäbää <@" +
-                  name +
-                  ">! Hän pudotti " +
-                  amount +
-                  emojies["coin"] +
-                  " maahan eikä saanut yhtään takaisin... Ehdit keräämään " + your_amount + emojies["coin"] + " kolikkoa maasta..."
+                name +
+                ">! Hän pudotti " +
+                amount +
+                emojies["coin"] +
+                " maahan eikä saanut yhtään takaisin... Ehdit keräämään " + your_amount + emojies["coin"] + " kolikkoa maasta..."
               );
               target_user["inventory"]["money"] -= amount;
               user["inventory"]["money"] += your_amount;
@@ -3688,10 +3773,10 @@ const commands = {
         if (user["inventory"]["money"] < 1000)
           return feed_channel.send(
             "Tarvitset vähintään " +
-              1000 +
-              " " +
-              emojies["coin"] +
-              " kutsuaksesi vartijan."
+            1000 +
+            " " +
+            emojies["coin"] +
+            " kutsuaksesi vartijan."
           );
 
         user["inventory"]["money"] -= 1000;
@@ -3729,7 +3814,7 @@ const commands = {
         }
 
         var drop_table = {
-          common : {
+          common: {
             Coins: {
               path: "user['inventory']['money']",
               amount: [600, 800, 1000],
@@ -3767,57 +3852,57 @@ const commands = {
             }
           },
           uncommon: {
-              Coins: {
-                path: "user['inventory']['money']",
-                amount: [1200, 1500, 2000],
-                name: emojies["coin"],
-                rate: 10,
-                real_name: "Coins"
-              },
-              Sytti: {
-                path: "user['inventory']['items']['bait']",
-                amount: [4, 5, 6],
-                name: emojies["sytti"],
-                rate: 5,
-                real_name: "Sytti"
-              },
-              Keppi: {
-                path: "user['inventory']['items']['stick']",
-                amount: [5],
-                name: emojies["keppi"],
-                rate: 5,
-                real_name: "Keppi"
-              },
-              Onki: {
-                path: "user['inventory']['key_items']['rod']",
-                amount: true,
-                key: true,
-                name: emojies["onki"],
-                rate: 1,
-                real_name: "Onki"
-              },
-              Supersytti: {
-                path: "user['inventory']['items']['super_bait']",
-                amount: [1],
-                name: emojies["supersytti"],
-                rate: 4,
-                real_name: "Supersytti"
-              },
-              Pommi: {
-                path: "user['inventory']['items']['bomb']",
-                amount: [1],
-                name: emojies["pommi"],
-                rate: 1,
-                real_name: "Pommi"
-              },
-              Kilpi: {
-                path: "user['inventory']['items']['shield']",
-                amount: [1],
-                name: emojies["kilpi"],
-                rate: 1,
-                real_name: "Kilpi"
-              }
+            Coins: {
+              path: "user['inventory']['money']",
+              amount: [1200, 1500, 2000],
+              name: emojies["coin"],
+              rate: 10,
+              real_name: "Coins"
             },
+            Sytti: {
+              path: "user['inventory']['items']['bait']",
+              amount: [4, 5, 6],
+              name: emojies["sytti"],
+              rate: 5,
+              real_name: "Sytti"
+            },
+            Keppi: {
+              path: "user['inventory']['items']['stick']",
+              amount: [5],
+              name: emojies["keppi"],
+              rate: 5,
+              real_name: "Keppi"
+            },
+            Onki: {
+              path: "user['inventory']['key_items']['rod']",
+              amount: true,
+              key: true,
+              name: emojies["onki"],
+              rate: 1,
+              real_name: "Onki"
+            },
+            Supersytti: {
+              path: "user['inventory']['items']['super_bait']",
+              amount: [1],
+              name: emojies["supersytti"],
+              rate: 4,
+              real_name: "Supersytti"
+            },
+            Pommi: {
+              path: "user['inventory']['items']['bomb']",
+              amount: [1],
+              name: emojies["pommi"],
+              rate: 1,
+              real_name: "Pommi"
+            },
+            Kilpi: {
+              path: "user['inventory']['items']['shield']",
+              amount: [1],
+              name: emojies["kilpi"],
+              rate: 1,
+              real_name: "Kilpi"
+            }
+          },
           rare: {
             Coins: {
               path: "user['inventory']['money']",
@@ -4138,7 +4223,7 @@ const commands = {
             );
             eval(
               drop_table[item_got]["path"] +
-                "+= drop_table[item_got]['amount'][_x];"
+              "+= drop_table[item_got]['amount'][_x];"
             );
             var emoji = emojies["chest_" + rarity];
             var user_name = user["name"];
@@ -4218,7 +4303,7 @@ const commands = {
               continue;
             }
 
-            if ( bucket[rnd] in items_got) {
+            if (bucket[rnd] in items_got) {
 
               if ("key" in drop_table[bucket[rnd]]) {
                 i -= 1;
@@ -4275,14 +4360,14 @@ const commands = {
             var item_got = items_got[h];
             if ("key" in item_got) {
 
-                eval(item_got["path"] + " = true;");
+              eval(item_got["path"] + " = true;");
 
-                var emoji = emojies["chest_" + rarity];
-                var user_name = user["name"];
-                var item_emoji = emojies[item_got["name"]["name"]];
-                save_user(user);
+              var emoji = emojies["chest_" + rarity];
+              var user_name = user["name"];
+              var item_emoji = emojies[item_got["name"]["name"]];
+              save_user(user);
 
-                item_list += ("- Avaintavara: " +
+              item_list += ("- Avaintavara: " +
                 item_emoji +
                 " " +
                 item_got["real_name"] +
@@ -4292,7 +4377,7 @@ const commands = {
 
               eval(
                 item_got["path"] +
-                  "+= item_got['amount'];"
+                "+= item_got['amount'];"
               );
 
               var emoji = emojies["chest_" + rarity];
@@ -4319,7 +4404,7 @@ const commands = {
           return msg.channel.send(
             {
               embed: {
-                title: "***" + user_name + ", Avasit: " + amount_lootboxes + " x "+ emoji + "***",
+                title: "***" + user_name + ", Avasit: " + amount_lootboxes + " x " + emoji + "***",
                 color: color,
                 fields: [
                   {
@@ -4401,7 +4486,7 @@ const commands = {
               };
 
               user["inventory"]["items"]["income_machine"] -= 1;
-              
+
               save_user(user);
               return feed_channel.send(`Hurraa! Tulokone hurraa!`);;
             }
@@ -4446,7 +4531,7 @@ const commands = {
               var money_to_add = user["inventory"]["money"];
               if (money_to_add > 10000000) {
                 money_to_add = 10000000;
-              } 
+              }
               user["inventory"]["money"] += money_to_add;
 
               user["inventory"]["items"]["gem"] -= 1;
@@ -4491,9 +4576,9 @@ const commands = {
 
               user["inventory"]["items"]["timemachine"] -= 1;
               user["timemachine_timer"] = {
-                "time" : _time,
-                "part_day" : _part_day,
-                "timer" : 60
+                "time": _time,
+                "part_day": _part_day,
+                "timer": 60
               }
 
               save_user(user);
@@ -4548,7 +4633,7 @@ const commands = {
                 var money_str = start_money.toString();
                 money_str = money_str
                   .split("")
-                  .sort(function() {
+                  .sort(function () {
                     return 0.5 - Math.random();
                   })
                   .join("");
@@ -4561,9 +4646,9 @@ const commands = {
               save_user(user);
               return feed_channel.send(
                 `There was a glitch ${
-                  emojies["glitch"]
+                emojies["glitch"]
                 } in the system. Seems like you had ${start_money} ${
-                  emojies["coin"]
+                emojies["coin"]
                 } before.\nNow you have ${end_money} ${emojies["coin"]}.`
               );
             }
@@ -4573,7 +4658,7 @@ const commands = {
               if ("security_cam" in user)
                 return feed_channel.send(`Sulla on jo valvonta päällä!`);
               user["security_cam"] = {
-                timer: 60*5,
+                timer: 60 * 5,
                 protected: 0
               };
 
@@ -4591,10 +4676,10 @@ const commands = {
               second = second.replace(",", "");
 
               if (second.slice(-1) == "k") {
-                var price = Math.floor(1000*parseFloat(second));
+                var price = Math.floor(1000 * parseFloat(second));
               }
               else if (second.slice(-1) == "m") {
-                var price = Math.floor(1000000*parseFloat(second));
+                var price = Math.floor(1000000 * parseFloat(second));
               } else {
                 var price = Math.floor(second);
               }
@@ -4602,7 +4687,7 @@ const commands = {
               if (isNaN(price)) return feed_channel.send(`Laita summa!`);
 
               if (second.startsWith("-")) {
-                price = price*-1;
+                price = price * -1;
                 if (user["inventory"]["key_items"]["safe"]["money"] < price) {
                   price = user["inventory"]["key_items"]["safe"]["money"];
                   user["inventory"]["key_items"]["safe"]["money"] = 0;
@@ -4617,7 +4702,7 @@ const commands = {
                 }
                 if (
                   user["inventory"]["key_items"]["safe"]["capasity"] -
-                    user["inventory"]["key_items"]["safe"]["money"] >=
+                  user["inventory"]["key_items"]["safe"]["money"] >=
                   price
                 ) {
                   user["inventory"]["key_items"]["safe"]["money"] += price;
@@ -4696,11 +4781,11 @@ const commands = {
               if (rnd > 3 && target_user["inventory"]["money"] > amount) {
                 feed_channel.send(
                   "Löit jäbää <@" +
-                    name +
-                    ">! Hän pudotti " +
-                    amount +
-                    emojies["coin"] +
-                    " maahan..."
+                  name +
+                  ">! Hän pudotti " +
+                  amount +
+                  emojies["coin"] +
+                  " maahan..."
                 );
                 target_user["inventory"]["money"] -= amount;
               } else {
@@ -4753,18 +4838,18 @@ const commands = {
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
               var amount = Math.floor(Math.random() * Math.floor(300 + 1)) * 50;
               var your_amount = Math.floor(amount / 10);
-              if (rnd > 3 ) {
+              if (rnd > 3) {
                 if (target_user["inventory"]["money"] < amount) {
                   amount = target_user["inventory"]["money"];
                   your_amount = Math.floor(amount / 10);
                 }
                 feed_channel.send(
                   "Löit jäbää <@" +
-                    name +
-                    ">! Hän pudotti " +
-                    amount +
-                    emojies["coin"] +
-                    " maahan eikä saanut yhtään takaisin... Ehdit keräämään " + your_amount + emojies["coin"] + " kolikkoa maasta..."
+                  name +
+                  ">! Hän pudotti " +
+                  amount +
+                  emojies["coin"] +
+                  " maahan eikä saanut yhtään takaisin... Ehdit keräämään " + your_amount + emojies["coin"] + " kolikkoa maasta..."
                 );
                 target_user["inventory"]["money"] -= amount;
                 user["inventory"]["money"] += your_amount;
@@ -4788,7 +4873,7 @@ const commands = {
                 return feed_channel.send(`Sulla ei ole maskeja`);
               if (target_user["inventory"]["money"] <= 0)
                 return feed_channel.send(`Kohteella ei ole oikein rahaa...`);
-              var multi = (48978*target_user["inventory"]["money"]**(-0.67)) / 100;
+              var multi = (48978 * target_user["inventory"]["money"] ** (-0.67)) / 100;
               if (multi > 1) {
                 multi = 1;
               } else if (multi < 0.01) {
@@ -4798,7 +4883,7 @@ const commands = {
               // ennen 10k voi varastaa kaikki rahat.
 
               var rnd = Math.floor(Math.random() * Math.floor(10 + 1));
-              var sum = Math.floor(Math.random() * Math.floor(multi*target_user["inventory"]["money"] + 1));
+              var sum = Math.floor(Math.random() * Math.floor(multi * target_user["inventory"]["money"] + 1));
 
               if (target_user["inventory"]["key_items"]["bush"]["on"]) return feed_channel.send(
                 `Et löydä häntä mistään!?...`
@@ -4814,10 +4899,10 @@ const commands = {
               if (rnd > 2) {
                 feed_channel.send(
                   "Varastit jäbältä <@" +
-                    name +
-                    ">! Sait: " +
-                    sum +
-                    emojies["coin"]
+                  name +
+                  ">! Sait: " +
+                  sum +
+                  emojies["coin"]
                 );
                 user["inventory"]["money"] += sum;
                 user["basic_statistics"]["money_stolen"] += sum;
@@ -4826,13 +4911,13 @@ const commands = {
               } else {
                 feed_channel.send(
                   "Jäit kiinni varastaessasi jäbältä <@" +
-                    name +
-                    ">! Sait sakkoa " +
-                    sum +
-                    emojies["coin"] +
-                    ". Kohdehenkilö saa korvausta: " +
-                    Math.floor(sum / 4) +
-                    emojies["coin"]
+                  name +
+                  ">! Sait sakkoa " +
+                  sum +
+                  emojies["coin"] +
+                  ". Kohdehenkilö saa korvausta: " +
+                  Math.floor(sum / 4) +
+                  emojies["coin"]
                 );
                 user["inventory"]["money"] -= sum;
                 user["basic_statistics"]["fines"] += sum;
@@ -4851,8 +4936,8 @@ const commands = {
               if (name == sender_id)
                 return feed_channel.send(`Ei onnistu, ei kannata omasta varastaa :DDD !`);
 
-              if (!target_user["inventory"]["key_items"]["safe"]["own"]) return 
-                feed_channel.send(`Kohteella ei ole edes tallelokeroa...`);
+              if (!target_user["inventory"]["key_items"]["safe"]["own"]) return
+              feed_channel.send(`Kohteella ei ole edes tallelokeroa...`);
 
               if ("security_cam" in target_user) {
                 target_user["security_cam"]["protected"] += 1;
@@ -4869,8 +4954,10 @@ const commands = {
               target_user["basic_statistics"]["lockpick_used_to_you"] += 1;
               user["inventory"]["items"]["lockpick"] -= 1;
 
-              target_user["lockpicking"] = {"time" : 0,
-                                            "lockpicker" : user["id"]}
+              target_user["lockpicking"] = {
+                "time": 0,
+                "lockpicker": user["id"]
+              }
 
               feed_channel.send(
                 "Hähää, nyt avataan lukko :D Menee hetki..."
@@ -4997,10 +5084,10 @@ const commands = {
               }
               feed_channel.send(
                 "Pommitit jäbää <@" +
-                  name +
-                  ">! Korjauksiin ja lääkäriin meni: " +
-                  amount +
-                  emojies["coin"]
+                name +
+                ">! Korjauksiin ja lääkäriin meni: " +
+                amount +
+                emojies["coin"]
               );
               target_user["inventory"]["money"] -= amount;
 
@@ -5022,14 +5109,14 @@ const commands = {
                 return feed_channel.send(`Et voi pränkätä ilman rahaa...`);
 
 
-                if ("security_cam" in target_user) {
-                  target_user["security_cam"]["protected"] += 1;
-                  feed_channel.send("Valvontakamera osoittaa sinuun!");
-                  save_user(target_user);
-                  save_user(user);
-                  return;
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                feed_channel.send("Valvontakamera osoittaa sinuun!");
+                save_user(target_user);
+                save_user(user);
+                return;
 
-                }
+              }
 
 
               var target_money = target_user["inventory"]["money"];
@@ -5041,12 +5128,12 @@ const commands = {
 
 
               feed_channel.send(
-                  "Pränkkäsit jäbältä <@" +
-                    name +
-                    "> rahat. Sait hänen: " +
-                    target_money +
-                    emojies["coin"] + " ja hän säi sinun " + user_money + emojies["coin"]
-                );
+                "Pränkkäsit jäbältä <@" +
+                name +
+                "> rahat. Sait hänen: " +
+                target_money +
+                emojies["coin"] + " ja hän säi sinun " + user_money + emojies["coin"]
+              );
 
               user["basic_statistics"]["pranked"] += 1;
               target_user["basic_statistics"]["got_pranked"] += 1;
@@ -5079,7 +5166,7 @@ const commands = {
               }
 
               var stun = firebase.database().ref("global_data/stunned");
-              stun.on("value", function(d) {
+              stun.on("value", function (d) {
                 stunned = d.val();
               });
 
@@ -5106,14 +5193,14 @@ const commands = {
               if (user["inventory"]["items"]["grabber"] < 1)
                 return feed_channel.send(`Sulla ei ole grabbereitä`);
 
-                if ("security_cam" in target_user) {
-                  target_user["security_cam"]["protected"] += 1;
-                  feed_channel.send("Valvontakamera osoittaa sinuun!");
-                  save_user(target_user);
-                  save_user(user);
-                  return;
+              if ("security_cam" in target_user) {
+                target_user["security_cam"]["protected"] += 1;
+                feed_channel.send("Valvontakamera osoittaa sinuun!");
+                save_user(target_user);
+                save_user(user);
+                return;
 
-                }
+              }
 
 
               var inv = target_user["inventory"]["items"];
@@ -5213,11 +5300,11 @@ const commands = {
               }
 
               feed_channel.send(
-                  "Varastit tavaran jäbältä <@" +
-                    name +
-                    ">! Sait: " +
-                    items
-                );
+                "Varastit tavaran jäbältä <@" +
+                name +
+                ">! Sait: " +
+                items
+              );
 
               user["inventory"]["items"]["grabber"] -= 1;
               user["inventory"]["items"][chosen_item] += 1;
@@ -5298,7 +5385,7 @@ const commands = {
             }
             var safe_t = "";
             if (ke["safe"]["own"]) {
-              key_items += `${emojies["tallelokero"]}[${user["inventory"]["key_items"]["safe"]["capasity"]/1000000}m]`;
+              key_items += `${emojies["tallelokero"]}[${user["inventory"]["key_items"]["safe"]["capasity"] / 1000000}m]`;
               safe_t = `\n${emojies["tallelokero"]} ${user["inventory"]["key_items"]["safe"]["money"]}${emojies["coin"]}`
             }
 
@@ -5309,23 +5396,23 @@ const commands = {
             var lootboxes = "";
             lootboxes += `${emojies["chest_common"]} Common: ${
               user["inventory"]["lootboxes"]["common"]
-            } (${user["inventory"]["lootboxes"]["common"] +
+              } (${user["inventory"]["lootboxes"]["common"] +
               user["basic_statistics"]["opened_lootboxes"]["common"]})\n`;
             lootboxes += `${emojies["chest_uncommon"]} Uncommon: ${
               user["inventory"]["lootboxes"]["uncommon"]
-            } (${user["inventory"]["lootboxes"]["uncommon"] +
+              } (${user["inventory"]["lootboxes"]["uncommon"] +
               user["basic_statistics"]["opened_lootboxes"]["uncommon"]})\n`;
             lootboxes += `${emojies["chest_rare"]} Rare: ${
               user["inventory"]["lootboxes"]["rare"]
-            } (${user["inventory"]["lootboxes"]["rare"] +
+              } (${user["inventory"]["lootboxes"]["rare"] +
               user["basic_statistics"]["opened_lootboxes"]["rare"]})\n`;
             lootboxes += `${emojies["chest_epic"]} Epic: ${
               user["inventory"]["lootboxes"]["epic"]
-            } (${user["inventory"]["lootboxes"]["epic"] +
+              } (${user["inventory"]["lootboxes"]["epic"] +
               user["basic_statistics"]["opened_lootboxes"]["epic"]})\n`;
             lootboxes += `${emojies["chest_legendary"]} Legendary: ${
               user["inventory"]["lootboxes"]["legendary"]
-            } (${user["inventory"]["lootboxes"]["legendary"] +
+              } (${user["inventory"]["lootboxes"]["legendary"] +
               user["basic_statistics"]["opened_lootboxes"]["legendary"]})\n`;
 
             var items = "";
@@ -5333,7 +5420,7 @@ const commands = {
             if (ite["ES"] > 0) {
               items += `${emojies["ES"]} ES: ${ite["ES"]} (Juotu: ${
                 ite["ES_can"]
-              })\n`;
+                })\n`;
             }
             if (ite["stick"] > 0) {
               items += `${emojies["keppi"]} Keppi: ${ite["stick"]}\n`;
@@ -5347,12 +5434,12 @@ const commands = {
             if (ite["super_bait"] > 0) {
               items += `${emojies["supersytti"]} Supersytti: ${
                 ite["super_bait"]
-              }\n`;
+                }\n`;
             }
             if (ite["hyper_bait"] > 0) {
               items += `${emojies["hypersytti"]} Hypersytti: ${
                 ite["hyper_bait"]
-              }\n`;
+                }\n`;
             }
             if (ite["timemachine"] > 0) {
               items += `${emojies["aikakone"]} Aikakone: ${ite["timemachine"]}\n`;
@@ -5366,27 +5453,27 @@ const commands = {
             if (ite["security_cam"] > 0) {
               items += `${emojies["valvontakamera"]} Valvontakamera: ${
                 ite["security_cam"]
-              }\n`;
+                }\n`;
             }
             if (ite["income_machine"] > 0) {
               items += `${emojies["tulokone"]} Tulokone: ${
                 ite["income_machine"]
-              }\n`;
+                }\n`;
             }
             if (ite["income_machine_X"] > 0) {
               items += `${emojies["tulokonex"]} Tulokone-X: ${
                 ite["income_machine_X"]
-              }\n`;
+                }\n`;
             }
             if (ite["income_accelerator"] > 0) {
               items += `${emojies["tulokiihdytin"]} Tulokiihdytin: ${
                 ite["income_accelerator"]
-              }\n`;
+                }\n`;
             }
             if (ite["income_absorber"] > 0) {
               items += `${emojies["tuloimu"]} Tuloimu: ${
                 ite["income_absorber"]
-              }\n`;
+                }\n`;
             }
             if (ite["mask"] > 0) {
               items += `${emojies["maski"]} Maski: ${ite["mask"]}\n`;
@@ -5412,17 +5499,17 @@ const commands = {
             if (ite["bronze_income"] > 0) {
               items += `${emojies["perustulo1"]} Pronssitulo: ${
                 ite["bronze_income"]
-              }\n`;
+                }\n`;
             }
             if (ite["silver_income"] > 0) {
               items += `${emojies["perustulo2"]} Hopeatulo: ${
                 ite["silver_income"]
-              }\n`;
+                }\n`;
             }
             if (ite["gold_income"] > 0) {
               items += `${emojies["perustulo3"]} Kultatulo: ${
                 ite["gold_income"]
-              }\n`;
+                }\n`;
             }
 
             if (items == "") {
@@ -5494,9 +5581,9 @@ const commands = {
                 },
                 description: `***Rahat:*** ${user["inventory"]["money"]}${
                   emojies["coin"]
-                }, ***Perustulo:*** ${user["inventory"]["income"]}${
+                  }, ***Perustulo:*** ${user["inventory"]["income"]}${
                   emojies["coin"]
-                }${safe_t}${status}`,
+                  }${safe_t}${status}`,
                 fields: [
                   {
                     name: "***___Tavarat:___***",
@@ -5550,73 +5637,73 @@ const commands = {
 
         function print_status(_id) {
 
-            var status = "";
+          var status = "";
 
-            if ("income_machine" in user) { // multi timer sum
-              var multi = user["income_machine"]["multi"];
-              var emoji;
-              var name;
-              if (multi == 10) {
-                emoji = emojies["tulokone"];
-                name = "Tulokone";
-              }
-              else if (multi == 20) {
-                emoji = emojies["tulokonex"];
-                name = "Tulokone-X";
-              }
-              else if (multi == 40) {
-                emoji = emojies["tulokiihdytin"];
-                name = "Tulokiihdytin";
-              }
-
-              status += emoji + " " + name + ": Rahaa saatu " + user["income_machine"]["sum"] + emojies["coin"] + " (" + user["income_machine"]["timer"] + " mins jäljellä)\n";
-
-
+          if ("income_machine" in user) { // multi timer sum
+            var multi = user["income_machine"]["multi"];
+            var emoji;
+            var name;
+            if (multi == 10) {
+              emoji = emojies["tulokone"];
+              name = "Tulokone";
+            }
+            else if (multi == 20) {
+              emoji = emojies["tulokonex"];
+              name = "Tulokone-X";
+            }
+            else if (multi == 40) {
+              emoji = emojies["tulokiihdytin"];
+              name = "Tulokiihdytin";
             }
 
-            if ("income_absorb" in user) {
-              status += emojies["tuloimu"] + " Imet tuloa jäbältä <@" + user["income_absorb"]["target"] + ">: Rahaa saatu " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
-            }
+            status += emoji + " " + name + ": Rahaa saatu " + user["income_machine"]["sum"] + emojies["coin"] + " (" + user["income_machine"]["timer"] + " mins jäljellä)\n";
 
-            if ("absorb_target" in user) {
-              status += emojies["tuloimu"] + " <@" + user["absorb_target"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["absorb_target"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
-            }
 
-            if ("timemachine_timer" in user) {
-              var time = user["time_machine"]["time"];
-              var time_left = user["time_machine"]["timer"];
-              status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
-            }
+          }
 
-            if ("fishing_timer" in user) {
-              var emoji;
-              if (user["inventory"]["key_items"]["hyper_rod"]) {
-                emoji = emojies["hyperonki"];
-              }
-              else if (user["inventory"]["key_items"]["hyper_rod"]) {
-                emoji = emojies["superonki"];
-              }
-              else {
-                emoji = emojies["onki"];
-              }
-              status += emoji + " Olet kalastamassa!"
-            }
+          if ("income_absorb" in user) {
+            status += emojies["tuloimu"] + " Imet tuloa jäbältä <@" + user["income_absorb"]["target"] + ">: Rahaa saatu " + user["income_absorb"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+          }
 
-            if ("fishing_boat_timer" in user) {
-              status += emojies["kalastusvene"] + " Olet kalastusreissulla!"
-            }
+          if ("absorb_target" in user) {
+            status += emojies["tuloimu"] + " <@" + user["absorb_target"]["absorber"] + "> imee sinulta tuloa: Rahaa menetetty " + user["absorb_target"]["sum"] + emojies["coin"] + " (" + user["income_absorb"]["timer"] + " mins jäljellä)\n";
+          }
 
-            if (status == "") {
-              status = "Ei mitään!";
-            }
+          if ("timemachine_timer" in user) {
+            var time = user["time_machine"]["time"];
+            var time_left = user["time_machine"]["timer"];
+            status += emojies["aikakone"] + " Aikakone: " + time + " (" + time_left + "mins jäljellä)\n"
+          }
 
-            msg.channel.send({
-              embed: {
-                title: `***STATUS (${user["name"]})***`,
-                color: user["info"]["color"],
-                description: `${status}`
-              }
-            });
+          if ("fishing_timer" in user) {
+            var emoji;
+            if (user["inventory"]["key_items"]["hyper_rod"]) {
+              emoji = emojies["hyperonki"];
+            }
+            else if (user["inventory"]["key_items"]["hyper_rod"]) {
+              emoji = emojies["superonki"];
+            }
+            else {
+              emoji = emojies["onki"];
+            }
+            status += emoji + " Olet kalastamassa!"
+          }
+
+          if ("fishing_boat_timer" in user) {
+            status += emojies["kalastusvene"] + " Olet kalastusreissulla!"
+          }
+
+          if (status == "") {
+            status = "Ei mitään!";
+          }
+
+          msg.channel.send({
+            embed: {
+              title: `***STATUS (${user["name"]})***`,
+              color: user["info"]["color"],
+              description: `${status}`
+            }
+          });
         }
       });
     });
@@ -5646,7 +5733,7 @@ const commands = {
               100
           ) * 100;*/
 
-        var cost_next_basic_income = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100;
+        var cost_next_basic_income = Math.floor((5364.6 * Math.exp(0.0057 * (user["basic_statistics"]["income_bought"]) * 5)) / 100) * 100;
 
         msg.channel.send({
           embed: {
@@ -5746,10 +5833,10 @@ const commands = {
         }
 
         if (amount.slice(-1) == "k") {
-          amount = Math.floor(1000*parseFloat(amount));
+          amount = Math.floor(1000 * parseFloat(amount));
         }
         else if (amount.slice(-1) == "m") {
-          amount = Math.floor(1000000*parseFloat(amount));
+          amount = Math.floor(1000000 * parseFloat(amount));
         }
 
         if (isNaN(amount))
@@ -5768,15 +5855,15 @@ const commands = {
         // PERUSTULO
         if (purchase == "perustulo") {
           var basic_income = user["inventory"]["income"];
-          var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057*(user["basic_statistics"]["income_bought"])*5))/100)*100;
+          var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057 * (user["basic_statistics"]["income_bought"]) * 5)) / 100) * 100;
           /*var basic_income_price =
             Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;*/
           if (money < basic_income_price)
             return msg.channel.send(
               "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
-                basic_income_price +
-                emojies["coin"] +
-                "."
+              basic_income_price +
+              emojies["coin"] +
+              "."
             );
 
           user["inventory"]["income"] += 5;
@@ -5785,8 +5872,8 @@ const commands = {
 
           msg.channel.send(
             "Onnittelut, perustuloa ostettu! Maksoi: " +
-              basic_income_price +
-              emojies["coin"]
+            basic_income_price +
+            emojies["coin"]
           );
         } else if (purchase == "es") {
           if (money < amount)
@@ -5834,47 +5921,47 @@ const commands = {
 
           msg.channel.send("Onnittelut! Sulla on nyt onki!");
         }
-      else if (purchase == "supersytti") {
-        if (user["inventory"]["items"]["bait"] < 7*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
+        else if (purchase == "supersytti") {
+          if (user["inventory"]["items"]["bait"] < 7 * amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
 
-        user["inventory"]["items"]["super_bait"] += amount;
-        user["inventory"]["items"]["bait"] -= amount*7;
+          user["inventory"]["items"]["super_bait"] += amount;
+          user["inventory"]["items"]["bait"] -= amount * 7;
 
-        msg.channel.send(`Ostit ${amount} supersyttiä!`);
-      }
-      else if (purchase == "tukki") {
-        if (user["inventory"]["items"]["stick"] < 50*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi keppejä.");
+          msg.channel.send(`Ostit ${amount} supersyttiä!`);
+        }
+        else if (purchase == "tukki") {
+          if (user["inventory"]["items"]["stick"] < 50 * amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi keppejä.");
 
-        user["inventory"]["items"]["log"] += amount;
-        user["inventory"]["items"]["stick"] -= amount*50;
+          user["inventory"]["items"]["log"] += amount;
+          user["inventory"]["items"]["stick"] -= amount * 50;
 
-        msg.channel.send(`Ostit ${amount} tukkeja!`);
-      }
-      else if (purchase == "hypersytti") {
-        if (user["inventory"]["items"]["super_bait"] < 7*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
+          msg.channel.send(`Ostit ${amount} tukkeja!`);
+        }
+        else if (purchase == "hypersytti") {
+          if (user["inventory"]["items"]["super_bait"] < 7 * amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi syttejä.");
 
-        user["inventory"]["items"]["hyper_bait"] += amount;
-        user["inventory"]["items"]["super_bait"] -= amount*7;
+          user["inventory"]["items"]["hyper_bait"] += amount;
+          user["inventory"]["items"]["super_bait"] -= amount * 7;
 
-        msg.channel.send(`Ostit ${amount} Hypersyttiä!`);
-      }
-      else if (purchase == "tallelokero") {
-        if (user["inventory"]["money"] < 100000*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi rahaa.");
+          msg.channel.send(`Ostit ${amount} Hypersyttiä!`);
+        }
+        else if (purchase == "tallelokero") {
+          if (user["inventory"]["money"] < 100000 * amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi rahaa.");
 
-        user["inventory"]["key_items"]["safe"]["capasity"] += amount*1000000;
-        user["inventory"]["money"] -= amount*100000;
+          user["inventory"]["key_items"]["safe"]["capasity"] += amount * 1000000;
+          user["inventory"]["money"] -= amount * 100000;
 
-        msg.channel.send(`Ostit ${amount} Tallelokero Upgradea!`);
-      }
-      else if (purchase == "aikakone") {
-        if (user["inventory"]["money"] < 10000*amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi rahaa.");
+          msg.channel.send(`Ostit ${amount} Tallelokero Upgradea!`);
+        }
+        else if (purchase == "aikakone") {
+          if (user["inventory"]["money"] < 10000 * amount) return msg.channel.send("Lol, sulla ei oo tarpeeksi rahaa.");
 
-        user["inventory"]["items"]["timemachine"] += amount;
-        user["inventory"]["money"] -= amount*10000;
+          user["inventory"]["items"]["timemachine"] += amount;
+          user["inventory"]["money"] -= amount * 10000;
 
-        msg.channel.send(`Ostit ${amount} aikakonetta!`);
-      }
-      else {
+          msg.channel.send(`Ostit ${amount} aikakonetta!`);
+        }
+        else {
           msg.channel.send(
             "Et voi ostaa mitään ihme " + purchase + " -juttua..."
           );
@@ -5954,7 +6041,7 @@ const commands = {
       prankster: "prankster",
       grabber: "grabber",
       stunner: "stunner",
-      lockpick : "tiirikka"
+      lockpick: "tiirikka"
     };
 
     var emo = {
@@ -6021,11 +6108,11 @@ const commands = {
           amount = "1";
         }
         if (amount.slice(-1) == "k") {
-          amount = Math.floor(1000*parseFloat(amount));
+          amount = Math.floor(1000 * parseFloat(amount));
         }
 
         else if (amount.slice(-1) == "m") {
-          amount = Math.floor(1000000*parseFloat(amount));
+          amount = Math.floor(1000000 * parseFloat(amount));
         }
 
         var current_user;
@@ -6062,7 +6149,7 @@ const commands = {
           }
 
           else if (amount == "puolet") {
-            amount = Math.floor(current_user["inventory"]["items"][ret[item]]/2 - helper_amount);
+            amount = Math.floor(current_user["inventory"]["items"][ret[item]] / 2 - helper_amount);
           }
 
           else if (amount == "min") {
@@ -6082,7 +6169,7 @@ const commands = {
           }
 
           else if (amount == "puolet") {
-            amount = Math.floor(current_user["inventory"]["money"]/2 - helper_amount);
+            amount = Math.floor(current_user["inventory"]["money"] / 2 - helper_amount);
           }
 
           else if (amount == "min") {
@@ -6142,11 +6229,11 @@ const commands = {
 
 
         if (amount.slice(-1) == "k") {
-          amount = Math.floor(1000*parseFloat(amount));
+          amount = Math.floor(1000 * parseFloat(amount));
         }
 
         else if (amount.slice(-1) == "m") {
-          amount = Math.floor(1000000*parseFloat(amount));
+          amount = Math.floor(1000000 * parseFloat(amount));
         }
 
         if (amount == undefined || amount == "") {
@@ -6187,7 +6274,7 @@ const commands = {
           }
 
           else if (amount == "puolet") {
-            amount = Math.floor(current_trades[item]/2);
+            amount = Math.floor(current_trades[item] / 2);
           }
 
           else if (amount == "min") {
@@ -6199,7 +6286,7 @@ const commands = {
           }
 
           else if (amount == "puolet") {
-            amount = Math.floor(current_trades["money"]/2);
+            amount = Math.floor(current_trades["money"] / 2);
           }
 
           else if (amount == "min") {
@@ -6249,11 +6336,11 @@ const commands = {
       }
     );
 
-    function removeDuplicateUsingFilter(arr){
-        let unique_array = arr.filter(function(elem, index, self) {
-            return index == self.indexOf(elem);
-        });
-        return unique_array
+    function removeDuplicateUsingFilter(arr) {
+      let unique_array = arr.filter(function (elem, index, self) {
+        return index == self.indexOf(elem);
+      });
+      return unique_array
     }
 
     em.on("collect", (reaction, _user) => {
@@ -6452,7 +6539,7 @@ const commands = {
     }
 
     async function trade_items(
-      user_id, target_user_id,_user_trades,
+      user_id, target_user_id, _user_trades,
       _target_user_trades,
       itemsx
     ) {
@@ -6521,26 +6608,26 @@ const commands = {
     var money_combined = user["inventory"]["key_items"]["safe"]["money"] + user["inventory"]["money"];
     var extratext = "";
 
-    if (money_combined/1000000000000000000000000 >= 1) {
+    if (money_combined / 1000000000000000000000000 >= 1) {
       // kvantrillionaa
-      extratext = " (" + (money_combined/1000000000000000000000000).toFixed(2) + " Kvandriljoonaa " + emojies["coin"] + ", 10^24)";
+      extratext = " (" + (money_combined / 1000000000000000000000000).toFixed(2) + " Kvandriljoonaa " + emojies["coin"] + ", 10^24)";
 
     }
-    else if (money_combined/1000000000000000000 >= 1) {
+    else if (money_combined / 1000000000000000000 >= 1) {
       // triljoona
-      extratext = " (" + (money_combined/1000000000000000000).toFixed(2) + " Triljoonaa " + emojies["coin"] + ", 10^18)";
+      extratext = " (" + (money_combined / 1000000000000000000).toFixed(2) + " Triljoonaa " + emojies["coin"] + ", 10^18)";
     }
-    else if (money_combined/1000000000000 >= 1) {
-       // biljoona
-      extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Biljoonaa " + emojies["coin"] + ", 10^12)";
+    else if (money_combined / 1000000000000 >= 1) {
+      // biljoona
+      extratext = " (" + (money_combined / 1000000000000).toFixed(2) + " Biljoonaa " + emojies["coin"] + ", 10^12)";
     }
-    else if (money_combined/1000000000 >= 1) {
+    else if (money_combined / 1000000000 >= 1) {
       // miljardi
-      extratext = " (" + (money_combined/1000000000).toFixed(2) + " Miljardia " + emojies["coin"] + ", 10^9)";
+      extratext = " (" + (money_combined / 1000000000).toFixed(2) + " Miljardia " + emojies["coin"] + ", 10^9)";
     }
-    else if (money_combined/1000000 >= 1) {
+    else if (money_combined / 1000000 >= 1) {
       // miljoona
-      extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Miljoonaa " + emojies["coin"] + ", 10^6)";
+      extratext = " (" + (money_combined / 1000000000000).toFixed(2) + " Miljoonaa " + emojies["coin"] + ", 10^6)";
     }
 
     if (name == "" || name === undefined) {
@@ -6589,46 +6676,46 @@ const commands = {
       var money_combined = target_user["inventory"]["key_items"]["safe"]["money"] + target_user["inventory"]["money"];
       var extratext = "";
 
-      if (money_combined/1000000000000000000000000 >= 1) {
+      if (money_combined / 1000000000000000000000000 >= 1) {
         // kvantrillionaa
-        extratext = " (" + (money_combined/1000000000000000000000000).toFixed(2) + " Kvandriljoonaa " + emojies["coin"] + ", 10^24)";
+        extratext = " (" + (money_combined / 1000000000000000000000000).toFixed(2) + " Kvandriljoonaa " + emojies["coin"] + ", 10^24)";
 
       }
-      else if (money_combined/1000000000000000000 >= 1) {
+      else if (money_combined / 1000000000000000000 >= 1) {
         // triljoona
-        extratext = " (" + (money_combined/1000000000000000000).toFixed(2) + " Triljoonaa " + emojies["coin"] + ", 10^18)";
+        extratext = " (" + (money_combined / 1000000000000000000).toFixed(2) + " Triljoonaa " + emojies["coin"] + ", 10^18)";
       }
-      else if (money_combined/1000000000000 >= 1) {
-         // biljoona
-        extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Biljoonaa " + emojies["coin"] + ", 10^12)";
+      else if (money_combined / 1000000000000 >= 1) {
+        // biljoona
+        extratext = " (" + (money_combined / 1000000000000).toFixed(2) + " Biljoonaa " + emojies["coin"] + ", 10^12)";
       }
-      else if (money_combined/1000000000 >= 1) {
+      else if (money_combined / 1000000000 >= 1) {
         // miljardi
-        extratext = " (" + (money_combined/1000000000).toFixed(2) + " Miljardia " + emojies["coin"] + ", 10^9)";
+        extratext = " (" + (money_combined / 1000000000).toFixed(2) + " Miljardia " + emojies["coin"] + ", 10^9)";
       }
-      else if (money_combined/1000000 >= 1) {
+      else if (money_combined / 1000000 >= 1) {
         // miljoona
-        extratext = " (" + (money_combined/1000000000000).toFixed(2) + " Miljoonaa " + emojies["coin"] + ", 10^6)";
+        extratext = " (" + (money_combined / 1000000000000).toFixed(2) + " Miljoonaa " + emojies["coin"] + ", 10^6)";
       }
 
       if (target_user["inventory"]["key_items"]["safe"]["own"]) {
 
-        if (target_user["inventory"]["key_items"]["safe"]["money"] + user["inventory"]["money"] )
-        
-        safe_txt =
-          " (" +
-          emojies["tallelokero"] +
-          " " +
-          target_user["inventory"]["key_items"]["safe"]["money"] +
-          emojies["coin"] +
-          ")";
+        if (target_user["inventory"]["key_items"]["safe"]["money"] + user["inventory"]["money"])
+
+          safe_txt =
+            " (" +
+            emojies["tallelokero"] +
+            " " +
+            target_user["inventory"]["key_items"]["safe"]["money"] +
+            emojies["coin"] +
+            ")";
       }
 
       return msg.channel.send(
         "Hänellä on " +
-          target_user["inventory"]["money"] +
-          emojies["coin"] +
-          safe_txt + extratext
+        target_user["inventory"]["money"] +
+        emojies["coin"] +
+        safe_txt + extratext
       );
     }
   },
@@ -6853,27 +6940,27 @@ const commands = {
         }
       }
 
-      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var percent = (caught_fish_count * 100 / all_fish_count).toFixed(0) + "%";
       var progress_bar = "";
-      if (caught_fish_count/all_fish_count >= 0.1) {
+      if (caught_fish_count / all_fish_count >= 0.1) {
         progress_bar += emojies["start2"];
       } else {
         progress_bar += emojies["start1"];
       }
-      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+      var complete_count = Math.round(10 * caught_fish_count / all_fish_count);
 
-      for (var i = 0; i < complete_count-1; i++) {
+      for (var i = 0; i < complete_count - 1; i++) {
         if (i < 8) {
           progress_bar += emojies["mid2"];
         }
       }
 
-      for (var i = 0; i < 9-complete_count; i++) {
+      for (var i = 0; i < 9 - complete_count; i++) {
         if (i < 8) {
           progress_bar += emojies["mid1"];
         }
       }
-      if (caught_fish_count/all_fish_count == 1) {
+      if (caught_fish_count / all_fish_count == 1) {
         progress_bar += emojies["end2"];
       } else {
         progress_bar += emojies["end1"];
@@ -6944,27 +7031,27 @@ const commands = {
         }
       }
 
-      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var percent = (caught_fish_count * 100 / all_fish_count).toFixed(0) + "%";
       var progress_bar = "";
-      if (caught_fish_count/all_fish_count >= 0.1) {
+      if (caught_fish_count / all_fish_count >= 0.1) {
         progress_bar += emojies["start2"];
       } else {
         progress_bar += emojies["start1"];
       }
-      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+      var complete_count = Math.round(10 * caught_fish_count / all_fish_count);
 
-      for (var i = 0; i < complete_count-1; i++) {
+      for (var i = 0; i < complete_count - 1; i++) {
         if (i < 8) {
           progress_bar += emojies["mid2"];
         }
       }
 
-      for (var i = 0; i < 9-complete_count; i++) {
+      for (var i = 0; i < 9 - complete_count; i++) {
         if (i < 8) {
           progress_bar += emojies["mid1"];
         }
       }
-      if (caught_fish_count/all_fish_count == 1) {
+      if (caught_fish_count / all_fish_count == 1) {
         progress_bar += emojies["end2"];
       } else {
         progress_bar += emojies["end1"];
@@ -7026,7 +7113,7 @@ const commands = {
               fish +
               more +
               "\n";
-          }else {
+          } else {
             if (user["game_kalastus"]["KalaDex"][fish]["caught"] > 0) {
               caught_fish_count += 1;
             }
@@ -7035,27 +7122,27 @@ const commands = {
         }
       }
 
-      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var percent = (caught_fish_count * 100 / all_fish_count).toFixed(0) + "%";
       var progress_bar = "";
-      if (caught_fish_count/all_fish_count >= 0.1) {
+      if (caught_fish_count / all_fish_count >= 0.1) {
         progress_bar += emojies["start2"];
       } else {
         progress_bar += emojies["start1"];
       }
-      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+      var complete_count = Math.round(10 * caught_fish_count / all_fish_count);
 
-      for (var i = 0; i < complete_count-1; i++) {
+      for (var i = 0; i < complete_count - 1; i++) {
         if (i < 8) {
           progress_bar += emojies["mid2"];
         }
       }
 
-      for (var i = 0; i < 9-complete_count; i++) {
+      for (var i = 0; i < 9 - complete_count; i++) {
         if (i < 8) {
           progress_bar += emojies["mid1"];
         }
       }
-      if (caught_fish_count/all_fish_count == 1) {
+      if (caught_fish_count / all_fish_count == 1) {
         progress_bar += emojies["end2"];
       } else {
         progress_bar += emojies["end1"];
@@ -7120,27 +7207,27 @@ const commands = {
         }
       }
 
-      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var percent = (caught_fish_count * 100 / all_fish_count).toFixed(0) + "%";
       var progress_bar = "";
-      if (caught_fish_count/all_fish_count >= 0.1) {
+      if (caught_fish_count / all_fish_count >= 0.1) {
         progress_bar += emojies["start2"];
       } else {
         progress_bar += emojies["start1"];
       }
-      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+      var complete_count = Math.round(10 * caught_fish_count / all_fish_count);
 
-      for (var i = 0; i < complete_count-1; i++) {
+      for (var i = 0; i < complete_count - 1; i++) {
         if (i < 8) {
           progress_bar += emojies["mid2"];
         }
       }
 
-      for (var i = 0; i < 9-complete_count; i++) {
+      for (var i = 0; i < 9 - complete_count; i++) {
         if (i < 8) {
           progress_bar += emojies["mid1"];
         }
       }
-      if (caught_fish_count/all_fish_count == 1) {
+      if (caught_fish_count / all_fish_count == 1) {
         progress_bar += emojies["end2"];
       } else {
         progress_bar += emojies["end1"];
@@ -7203,27 +7290,27 @@ const commands = {
         }
       }
 
-      var percent = (caught_fish_count*100/all_fish_count).toFixed(0) + "%";
+      var percent = (caught_fish_count * 100 / all_fish_count).toFixed(0) + "%";
       var progress_bar = "";
-      if (caught_fish_count/all_fish_count >= 0.1) {
+      if (caught_fish_count / all_fish_count >= 0.1) {
         progress_bar += emojies["start2"];
       } else {
         progress_bar += emojies["start1"];
       }
-      var complete_count = Math.round(10*caught_fish_count/all_fish_count);
+      var complete_count = Math.round(10 * caught_fish_count / all_fish_count);
 
-      for (var i = 0; i < complete_count-1; i++) {
+      for (var i = 0; i < complete_count - 1; i++) {
         if (i < 8) {
           progress_bar += emojies["mid2"];
         }
       }
 
-      for (var i = 0; i < 9-complete_count; i++) {
+      for (var i = 0; i < 9 - complete_count; i++) {
         if (i < 8) {
           progress_bar += emojies["mid1"];
         }
       }
-      if (caught_fish_count/all_fish_count == 1) {
+      if (caught_fish_count / all_fish_count == 1) {
         progress_bar += emojies["end2"];
       } else {
         progress_bar += emojies["end1"];
@@ -7377,9 +7464,9 @@ const commands = {
               name: "***___YLEISTÄ:___***",
               value: `Kaikki pelit: ${games}\nVoitetut pelit: ${games_won}\nHävityt pelit: ${games_lost}\nVoitetut rahat: ${money_won}${
                 emojies["coin"]
-              }\nHävityt rahat: ${money_lost}${
+                }\nHävityt rahat: ${money_lost}${
                 emojies["coin"]
-              }\nNetto: ${netto}${emojies["coin"]}`
+                }\nNetto: ${netto}${emojies["coin"]}`
             }
           ]
         }
@@ -7694,8 +7781,8 @@ const commands = {
         tier3 = "Suoritettu";
       }
 
-      var avrg_w = (user["game_kalastus"]["all_fish_weight"]/user["game_kalastus"]["fish_caught"]).toFixed(2);
-      var avrg_p = (user["game_kalastus"]["money_got"]/user["game_kalastus"]["fish_caught"]).toFixed(2);
+      var avrg_w = (user["game_kalastus"]["all_fish_weight"] / user["game_kalastus"]["fish_caught"]).toFixed(2);
+      var avrg_p = (user["game_kalastus"]["money_got"] / user["game_kalastus"]["fish_caught"]).toFixed(2);
 
       return {
         embed: {
@@ -7901,7 +7988,7 @@ const commands = {
         "\n";
       // Omaisuus
       var solo_minutes =
-        "`Solo minuutit:` " + user["basic_statistics"]["solo_minutes"]+ "\n";
+        "`Solo minuutit:` " + user["basic_statistics"]["solo_minutes"] + "\n";
       var wealth =
         "`Omaisuus:` " + calculate_wealth(user) + emojies["coin"] + "\n";
       // Ostetut perustulot
@@ -7956,12 +8043,12 @@ const commands = {
       // Lootboxit afkaamalla
       var loot_afk =
         "`LootBoxit Afkaamalla:` " +
-        (user["basic_statistics"]["lootboxes_by_afking_common"] + user["basic_statistics"]["lootboxes_by_afking_uncommon"] + user["basic_statistics"]["lootboxes_by_afking_rare"] + user["basic_statistics"]["lootboxes_by_afking_epic"] + user["basic_statistics"]["lootboxes_by_afking_legendary"] ) +
+        (user["basic_statistics"]["lootboxes_by_afking_common"] + user["basic_statistics"]["lootboxes_by_afking_uncommon"] + user["basic_statistics"]["lootboxes_by_afking_rare"] + user["basic_statistics"]["lootboxes_by_afking_epic"] + user["basic_statistics"]["lootboxes_by_afking_legendary"]) +
         "\n";
       // Lootboxit pelaamalla
       var loot_game =
         "`LootBoxit Pelaamalla:` " +
-        (user["basic_statistics"]["lootboxes_by_playing_common"] + user["basic_statistics"]["lootboxes_by_playing_uncommon"] + user["basic_statistics"]["lootboxes_by_playing_rare"] + user["basic_statistics"]["lootboxes_by_playing_epic"] + user["basic_statistics"]["lootboxes_by_playing_legendary"] ) +
+        (user["basic_statistics"]["lootboxes_by_playing_common"] + user["basic_statistics"]["lootboxes_by_playing_uncommon"] + user["basic_statistics"]["lootboxes_by_playing_rare"] + user["basic_statistics"]["lootboxes_by_playing_epic"] + user["basic_statistics"]["lootboxes_by_playing_legendary"]) +
         "\n";
       // common / minuutti
       var common_min =
@@ -8130,7 +8217,7 @@ const commands = {
 
     var users;
     msg.delete();
-    bot_users.once("value", async function(u) {
+    bot_users.once("value", async function (u) {
       users = u.val();
       var message;
       await feed_channel.send(await activity(users)).then(async m => {
@@ -8185,14 +8272,14 @@ const commands = {
           w_l[key] = value;
         }
 
-        var items = Object.keys(w_l).map(function(key) {
+        var items = Object.keys(w_l).map(function (key) {
           return {
             id: key,
             val: w_l[key]
           };
         });
 
-        items = items.sort(function(a, b) {
+        items = items.sort(function (a, b) {
           return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
         });
 
@@ -8230,14 +8317,14 @@ const commands = {
           w_l[key] = value;
         }
 
-        var items = Object.keys(w_l).map(function(key) {
+        var items = Object.keys(w_l).map(function (key) {
           return {
             id: key,
             val: w_l[key]
           };
         });
 
-        items = items.sort(function(a, b) {
+        items = items.sort(function (a, b) {
           return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
         });
 
@@ -8285,14 +8372,14 @@ const commands = {
           w_l[key] = value;
         }
 
-        var items = Object.keys(w_l).map(function(key) {
+        var items = Object.keys(w_l).map(function (key) {
           return {
             id: key,
             val: w_l[key]
           };
         });
 
-        items = items.sort(function(a, b) {
+        items = items.sort(function (a, b) {
           return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
         });
 
@@ -8337,14 +8424,14 @@ const commands = {
           w_l[key] = value;
         }
 
-        var items = Object.keys(w_l).map(function(key) {
+        var items = Object.keys(w_l).map(function (key) {
           return {
             id: key,
             val: w_l[key]
           };
         });
 
-        items = items.sort(function(a, b) {
+        items = items.sort(function (a, b) {
           return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
         });
 
@@ -8389,14 +8476,14 @@ const commands = {
           w_l[key] = value;
         }
 
-        var items = Object.keys(w_l).map(function(key) {
+        var items = Object.keys(w_l).map(function (key) {
           return {
             id: key,
             val: w_l[key]
           };
         });
 
-        items = items.sort(function(a, b) {
+        items = items.sort(function (a, b) {
           return a.val > b.val ? -1 : a.val == b.val ? 0 : 1;
         });
 
@@ -8438,7 +8525,7 @@ const commands = {
   // boxisade
 
   pääpäivä: msg => {
-    
+
     var date = new Date();
     var a = date.getDate();
     var b = date.getMonth();
@@ -8571,10 +8658,14 @@ const commands = {
     delete this_date;
 
     if (day == 3) {
-      msg.channel.send("", {file: "https://i.imgur.com/NcE2HFK.jpg"});
+      msg.channel.send("", { file: "https://i.imgur.com/NcE2HFK.jpg" });
     } else {
-      msg.channel.send("", {file: "https://i.imgur.com/hlNUbYt.jpg"});
+      msg.channel.send("", { file: "https://i.imgur.com/hlNUbYt.jpg" });
     }
+  },
+
+  password: msg => {
+
   },
 
   juo: msg => {
@@ -8683,10 +8774,10 @@ const commands = {
     }
 
     if (amount.slice(-1) == "k") {
-      amount = Math.floor(1000*parseFloat(amount));
+      amount = Math.floor(1000 * parseFloat(amount));
     }
     else if (amount.slice(-1) == "m") {
-      amount = Math.floor(1000000*parseFloat(amount));
+      amount = Math.floor(1000000 * parseFloat(amount));
     }
 
     if (name == "" || name === undefined) return;
@@ -8735,10 +8826,10 @@ const commands = {
     }
 
     if (amount.slice(-1) == "k") {
-      amount = Math.floor(1000*parseFloat(amount));
+      amount = Math.floor(1000 * parseFloat(amount));
     }
     else if (amount.slice(-1) == "m") {
-      amount = Math.floor(1000000*parseFloat(amount));
+      amount = Math.floor(1000000 * parseFloat(amount));
     }
 
     let name = msg.content.split(" ")[1];
@@ -8827,7 +8918,7 @@ const commands = {
     msg.channel.send("Ping?").then(m => {
       m.edit(
         `Pong! Viive on ${m.createdTimestamp -
-          msg.createdTimestamp}ms. API viive on ${Math.round(client.ping)}ms`
+        msg.createdTimestamp}ms. API viive on ${Math.round(client.ping)}ms`
       );
     });
   },
@@ -8851,7 +8942,7 @@ const commands = {
     if (minute < 10) {
       addition2 = "0";
     }
-    
+
     let aika = "";
     if (hour >= 5 && hour < 10) {
       aika = "Aamu";
@@ -8874,7 +8965,7 @@ const commands = {
 
     let name = msg.content.split(" ")[1];
 
-    if (name == "" || name === undefined)  {
+    if (name == "" || name === undefined) {
       msg.channel.send(
         "Laita nimi!"
       );
@@ -8907,7 +8998,7 @@ const commands = {
         }
         msg.channel.send(
           "<@" + name + "> on viimeksi ollut channelillä " +
-           day + "/" + month + "/" + year + " klo " + hours + ":" + addition + minutes
+          day + "/" + month + "/" + year + " klo " + hours + ":" + addition + minutes
         );
         msg.delete();
         save_user(user);
@@ -8920,21 +9011,21 @@ const commands = {
     if (locker.includes(msg.author.id)) {
 
       return firebase
-      .database()
-      .ref("global_data")
-      .once("value")
-      .then(d => {
-        let global = d.val();
-        global.lock = true;
-        locked_flag = true;
-        change_title("LUKITTU");
-        msg.channel.send("Botti lukittu ID " + msg.author.id + " toimesta.");
-        return firebase
         .database()
         .ref("global_data")
-        .set(global);
+        .once("value")
+        .then(d => {
+          let global = d.val();
+          global.lock = true;
+          locked_flag = true;
+          change_title("LUKITTU");
+          msg.channel.send("Botti lukittu ID " + msg.author.id + " toimesta.");
+          return firebase
+            .database()
+            .ref("global_data")
+            .set(global);
 
-      });
+        });
 
     }
     else {
@@ -8943,6 +9034,15 @@ const commands = {
   }
 
 };
+
+const private_commands = {
+
+  salasana: msg => {
+    let password = msg.content.split(" ")[1];
+    setPassword(msg.author.id, password);
+  }
+
+}
 
 var emojies = {};
 
@@ -8959,11 +9059,11 @@ client.on("ready", () => {
   check_stun();
   console.log(
     `Bot has started, with ${client.users.size} users, in ${
-      client.channels.size
+    client.channels.size
     } channels of ${client.guilds.size} guilds.`
   );
 
-  setTimeout(function(){
+  setTimeout(function () {
     process.exit(0);
   }, 60 * 60 * 1000);
 
@@ -8977,7 +9077,7 @@ client.on("ready", () => {
 
   check_lock();
 
-  check_pääpäivä().then( v => {
+  check_pääpäivä().then(v => {
     if (locked_flag) {
       change_title("LUKITTU");
     } else if (v) {
@@ -8999,51 +9099,71 @@ client.on("message", async msg => {
   if (msg.content.indexOf(tokens.prefix) !== 0) return;
   if (!msg.content.startsWith(tokens.prefix)) return;
 
-  if (msg.author.id != "247754056804728832") {
-    if (banned_textchannels.includes(msg.channel.id)) {
-      msg.delete();
+  if (msg.guild === null) {
+
+    if (
+      private_commands.hasOwnProperty(
+        msg.content
+          .toLowerCase()
+          .slice(tokens.prefix.length)
+          .split(" ")[0]
+      )
+    ) {
+      private_commands[
+        msg.content
+          .toLowerCase()
+          .slice(tokens.prefix.length)
+          .split(" ")[0]
+      ](msg);
+    }
+
+  } else {
+    if (msg.author.id != "247754056804728832") {
+      if (banned_textchannels.includes(msg.channel.id)) {
+        msg.delete();
+        return;
+      }
+    }
+
+    if (locked_flag) {
+      console.log("Lukittu viesti!");
+      msg.channel.send(
+        "bOtter on väliaikaisesti lukittu eikä ota komentoja vastaan.");
       return;
     }
-  }
 
-  if (locked_flag) {
-    console.log("Lukittu viesti!");
-    msg.channel.send(
-      "bOtter on väliaikaisesti lukittu eikä ota komentoja vastaan.");
-    return;
-  }
+    if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
 
-  if ((get_stun()).includes(msg.author.id)) return msg.channel.send("Olet stunneissa.");
 
-  
 
-  if (!(msg.content).includes("sano")) {
-    if (!(msg.content).includes("rahat") && !(msg.content).includes("ryhmäpeli")) {
-      msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "r", tokens.prefix + "rahat");
+    if (!(msg.content).includes("sano")) {
+      if (!(msg.content).includes("rahat") && !(msg.content).includes("ryhmäpeli")) {
+        msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "r", tokens.prefix + "rahat");
+      }
+      if (!(msg.content).includes("inv") && !(msg.content).includes("ilmoitukset")) {
+        msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "i", tokens.prefix + "inv");
+      }
+      if ((msg.content.split(" ")[0]) == "!s") {
+        msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "s", tokens.prefix + "status");
+      }
     }
-    if (!(msg.content).includes("inv") && !(msg.content).includes("ilmoitukset")) {
-      msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "i", tokens.prefix + "inv");
-    }
-    if ((msg.content.split(" ")[0]) == "!s") {
-      msg.content = (msg.content).toLowerCase().replace(tokens.prefix + "s", tokens.prefix + "status");
+
+    if (
+      commands.hasOwnProperty(
+        msg.content
+          .toLowerCase()
+          .slice(tokens.prefix.length)
+          .split(" ")[0]
+      )
+    ) {
+      commands[
+        msg.content
+          .toLowerCase()
+          .slice(tokens.prefix.length)
+          .split(" ")[0]
+      ](msg);
     }
   }
-
-  if (
-    commands.hasOwnProperty(
-      msg.content
-        .toLowerCase()
-        .slice(tokens.prefix.length)
-        .split(" ")[0]
-    )
-  ) {
-    commands[
-      msg.content
-        .toLowerCase()
-        .slice(tokens.prefix.length)
-        .split(" ")[0]
-    ](msg);
-  }  
 });
 
 client.on("error", e => {
@@ -9053,13 +9173,13 @@ client.on("error", e => {
 const banned_channels = ["300242143702679552", "404378873380470786"];
 
 var minute_count = 0;
-setInterval(async function() {
+setInterval(async function () {
   var users;
   var global;
-  await bot_users.on("value", async function(u) {
+  await bot_users.on("value", async function (u) {
     users = u.val();
   });
-  await global_data.once("value", async function(g) {
+  await global_data.once("value", async function (g) {
     global = g.val();
   });
   check_lock();
@@ -9067,7 +9187,7 @@ setInterval(async function() {
     change_title("LUKITTU");
     console.log("Lukittu intervalli");
     return;
-  } 
+  }
 
   var date = new Date();
   var day = date.getDate();
@@ -9078,12 +9198,14 @@ setInterval(async function() {
   var weekday = date.getDay();
   delete date;
 
-  var date_array = {'day' : day,
-                  'month' : month,
-                  'year' : year,
-                  'minutes' : minutes,
-                  'hours' : hours,
-                  'weekday': weekday};
+  var date_array = {
+    'day': day,
+    'month': month,
+    'year': year,
+    'minutes': minutes,
+    'hours': hours,
+    'weekday': weekday
+  };
 
   // Happens every time user is active on voicechannel
   var voicechannels_array = client.channels.keyArray();
@@ -9120,7 +9242,7 @@ setInterval(async function() {
     }
   }
 
-  await bot_users.once("value", async function(u) {
+  await bot_users.once("value", async function (u) {
     users = u.val();
   });
 
@@ -9137,10 +9259,10 @@ setInterval(async function() {
             .get("666348588527386643")
             .send(
               "Tuloimusi loppui, <@" +
-                m +
-                ">. Imit yhteensä: " +
-                users[m]["income_absorb"]["sum"] +
-                emojies["coin"]
+              m +
+              ">. Imit yhteensä: " +
+              users[m]["income_absorb"]["sum"] +
+              emojies["coin"]
             );
           delete users[m].income_absorb;
           await firebase
@@ -9153,14 +9275,14 @@ setInterval(async function() {
       if ("stun_timer" in users[m]) {
         users[m]["stun_timer"]["timer"] -= 1;
         if (users[m]["stun_timer"]["timer"] == 0) {
-          (global["stunned"]).splice( (global["stunned"]).indexOf("" + m), 1 );
+          (global["stunned"]).splice((global["stunned"]).indexOf("" + m), 1);
           users[m]["stun_timer"] = null;
 
           client.channels
             .get("666348588527386643")
             .send(
               "Stunnisi päättyi loppui <@" +
-                m + ">"
+              m + ">"
             );
 
           await firebase
@@ -9178,10 +9300,10 @@ setInterval(async function() {
             .get("666348588527386643")
             .send(
               "<@" +
-                m +
-                ">, Menetit yhteensä: " +
-                users[m]["absorb_target"]["sum"] +
-                emojies["coin"]
+              m +
+              ">, Menetit yhteensä: " +
+              users[m]["absorb_target"]["sum"] +
+              emojies["coin"]
             );
           delete users[m].absorb_target;
           await firebase
@@ -9197,19 +9319,19 @@ setInterval(async function() {
           if (users[m]["income_machine"]["multi"] == 40) {
 
             users[m]["inventory"]["money"] += users[m]["income_machine"]["multi"] * users[m]["inventory"]["income"] - users[m]["inventory"]["income"] + 5000;
-              // laittaa pelkät tulokone rahat
+            // laittaa pelkät tulokone rahat
             users[m]["income_machine"]["sum"] += users[m]["income_machine"]["multi"] * users[m]["inventory"]["income"] - users[m]["inventory"]["income"] + 5000;
 
           } else {
 
             users[m]["inventory"]["money"] +=
               users[m]["income_machine"]["multi"] *
-                users[m]["inventory"]["income"] -
+              users[m]["inventory"]["income"] -
               users[m]["inventory"]["income"];
-              // laittaa pelkät tulokone rahat
+            // laittaa pelkät tulokone rahat
             users[m]["income_machine"]["sum"] +=
               users[m]["income_machine"]["multi"] *
-                users[m]["inventory"]["income"] -
+              users[m]["inventory"]["income"] -
               users[m]["inventory"]["income"];
 
           }
@@ -9219,17 +9341,17 @@ setInterval(async function() {
             if (user_under_income(users[m]["absorb_target"]["absorber"])) {
               users[m]["basic_statistics"]["money_from_income_machines"] -=
                 users[m]["income_machine"]["multi"] *
-                  users[m]["inventory"]["income"] -
+                users[m]["inventory"]["income"] -
                 users[m]["inventory"]["income"]; // poistaa incomerahat jos joku
               users[m]["inventory"]["money"] -=
                 users[m]["income_machine"]["multi"] *
-                  users[m]["inventory"]["income"] -
+                users[m]["inventory"]["income"] -
                 users[m]["inventory"]["income"];
             }
           }
           users[m]["basic_statistics"]["money_from_income_machines"] +=
             users[m]["income_machine"]["multi"] *
-              users[m]["inventory"]["income"] -
+            users[m]["inventory"]["income"] -
             users[m]["inventory"]["income"];
         }
 
@@ -9239,10 +9361,10 @@ setInterval(async function() {
             .get("666348588527386643")
             .send(
               "<@" +
-                m +
-                ">, Tulokoneesi on päättynyt... Sait: " +
-                users[m]["income_machine"]["sum"] +
-                emojies["coin"]
+              m +
+              ">, Tulokoneesi on päättynyt... Sait: " +
+              users[m]["income_machine"]["sum"] +
+              emojies["coin"]
             );
           delete users[m].income_machine;
           await firebase
@@ -9283,18 +9405,18 @@ setInterval(async function() {
           await firebase
             .database()
             .ref("users/" + users[m]["id"] + "/inventory/key_items/safe/money")
-            .set(0); 
+            .set(0);
 
           client.channels
             .get("666348588527386643")
             .send(
               "Tiirikointi onnistui, <@" +
-                users[m]["lockpicking"]["lockpicker"] +
-                "> onnistui varastamaan tallelokerosi tyhjäksi <@" +
-                m +
-                ">! Siihen kului vain " + 
-                users[m]["lockpicking"]["time"] +
-                " minuuttia!"
+              users[m]["lockpicking"]["lockpicker"] +
+              "> onnistui varastamaan tallelokerosi tyhjäksi <@" +
+              m +
+              ">! Siihen kului vain " +
+              users[m]["lockpicking"]["time"] +
+              " minuuttia!"
             );
 
           delete users[m].lockpicking;
@@ -9309,14 +9431,14 @@ setInterval(async function() {
       if ("stun_timer" in users[m]) {
         users[m]["stun_timer"]["timer"] -= 1;
         if (users[m]["stun_timer"]["timer"] == 0) {
-          (global["stunned"]).splice( (global["stunned"]).indexOf("" + m), 1 );
+          (global["stunned"]).splice((global["stunned"]).indexOf("" + m), 1);
           users[m]["stun_timer"] = null;
 
           client.channels
             .get("666348588527386643")
             .send(
               "Stunnisi päättyi loppui <@" +
-                m + ">"
+              m + ">"
             );
 
           await firebase
@@ -9339,10 +9461,10 @@ setInterval(async function() {
             .get("666348588527386643")
             .send(
               "<@" +
-                m +
-                ">, Valvontasi on päättynyt... Valvonta suojasi " +
-                users[m]["security_cam"]["protected"] +
-                " tapausta!"
+              m +
+              ">, Valvontasi on päättynyt... Valvonta suojasi " +
+              users[m]["security_cam"]["protected"] +
+              " tapausta!"
             );
           delete users[m].security_cam;
           await firebase
@@ -9359,8 +9481,8 @@ setInterval(async function() {
             .get("666348588527386643")
             .send(
               "<@" +
-                m +
-                ">, Aikakone palautti sinut taas normaaliin ulottuvuuteen..."
+              m +
+              ">, Aikakone palautti sinut taas normaaliin ulottuvuuteen..."
             );
           delete users[m].timemachine_timer;
           await firebase
@@ -9377,11 +9499,11 @@ setInterval(async function() {
             .get("666348588527386643")
             .send(
               "<@" +
-                m +
-                ">, Puska kuihtui ajan myötä... ");
-        users[m]["inventory"]["key_items"]["bush"]["timer"] = 10080;
-        users[m]["inventory"]["key_items"]["bush"]["on"] = false;
-        users[m]["inventory"]["key_items"]["bush"]["own"] = false;
+              m +
+              ">, Puska kuihtui ajan myötä... ");
+          users[m]["inventory"]["key_items"]["bush"]["timer"] = 10080;
+          users[m]["inventory"]["key_items"]["bush"]["on"] = false;
+          users[m]["inventory"]["key_items"]["bush"]["own"] = false;
         }
       }
 
