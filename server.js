@@ -761,6 +761,7 @@ function check_user_in_database(_id) {
                   .set(hash);
                 client.fetchUser(_id, false).then(u => {
                   u.send("Sun salasana botter.xyz sivustolle on ja se on: **" + pass + "**.\nVoit vaihtaa salasanan komennolla " + tokens.prefix + "salasana <uusi salasana>. Uuden salasanan pituus on oltava 6-18 merkkiä ja se saa sisaltää seuraavia merkkejä:\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+                  u.send("**!!! botter.xyz ei ole vielä toiminnassa !!!**");
                 });
               }
 
