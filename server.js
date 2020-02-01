@@ -92,7 +92,7 @@ async function setPassword(id, password) {
       }
     }
 
-    let hash = bcrypt.hashSync(retVal, 10);
+    let hash = bcrypt.hashSync(password, 10);
     user.send("Salasana on vaihdettu! Suosittelen poistamaan lähettämäsi viestin, jottei se jää muiden katseltavaksi. Voit kuitenkin halutessasi säilyttää sen, jotta muistat salasanasi! Voit kuitenkin aina tilata uuden salasanan.");
     return firebase
       .database()
@@ -9041,6 +9041,7 @@ const private_commands = {
 
   salasana: msg => {
     let password = msg.content.split(" ")[1];
+    console.log(password);
     setPassword(msg.author.id, password);
   }
 
