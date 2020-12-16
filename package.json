@@ -1,0 +1,26 @@
+{
+  "name": "botter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kart5a/bOtter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kart5a/bOtter/issues"
+  },
+  "homepage": "https://github.com/Kart5a/bOtter#readme",
+  "dependencies": {
+    "bcrypt": "^5.0.0",
+    "crypto": "^1.0.1",
+    "discord.js": "11.5.1",
+    "firebase": "^8.2.0"
+  }
+}

@@ -664,7 +664,7 @@ function check_user_in_database(_id) {
           client.fetchUser(_id, false).then(user => {
             user.send("Sun salasana botter.xyz sivustolle on: **" + pass + "**.\nVoit vaihtaa salasanan komennolla " + tokens.prefix + "salasana <uusi salasana>. Uuden salasanan pituus on oltava 6-18 merkkiä ja se saa sisaltää seuraavia merkkejä:\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
           });
-        } 
+        }
         else {
           Object.keys(new_user_users).forEach(function (key) {
             if (!(key in users)) {
@@ -4647,10 +4647,8 @@ const commands = {
               user["inventory"]["money"] = end_money;
               save_user(user);
               return feed_channel.send(
-                `There was a glitch ${
-                emojies["glitch"]
-                } in the system. Seems like you had ${start_money} ${
-                emojies["coin"]
+                `There was a glitch ${emojies["glitch"]
+                } in the system. Seems like you had ${start_money} ${emojies["coin"]
                 } before.\nNow you have ${end_money} ${emojies["coin"]}.`
               );
             }
@@ -5396,32 +5394,26 @@ const commands = {
             }
 
             var lootboxes = "";
-            lootboxes += `${emojies["chest_common"]} Common: ${
-              user["inventory"]["lootboxes"]["common"]
+            lootboxes += `${emojies["chest_common"]} Common: ${user["inventory"]["lootboxes"]["common"]
               } (${user["inventory"]["lootboxes"]["common"] +
               user["basic_statistics"]["opened_lootboxes"]["common"]})\n`;
-            lootboxes += `${emojies["chest_uncommon"]} Uncommon: ${
-              user["inventory"]["lootboxes"]["uncommon"]
+            lootboxes += `${emojies["chest_uncommon"]} Uncommon: ${user["inventory"]["lootboxes"]["uncommon"]
               } (${user["inventory"]["lootboxes"]["uncommon"] +
               user["basic_statistics"]["opened_lootboxes"]["uncommon"]})\n`;
-            lootboxes += `${emojies["chest_rare"]} Rare: ${
-              user["inventory"]["lootboxes"]["rare"]
+            lootboxes += `${emojies["chest_rare"]} Rare: ${user["inventory"]["lootboxes"]["rare"]
               } (${user["inventory"]["lootboxes"]["rare"] +
               user["basic_statistics"]["opened_lootboxes"]["rare"]})\n`;
-            lootboxes += `${emojies["chest_epic"]} Epic: ${
-              user["inventory"]["lootboxes"]["epic"]
+            lootboxes += `${emojies["chest_epic"]} Epic: ${user["inventory"]["lootboxes"]["epic"]
               } (${user["inventory"]["lootboxes"]["epic"] +
               user["basic_statistics"]["opened_lootboxes"]["epic"]})\n`;
-            lootboxes += `${emojies["chest_legendary"]} Legendary: ${
-              user["inventory"]["lootboxes"]["legendary"]
+            lootboxes += `${emojies["chest_legendary"]} Legendary: ${user["inventory"]["lootboxes"]["legendary"]
               } (${user["inventory"]["lootboxes"]["legendary"] +
               user["basic_statistics"]["opened_lootboxes"]["legendary"]})\n`;
 
             var items = "";
             var ite = user["inventory"]["items"];
             if (ite["ES"] > 0) {
-              items += `${emojies["ES"]} ES: ${ite["ES"]} (Juotu: ${
-                ite["ES_can"]
+              items += `${emojies["ES"]} ES: ${ite["ES"]} (Juotu: ${ite["ES_can"]
                 })\n`;
             }
             if (ite["stick"] > 0) {
@@ -5434,13 +5426,11 @@ const commands = {
               items += `${emojies["sytti"]} Sytti: ${ite["bait"]}\n`;
             }
             if (ite["super_bait"] > 0) {
-              items += `${emojies["supersytti"]} Supersytti: ${
-                ite["super_bait"]
+              items += `${emojies["supersytti"]} Supersytti: ${ite["super_bait"]
                 }\n`;
             }
             if (ite["hyper_bait"] > 0) {
-              items += `${emojies["hypersytti"]} Hypersytti: ${
-                ite["hyper_bait"]
+              items += `${emojies["hypersytti"]} Hypersytti: ${ite["hyper_bait"]
                 }\n`;
             }
             if (ite["timemachine"] > 0) {
@@ -5453,28 +5443,23 @@ const commands = {
               items += `${emojies["pommi"]} Pommi: ${ite["bomb"]}\n`;
             }
             if (ite["security_cam"] > 0) {
-              items += `${emojies["valvontakamera"]} Valvontakamera: ${
-                ite["security_cam"]
+              items += `${emojies["valvontakamera"]} Valvontakamera: ${ite["security_cam"]
                 }\n`;
             }
             if (ite["income_machine"] > 0) {
-              items += `${emojies["tulokone"]} Tulokone: ${
-                ite["income_machine"]
+              items += `${emojies["tulokone"]} Tulokone: ${ite["income_machine"]
                 }\n`;
             }
             if (ite["income_machine_X"] > 0) {
-              items += `${emojies["tulokonex"]} Tulokone-X: ${
-                ite["income_machine_X"]
+              items += `${emojies["tulokonex"]} Tulokone-X: ${ite["income_machine_X"]
                 }\n`;
             }
             if (ite["income_accelerator"] > 0) {
-              items += `${emojies["tulokiihdytin"]} Tulokiihdytin: ${
-                ite["income_accelerator"]
+              items += `${emojies["tulokiihdytin"]} Tulokiihdytin: ${ite["income_accelerator"]
                 }\n`;
             }
             if (ite["income_absorber"] > 0) {
-              items += `${emojies["tuloimu"]} Tuloimu: ${
-                ite["income_absorber"]
+              items += `${emojies["tuloimu"]} Tuloimu: ${ite["income_absorber"]
                 }\n`;
             }
             if (ite["mask"] > 0) {
@@ -5499,18 +5484,15 @@ const commands = {
               items += `${emojies["glitch"]} Glitch: ${ite["glitch"]}\n`;
             }
             if (ite["bronze_income"] > 0) {
-              items += `${emojies["perustulo1"]} Pronssitulo: ${
-                ite["bronze_income"]
+              items += `${emojies["perustulo1"]} Pronssitulo: ${ite["bronze_income"]
                 }\n`;
             }
             if (ite["silver_income"] > 0) {
-              items += `${emojies["perustulo2"]} Hopeatulo: ${
-                ite["silver_income"]
+              items += `${emojies["perustulo2"]} Hopeatulo: ${ite["silver_income"]
                 }\n`;
             }
             if (ite["gold_income"] > 0) {
-              items += `${emojies["perustulo3"]} Kultatulo: ${
-                ite["gold_income"]
+              items += `${emojies["perustulo3"]} Kultatulo: ${ite["gold_income"]
                 }\n`;
             }
 
@@ -5581,10 +5563,8 @@ const commands = {
                 thumbnail: {
                   url: avatar
                 },
-                description: `***Rahat:*** ${user["inventory"]["money"]}${
-                  emojies["coin"]
-                  }, ***Perustulo:*** ${user["inventory"]["income"]}${
-                  emojies["coin"]
+                description: `***Rahat:*** ${user["inventory"]["money"]}${emojies["coin"]
+                  }, ***Perustulo:*** ${user["inventory"]["income"]}${emojies["coin"]
                   }${safe_t}${status}`,
                 fields: [
                   {
@@ -5841,42 +5821,73 @@ const commands = {
           amount = Math.floor(1000000 * parseFloat(amount));
         }
 
-        if (isNaN(amount))
-          return msg.channel.send(amount + ` määrää ei voida ostaa :D`);
-        amount = Math.floor(parseInt(amount));
-        if (amount < 0)
-          return msg.channel.send("Et voi myydä tuotetta pois :(");
-        if (amount == 0)
-          return msg.channel.send("Ai, etkö aiokkaan ostaan mitään?");
+        if (amount == "max" && purchase == "perustulo") {
 
-        if (purchase == "" || purchase === undefined)
-          return msg.channel.send(`Kirjoita !osta ja tuotteen nimi`);
+        }
+        else if (isNaN(amount)) {
+          return msg.channel.send(amount + ` määrää ei voida ostaa :D`);
+        } else {
+          amount = Math.floor(parseInt(amount));
+          if (amount < 0)
+            return msg.channel.send("Et voi myydä tuotetta pois :(");
+          if (amount == 0)
+            return msg.channel.send("Ai, etkö aiokkaan ostaan mitään?");
+
+          if (purchase == "" || purchase === undefined)
+            return msg.channel.send(`Kirjoita !osta ja tuotteen nimi`);
+        }
 
         var money = user["inventory"]["money"];
 
         // PERUSTULO
         if (purchase == "perustulo") {
-          var basic_income = user["inventory"]["income"];
-          var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057 * (user["basic_statistics"]["income_bought"]) * 5)) / 100) * 100;
-          /*var basic_income_price =
-            Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;*/
-          if (money < basic_income_price)
-            return msg.channel.send(
-              "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
+
+          if (amount == "max") {
+            let index = 0;
+            let cost = 0;
+            while (user["inventory"]["money"] >= Math.floor((5364.6 * Math.exp(0.0057 * (user["basic_statistics"]["income_bought"]) * 5)) / 100) * 100) {
+              var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057 * (user["basic_statistics"]["income_bought"]) * 5)) / 100) * 100;
+
+              user["basic_statistics"]["income_bought"] += 1;
+              user["inventory"]["income"] += 5;
+              user["inventory"]["money"] -= basic_income_price;
+              index += 1;
+              cost += basic_income_price;
+            }
+            if (index > 0) {
+              msg.channel.send(
+                "Onnittelut, " + (index + 1) + " kappaletta perustuloa ostettu! Maksoi: " +
+                cost +
+                emojies["coin"]
+              );
+            } else {
+              msg.channel.send(
+                "Sinulla ei ole rahaa ostaa ainuttakaan perustuloa!"
+              );
+            }
+          } else {
+            var basic_income_price = Math.floor((5364.6 * Math.exp(0.0057 * (user["basic_statistics"]["income_bought"]) * 5)) / 100) * 100;
+            /*var basic_income_price =
+              Math.floor((1000 * Math.pow(1.08, user["basic_statistics"]["income_bought"]) * (10 + 5 * user["basic_statistics"]["income_bought"])) / 100) * 100;*/
+            if (money < basic_income_price)
+              return msg.channel.send(
+                "Ei ole varaa ostaa... nyt keräämään, tarvitset: " +
+                basic_income_price +
+                emojies["coin"] +
+                "."
+              );
+
+            user["inventory"]["income"] += 5;
+            user["basic_statistics"]["income_bought"] += 1;
+            user["inventory"]["money"] -= basic_income_price;
+
+            msg.channel.send(
+              "Onnittelut, perustuloa ostettu! Maksoi: " +
               basic_income_price +
-              emojies["coin"] +
-              "."
+              emojies["coin"]
             );
+          }
 
-          user["inventory"]["income"] += 5;
-          user["basic_statistics"]["income_bought"] += 1;
-          user["inventory"]["money"] -= basic_income_price;
-
-          msg.channel.send(
-            "Onnittelut, perustuloa ostettu! Maksoi: " +
-            basic_income_price +
-            emojies["coin"]
-          );
         } else if (purchase == "es") {
           if (money < amount)
             return msg.channel.send(
@@ -7464,10 +7475,8 @@ const commands = {
           fields: [
             {
               name: "***___YLEISTÄ:___***",
-              value: `Kaikki pelit: ${games}\nVoitetut pelit: ${games_won}\nHävityt pelit: ${games_lost}\nVoitetut rahat: ${money_won}${
-                emojies["coin"]
-                }\nHävityt rahat: ${money_lost}${
-                emojies["coin"]
+              value: `Kaikki pelit: ${games}\nVoitetut pelit: ${games_won}\nHävityt pelit: ${games_lost}\nVoitetut rahat: ${money_won}${emojies["coin"]
+                }\nHävityt rahat: ${money_lost}${emojies["coin"]
                 }\nNetto: ${netto}${emojies["coin"]}`
             }
           ]
@@ -9061,8 +9070,7 @@ client.on("ready", () => {
   loadEmojies();
   check_stun();
   console.log(
-    `Bot has started, with ${client.users.size} users, in ${
-    client.channels.size
+    `Bot has started, with ${client.users.size} users, in ${client.channels.size
     } channels of ${client.guilds.size} guilds.`
   );
 
@@ -9235,6 +9243,9 @@ setInterval(async function () {
             console.log("Solojäbä: " + m);
             await add_solo(m);
           }
+
+
+
           await add_income(usr.id);
           await draw_lootbox(usr.id, 45, false);
 
@@ -9433,14 +9444,14 @@ setInterval(async function () {
 
       if ("stun_timer" in users[m]) {
         users[m]["stun_timer"]["timer"] -= 1;
-        if (users[m]["stun_timer"]["timer"] == 0) {
+        if (users[m]["stun_timer"]["timer"] <= 0) {
           (global["stunned"]).splice((global["stunned"]).indexOf("" + m), 1);
           users[m]["stun_timer"] = null;
 
           client.channels
             .get("666348588527386643")
             .send(
-              "Stunnisi päättyi loppui <@" +
+              "Stunnisi päättyi <@" +
               m + ">"
             );
 
